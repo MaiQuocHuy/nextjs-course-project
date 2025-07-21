@@ -239,7 +239,9 @@ export default function LoginPage() {
             </DialogHeader>
             <div className="flex justify-center mt-6">
               <Button onClick={() => setShowSuccessModal(false)} className="px-8">
-                Continue
+                <Link href="/dashboard" className="font-medium ">
+                  Continue
+                </Link>
               </Button>
             </div>
           </DialogContent>
