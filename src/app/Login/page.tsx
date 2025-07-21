@@ -71,8 +71,8 @@ export default function LoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: "user@example.com",
+      password: "Password123",
       rememberMe: false,
     },
   });
@@ -209,15 +209,6 @@ export default function LoginPage() {
                 </Button>
               </form>
             </Form>
-
-            {/* Demo Credentials */}
-            <div className="rounded-md bg-blue-50 p-4">
-              <div className="text-sm">
-                <p className="font-medium text-blue-800 mb-1">Demo Credentials:</p>
-                <p className="text-blue-700">Email: user@example.com</p>
-                <p className="text-blue-700">Password: Password123</p>
-              </div>
-            </div>
 
             {/* Register Link */}
             <div className="text-center text-sm text-gray-600">
