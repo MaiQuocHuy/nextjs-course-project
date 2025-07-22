@@ -45,10 +45,10 @@ export function CourseCard({ course, className = "" }: CourseCardProps) {
 
   return (
     <Card
-      className={`group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/15 transition-all duration-300 hover:-translate-y-1 transform ${className}`}
+      className={`group relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2 transform ${className}`}
     >
       {/* Premium Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/3 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/5 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
       {/* Image Section with Overlay */}
       <div className="relative overflow-hidden">
