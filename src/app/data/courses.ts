@@ -126,8 +126,8 @@ export const mockUsers: User[] = [
   {
     id: '2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q',
     email: 'sarah.dev@example.com',
-    name: 'Sarah Johnson',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b67565b4?w=150&h=150&fit=crop&crop=face',
+    name: 'Dr. John Smith',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     role: 'INSTRUCTOR',
     created_at: '2024-01-20T09:30:00Z'
   },
