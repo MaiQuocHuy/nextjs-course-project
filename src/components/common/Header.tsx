@@ -184,7 +184,7 @@ export function Header() {
             <div className="flex items-center space-x-2">
               <Link
                 href="/login"
-                className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               >
                 <LogIn className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                 Login
