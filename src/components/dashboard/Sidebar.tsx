@@ -22,7 +22,7 @@ const navigationItems = [
   },
   {
     label: "My Courses",
-    href: "/dashboard/courses",
+    href: "/dashboard/my-courses",
     icon: BookOpen,
   },
   {
