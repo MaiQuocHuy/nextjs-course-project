@@ -1,9 +1,9 @@
 "use client";
 
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { DashboardStats } from "@/components/dashboard/DashboardStats";
-import { EnrolledCoursesSummary } from "@/components/dashboard/EnrolledCoursesSummary";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { DashboardLayout } from "@/components/dashboard-student/DashboardLayout";
+import { DashboardStats } from "@/components/dashboard-student/DashboardStats";
+import { EnrolledCoursesSummary } from "@/components/dashboard-student/EnrolledCoursesSummary";
+import { ActivityFeed } from "@/components/dashboard-student/ActivityFeed";
 
 export default function DashboardPage() {
   return (

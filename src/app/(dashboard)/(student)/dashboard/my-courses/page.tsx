@@ -1,6 +1,6 @@
 import { GraduationCap, Filter, Search } from "lucide-react";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { CourseList } from "@/components/courses/CourseList";
+import { DashboardLayout } from "@/components/dashboard-student/DashboardLayout";
+import { CourseList } from "@/components/dashboard-student/courses/CourseList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";

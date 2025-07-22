@@ -96,9 +96,9 @@ export function EnrolledCoursesSummary() {
           {courses.map((enrollment) => (
             <Card
               key={enrollment.course_id}
-              className="overflow-hidden hover:shadow-lg transition-shadow"
+              className="overflow-hidden hover:shadow-lg transition-shadow "
             >
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 px-3">
                 <div className="aspect-video relative rounded-md overflow-hidden mb-3">
                   <Image
                     src={enrollment.course.thumbnail}
@@ -120,7 +120,7 @@ export function EnrolledCoursesSummary() {
                   </p>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
