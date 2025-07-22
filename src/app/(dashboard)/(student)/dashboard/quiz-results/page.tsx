@@ -1,7 +1,12 @@
-import React from "react";
+"use client";
 
-const page = () => {
-  return <div>page</div>;
-};
+import { DashboardLayout } from "@/components/dashboard-student/DashboardLayout";
+import { QuizResultsPage } from "@/components/dashboard-student/quiz-results/QuizResultsPage";
 
-export default page;
+export default function QuizResultsPageRoute() {
+  return (
+    <DashboardLayout>
+      <QuizResultsPage />
+    </DashboardLayout>
+  );
+}
