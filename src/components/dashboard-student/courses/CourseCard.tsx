@@ -1,7 +1,10 @@
+"use client";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { CourseProgress } from "./CourseProgress";
 import { CourseStatus } from "./CourseStatus";
 
@@ -19,10 +22,15 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course }: CourseCardProps) {
+  const router = useRouter();
   const isCompleted = course.completedLessons === course.totalLessons;
 
+  const handleNavigateToLearning = () => {
+    router.push(`/dashboard/learning/${course.id}`);
+  };
+
   return (
-    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow h-full">
+    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow h-full pt-0">
       <div className="flex flex-col h-full">
         <CardHeader className="p-0">
           <div className="aspect-video relative rounded-t-2xl overflow-hidden">
@@ -35,7 +43,7 @@ export function CourseCard({ course }: CourseCardProps) {
             />
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-6 flex flex-col flex-1">
           <div className="flex flex-col justify-between h-full space-y-4">
             {/* Course Info - Fixed height section */}
@@ -52,7 +60,7 @@ export function CourseCard({ course }: CourseCardProps) {
             </div>
 
             {/* Progress Section */}
-            <CourseProgress 
+            <CourseProgress
               completedLessons={course.completedLessons}
               totalLessons={course.totalLessons}
             />
@@ -61,6 +69,7 @@ export function CourseCard({ course }: CourseCardProps) {
             <Button
               className="w-full hover:bg-primary/90 transition-colors mt-auto"
               variant="default"
+              onClick={handleNavigateToLearning}
             >
               {isCompleted ? "Review Course" : "Continue Learning"}
               <ArrowRight className="h-4 w-4 ml-2" />
