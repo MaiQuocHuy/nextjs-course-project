@@ -81,7 +81,7 @@ export function SearchBar({
 
       {/* Search Results Dropdown */}
       {open && filteredCourses.length > 0 && (
-        <div className="absolute top-full mt-1 w-full bg-popover border rounded-md shadow-lg z-50 max-h-[200px] overflow-auto">
+        <div className="absolute top-full mt-1 w-full bg-popover border rounded-md shadow-lg z-[9999] max-h-[200px] overflow-auto">
           <div className="p-2">
             <div className="text-xs font-medium text-muted-foreground px-2 py-1">
               Courses
@@ -101,7 +101,7 @@ export function SearchBar({
       )}
 
       {open && filteredCourses.length === 0 && query && (
-        <div className="absolute top-full mt-1 w-full bg-popover border rounded-md shadow-lg z-50">
+        <div className="absolute top-full mt-1 w-full bg-popover border rounded-md shadow-lg z-[9999]">
           <div className="p-4 text-sm text-muted-foreground text-center">
             No courses found.
           </div>

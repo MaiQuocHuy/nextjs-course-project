@@ -227,7 +227,7 @@ export default function CoursesPage() {
 
       {/* Filters and Search Section */}
       <section
-        className={`py-8 bg-gradient-to-b from-background to-muted/20 sticky top-16 z-30 backdrop-blur-md bg-background/95 border-b transition-all duration-300 ${
+        className={`py-8 bg-gradient-to-b from-background to-muted/20 sticky top-16 z-30 backdrop-blur-md bg-background/95 border-b border-t transition-all duration-300 ${
           isSearchBarVisible
             ? "opacity-100 translate-y-0"
             : "opacity-0 -translate-y-full pointer-events-none"
