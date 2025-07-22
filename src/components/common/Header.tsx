@@ -105,7 +105,7 @@ export function Header() {
             ))}
           </nav>
 
-          <SearchBar className="w-80 transition-all duration-300 focus-within:scale-105 focus-within:shadow-lg" />
+          <SearchBar className="w-80 transition-all duration-300 focus-within:scale-105 focus-within:shadow-lg relative z-[100]" />
         </div>
 
         {/* Right side - Desktop */}
@@ -219,11 +219,11 @@ export function Header() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="w-[320px] p-0 bg-gradient-to-b from-background to-muted/20"
+              className="w-[320px] p-0 bg-background border-l border-border/50 shadow-2xl"
             >
               <div className="flex flex-col h-full">
                 {/* Mobile Header */}
-                <div className="p-6 border-b border-border/50 bg-gradient-to-r from-primary/5 to-purple-500/5">
+                <div className="p-6 border-b border-border/50 bg-background">
                   <Link
                     href="/"
                     className="group flex items-center space-x-2 transition-all duration-300 hover:scale-105"
@@ -237,7 +237,7 @@ export function Header() {
                 </div>
 
                 {/* Mobile Search */}
-                <div className="p-6 border-b border-border/50">
+                <div className="p-6 border-b border-border/50 relative z-[100]">
                   <SearchBar
                     className="transition-all duration-300 focus-within:scale-105"
                     placeholder="Search courses..."
@@ -258,7 +258,7 @@ export function Header() {
                 </div>
 
                 {/* Mobile Auth Buttons */}
-                <div className="p-6 border-t border-border/50 bg-gradient-to-r from-muted/30 to-primary/5">
+                <div className="p-6 border-t border-border/50 bg-background">
                   {isLoggedIn ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-lg">
@@ -315,15 +315,23 @@ export function Header() {
                   ) : (
                     <div className="flex flex-col space-y-3">
                       <Button
+                        asChild
                         variant="ghost"
                         className="w-full flex items-center gap-2 transition-all duration-300 hover:bg-primary/10 hover:scale-105 hover:shadow-md"
                       >
-                        <LogIn className="h-4 w-4" />
-                        Login
+                        <Link href="/login" onClick={() => setIsOpen(false)}>
+                          <LogIn className="h-4 w-4" />
+                          Login
+                        </Link>
                       </Button>
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Register
+                      <Button
+                        asChild
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+                      >
+                        <Link href="/register" onClick={() => setIsOpen(false)}>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Register
+                        </Link>
                       </Button>
                     </div>
                   )}
