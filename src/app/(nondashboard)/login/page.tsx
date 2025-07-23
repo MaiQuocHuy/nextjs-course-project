@@ -100,7 +100,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#e5ecff] px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1 text-center">
@@ -124,7 +124,7 @@ export default function LoginPage() {
                           type="email"
                           placeholder="Enter your email"
                           {...field}
-                          className="h-11"
+                          className="h-11 border-gray-900"
                         />
                       </FormControl>
                       <FormMessage />
@@ -144,7 +144,7 @@ export default function LoginPage() {
                           href="/forgot-password"
                           className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
                         >
-                          Forgot password?
+                          Forgot your password?
                         </Link>
                       </div>
                       <FormControl>
@@ -153,7 +153,7 @@ export default function LoginPage() {
                             type={showPassword ? "text" : "password"}
                             placeholder="Enter your password"
                             {...field}
-                            className="h-11 pr-10"
+                            className="h-11 pr-10 border-gray-900"
                           />
                           <Button
                             type="button"
@@ -163,9 +163,9 @@ export default function LoginPage() {
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
+                              <EyeOff className="h-4 w-4 text-gray-900" />
                             ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
+                              <Eye className="h-4 w-4 text-gray-900" />
                             )}
                             <span className="sr-only">
                               {showPassword ? "Hide password" : "Show password"}
@@ -183,12 +183,16 @@ export default function LoginPage() {
                   control={form.control}
                   name="rememberMe"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormItem className="flex flex-row items-start space-x-1 space-y-0">
                       <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        <Checkbox
+                          className="border-gray-600"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal cursor-pointer">
+                        <FormLabel className="text-sm font-normal cursor-pointer ">
                           Remember me for 30 days
                         </FormLabel>
                       </div>
