@@ -147,7 +147,7 @@ export default function RegisterPage() {
                 id="name"
                 {...register("name")}
                 placeholder="Enter your full name"
-                className={errors.name ? "border-red-500" : ""}
+                className={errors.name ? "border-red-500" : " border-gray-900"}
               />
               {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
             </div>
@@ -160,7 +160,7 @@ export default function RegisterPage() {
                 type="email"
                 {...register("email")}
                 placeholder="Enter your email address"
-                className={errors.email ? "border-red-500" : ""}
+                className={errors.email ? "border-red-500" : "border-gray-900"}
               />
               {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
@@ -174,7 +174,7 @@ export default function RegisterPage() {
                   type="password"
                   {...register("password")}
                   placeholder="Create a password"
-                  className={errors.password ? "border-red-500" : ""}
+                  className={errors.password ? "border-red-500" : "border-gray-900"}
                 />
                 {errors.password && (
                   <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -187,7 +187,7 @@ export default function RegisterPage() {
                   type="password"
                   {...register("confirmPassword")}
                   placeholder="Confirm your password"
-                  className={errors.confirmPassword ? "border-red-500" : ""}
+                  className={errors.confirmPassword ? "border-red-500" : "border-gray-900"}
                 />
                 {errors.confirmPassword && (
                   <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
@@ -204,13 +204,13 @@ export default function RegisterPage() {
                 className="flex flex-col space-y-2"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="student" id="student" />
+                  <RadioGroupItem value="student" id="student" className="border-gray-900" />
                   <Label htmlFor="student" className="cursor-pointer">
                     Student
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="instructor" id="instructor" />
+                  <RadioGroupItem value="instructor" id="instructor" className="border-gray-900" />
                   <Label htmlFor="instructor" className="cursor-pointer">
                     Instructor
                   </Label>

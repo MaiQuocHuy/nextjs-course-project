@@ -39,6 +39,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.newyorker.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
