@@ -832,6 +832,19 @@ export const getFeaturedCourses = () => {
     .slice(0, 6);
 };
 
+export const getCourseById = (id: string) => {
+  return mockCourses.find(course => 
+    course.id === id && 
+    course.is_published && 
+    course.is_approved && 
+    !course.is_deleted
+  );
+};
+
+export const getCourseReviews = (courseId: string) => {
+  return mockReviews.filter(review => review.course_id === courseId);
+};
+
 export const getPopularCourses = () => {
   return mockCourses
     .filter(course => course.is_published && course.is_approved && !course.is_deleted)
