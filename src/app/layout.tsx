@@ -1,36 +1,24 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/common/Header";
-import { Footer } from "@/components/common/Footer";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { SystemProvider } from '@/components/providers/SystemProvider';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Student Dashboard - Next.js Course Project",
-  description:
-    "A comprehensive student dashboard built with Next.js and shadcn/ui",
+  title: 'Online Learning Platform',
+  description: '',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
-      >
-        <main className="flex-1">{children}</main>
+      <body className={inter.className}>
+        <SystemProvider>{children}</SystemProvider>
       </body>
     </html>
   );
