@@ -47,7 +47,7 @@ export default function CoursesPage() {
 
   // Initialize search query from URL params
   useEffect(() => {
-    const searchParam = searchParams.get("search");
+    const searchParam = searchParams?.get("search");
     if (searchParam) {
       setSearchQuery(searchParam);
       console.log("Search param from URL:", searchParam); // Debug log
