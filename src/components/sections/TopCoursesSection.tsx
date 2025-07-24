@@ -31,7 +31,11 @@ export function TopCoursesSection() {
           </p>
         </div>
 
-        <CourseList courses={featuredCourses} className="mb-12" />
+        <CourseList
+          courses={featuredCourses}
+          variant="grid"
+          className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+        />
 
         <div className="text-center">
           <Button

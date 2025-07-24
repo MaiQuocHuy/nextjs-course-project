@@ -11,9 +11,14 @@ import { Course } from "@/app/data/courses";
 interface CourseCardProps {
   course: Course;
   className?: string;
+  variant?: "grid" | "list";
 }
 
-export function CourseCard({ course, className = "" }: CourseCardProps) {
+export function CourseCard({
+  course,
+  className = "",
+  variant = "grid",
+}: CourseCardProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -43,12 +48,150 @@ export function CourseCard({ course, className = "" }: CourseCardProps) {
     return Math.round(totalMinutes / 60);
   };
 
+  const isListView = variant === "list";
+
+  if (isListView) {
+    // List variant - horizontal layout
+    return (
+      <Card
+        className={`group relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 transform ${className}`}
+      >
+        <div className="flex items-stretch">
+          {/* Image Section - Centered vertically */}
+          <div className="relative w-64 flex-shrink-0">
+            <Image
+              src={course.thumbnail || "/placeholder-course.jpg"}
+              alt={course.title}
+              width={256}
+              height={144}
+              className="w-full h-full object-cover rounded-l-lg"
+            />
+
+            {/* Top Badges */}
+            <div className="absolute top-2 left-2">
+              <Badge
+                variant="secondary"
+                className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium text-xs px-2 py-1"
+              >
+                {course.categories?.[0]?.name || "Course"}
+              </Badge>
+            </div>
+
+            <div className="absolute top-2 right-2">
+              <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-lg font-semibold text-xs px-2 py-1">
+                {formatPrice(course.price)}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="flex-1 px-4 py-3">
+            <div className="flex flex-col justify-between h-full min-h-[160px]">
+              <div>
+                {/* Title - Reduced margin */}
+                <h3 className="text-lg font-bold line-clamp-2 group-hover:text-blue-600 transition-colors duration-300 mb-2">
+                  {course.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
+                  {course.description}
+                </p>
+
+                {/* Instructor */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="relative">
+                    <Image
+                      src={
+                        course.instructor?.avatar || "/placeholder-avatar.jpg"
+                      }
+                      alt={course.instructor?.name || "Instructor"}
+                      width={32}
+                      height={32}
+                      className="rounded-full ring-2 ring-blue-100 dark:ring-blue-900"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {course.instructor?.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Expert Instructor
+                    </p>
+                  </div>
+                </div>
+
+                {/* Rating & Stats - Compact layout */}
+                <div className="flex items-center gap-6 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 transition-colors ${
+                            i < Math.floor(course.rating || 0)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {course.rating?.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      ({formatStudentsCount(course.studentsCount || 0)})
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" />
+                      <span>{getTotalLessons()} lessons</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{getDurationInHours()}h</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>
+                        {formatStudentsCount(course.studentsCount || 0)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Button - Reduced margin */}
+              <div className="flex justify-end">
+                <Button
+                  asChild
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 font-semibold px-6 py-2 rounded-lg group"
+                >
+                  <Link href={`/courses/${course.id}`}>
+                    <span className="group-hover:translate-x-0.5 transition-transform duration-300">
+                      Enroll Now
+                    </span>
+                    <PlayCircle className="w-4 h-4 ml-2 group-hover:scale-105 transition-transform duration-300" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Grid variant - vertical layout (existing code)
   return (
     <Card
-      className={`group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/15 transition-all duration-300 hover:-translate-y-1 transform ${className}`}
+      className={`group relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2 transform ${className}`}
     >
       {/* Premium Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/3 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/5 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
       {/* Image Section with Overlay */}
       <div className="relative overflow-hidden">
