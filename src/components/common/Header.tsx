@@ -27,6 +27,7 @@ import { SearchBar } from "@/components/common/SearchBar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { set } from "zod";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -38,12 +39,14 @@ const navigation = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const isLoggedIn = false; // Replace with actual auth state
+  // const isLoggedIn = false; // Replace with actual auth state
   const userName = "John Doe"; // Replace with actual user data
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Example state for login status
 
   const handleLogout = () => {
     // Handle logout logic here
     console.log("Logging out...");
+    setIsLoggedIn(false);
   };
 
   const isActiveLink = (href: string) => {
