@@ -1,6 +1,6 @@
 'use client';
 
-import { Dashboard } from '@/pages/instructor/Dashboard';
+import { Dashboard } from '@/pages/instructor/dashboard-page';
 
 export default function InstructorDashboard() {
   return <Dashboard />;

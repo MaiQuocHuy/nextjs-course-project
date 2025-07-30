@@ -33,3 +33,19 @@ export interface LearningPageProps {
   courseId: string;
   lessonId?: string;
 }
+
+export interface UploadedFile {
+  id: string;
+  file: File;
+  preview: string;
+  type: 'image' | 'video';
+  status: 'uploading' | 'success' | 'error';
+  error?: string;
+  // metadata?: {
+  //   type: 'image' | 'video';
+  //   dimensions?: { width: number; height: number };
+  //   aspectRatio?: number;
+  //   duration?: number;
+  //   formattedDuration?: string;
+  // };
+}
