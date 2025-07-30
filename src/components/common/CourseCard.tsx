@@ -89,9 +89,11 @@ export function CourseCard({
             <div className="flex flex-col justify-between h-full min-h-[160px]">
               <div>
                 {/* Title - Reduced margin */}
-                <h3 className="text-lg font-bold line-clamp-2 group-hover:text-blue-600 transition-colors duration-300 mb-2">
-                  {course.title}
-                </h3>
+                <Link href={`/courses/${course.id}`}>
+                  <h3 className="text-lg font-bold line-clamp-2 hover:text-blue-600 transition-colors duration-300 mb-2 cursor-pointer">
+                    {course.title}
+                  </h3>
+                </Link>
 
                 {/* Description */}
                 <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
@@ -244,9 +246,11 @@ export function CourseCard({
         <div className="space-y-3">
           {/* Title - Fixed height for consistency */}
           <div className="h-12 flex items-start">
-            <h3 className="text-lg font-bold line-clamp-2 group-hover:text-blue-600 transition-colors duration-300 leading-tight">
-              {course.title}
-            </h3>
+            <Link href={`/courses/${course.id}`}>
+              <h3 className="text-lg font-bold line-clamp-2 hover:text-blue-600 transition-colors duration-300 leading-tight cursor-pointer">
+                {course.title}
+              </h3>
+            </Link>
           </div>
 
           {/* Description */}
