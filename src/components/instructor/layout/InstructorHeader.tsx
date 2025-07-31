@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -10,18 +9,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Menu, Search } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { Bell, Menu } from 'lucide-react';
 
 interface InstructorHeaderProps {
   onMenuClick: () => void;
 }
 
 export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
-  const unreadCount = useSelector(
-    (state: RootState) => state.notifications.unreadCount
-  );
+  const unreadCount = 0;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-card/95 backdrop-blur px-6 shadow-card">
@@ -35,14 +30,15 @@ export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
         <span className="sr-only">Open sidebar</span>
       </Button>
 
-      <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-        <div className="relative flex flex-1 items-center">
+      <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-end">
+        {/* Search bar */}
+        {/* <div className="relative flex flex-1 items-center">
           <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search courses, students..."
             className="pl-10 w-full max-w-sm"
           />
-        </div>
+        </div> */}
 
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           {/* Notifications */}
