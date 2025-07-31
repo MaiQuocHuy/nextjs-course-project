@@ -5,10 +5,12 @@ import { AboutSection } from "@/components/sections/AboutSection";
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 import { PartnersSection } from "@/components/sections/PartnersSection";
 import { CTASection } from "@/components/sections/CTASection";
+import TestComponent from "@/components/common/TestComponent";
 
 const HomePage = () => {
   return (
     <main className="min-h-screen">
+      {/* <TestComponent /> */}
       <HeroSection />
       <TopCoursesSection />
       <AboutSection />
