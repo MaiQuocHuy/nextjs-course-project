@@ -3,16 +3,16 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Provider } from "react-redux";
-import { store } from "@/store/store";
 import { ReactNode } from "react";
+import StoreProvider from "@/components/providers/StoreProvider";
 
 export function SystemProvider({ children }: { children: ReactNode }) {
   return (
-    <Provider store={store}>
+    <StoreProvider>
       <TooltipProvider>
         <Toaster />
         {children}
       </TooltipProvider>
-    </Provider>
+    </StoreProvider>
   );
 }

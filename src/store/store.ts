@@ -1,17 +1,24 @@
-import { configureStore } from '@reduxjs/toolkit';
-import coursesReducer from './slices/coursesSlice';
-import studentsReducer from './slices/studentsSlice';
-import earningsReducer from './slices/earningsSlice';
-import notificationsReducer from './slices/notificationsSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import { setupListeners } from "@reduxjs/toolkit/query";
+import counterReducer from "./slices/student/counterSlice";
+import { authApi } from "@/services/authApi";
+export const makeStore = () => {
+  const store = configureStore({
+    reducer: {
+      counter: counterReducer,
+      [authApi.reducerPath]: authApi.reducer,
+    },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(authApi.middleware),
+  });
 
-export const store = configureStore({
-  reducer: {
-    courses: coursesReducer,
-    students: studentsReducer,
-    earnings: earningsReducer,
-    notifications: notificationsReducer,
-  },
-});
+  // Enable listener behavior for the store
+  setupListeners(store.dispatch);
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+  return store;
+};
+
+export type AppStore = ReturnType<typeof makeStore>;
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];
