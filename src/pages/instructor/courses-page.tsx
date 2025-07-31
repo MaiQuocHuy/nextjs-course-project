@@ -242,7 +242,7 @@ export const Courses = () => {
             Manage your courses and create new ones
           </p>
         </div>
-        <Link href="/instructor/courses/create">
+        <Link href="/instructor/courses/create-course">
           <Button className="cursor-pointer shadow-elegant">
             <Plus className="mr-2 h-4 w-4" />
             Create Course

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { InstructorSidebar } from '@/components/instructor-dashboard/layout/InstructorSidebar';
-import { InstructorHeader } from '@/components/instructor-dashboard/layout/InstructorHeader';
+import { InstructorSidebar } from '@/components/instructor/layout/InstructorSidebar';
+import { InstructorHeader } from '@/components/instructor/layout/InstructorHeader';
 
 export default function InstructorLayout({
   children,

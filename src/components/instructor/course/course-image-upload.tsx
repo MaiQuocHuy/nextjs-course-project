@@ -1,7 +1,7 @@
 'use client';
 
 import { z } from 'zod';
-import { MediaUpload2 } from './media-upload';
+import { MediaUpload } from './media-upload';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 
@@ -60,7 +60,7 @@ export function CourseImageUpload({
         </AlertDescription>
       </Alert> */}
 
-      <MediaUpload2
+      <MediaUpload
         accept="image/jpeg,image/jpg,image/png,image/webp"
         maxFiles={1}
         maxSize={5}

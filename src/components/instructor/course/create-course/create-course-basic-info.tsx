@@ -8,7 +8,7 @@ import {
   getWordCount,
   getCharacterCount,
   fullCourseFormSchema,
-} from '@/lib/validations/course';
+} from '@/lib/instructor/validations/course';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -69,7 +69,7 @@ const tempTitle = 'Complete Web Development Bootcamp';
 const tempDes =
   'Learn HTML, CSS, JavaScript, React, Node.js and more in this comprehensive web development course. Perfect for beginners who want to become full-stack developers.';
 
-export function CourseForm({ onSubmit, className }: CourseFormProps) {
+export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) {
   const [courseThumb, setCourseThumb] = useState<UploadedFile | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

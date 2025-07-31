@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UploadedFile } from '@/types/learning';
-import { imageFileSchema } from '@/lib/validations/course';
+import { imageFileSchema } from '@/lib/instructor/validations/course';
 
 interface MediaUploadProps {
   accept?: string;

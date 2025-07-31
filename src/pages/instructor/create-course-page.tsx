@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CourseForm } from '@/components/instructor-dashboard/course/course-form';
-import { CourseImageUpload } from '@/components/instructor-dashboard/course/course-image-upload';
-import { CourseVideoUpload } from '@/components/instructor-dashboard/course/course-video-upload';
+import { useState } from 'react';
+import { ArrowLeft, Save, Send, CheckCircle } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -12,27 +10,38 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Send, CheckCircle } from 'lucide-react';
-import type { CourseFormData } from '@/lib/validations/course';
 import { Progress } from '@/components/ui/progress';
-import Image from 'next/image';
 
-interface UploadedFile {
-  id: string;
-  file: File;
-  preview: string;
-  type: 'image' | 'video';
-  progress: number;
-  status: 'uploading' | 'success' | 'error';
-  error?: string;
-}
+import type { CourseFormData } from '@/lib/instructor/validations/course';
+import { CreateCourseBasicInfo } from '@/components/instructor/course/create-course/create-course-basic-info';
+import { useRouter } from 'next/navigation';
+import CreateLessonsPage from '@/components/instructor/course/create-course/create-lessons/create-lessons';
 
-export default function CreateCourse() {
+// interface UploadedFile {
+//   id: string;
+//   file: File;
+//   preview: string;
+//   type: 'image' | 'video';
+//   progress: number;
+//   status: 'uploading' | 'success' | 'error';
+//   error?: string;
+// }
+
+export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseData, setCourseData] = useState<CourseFormData | null>(null);
+  const router = useRouter();
+
+  const handleSteps = () => {
+    if (currentStep > 1) {
+      setCurrentStep(1);
+    } else {
+      router.push('/instructor/courses');
+    }
+  };
 
   const handleCourseFormSubmit = (data: CourseFormData) => {
-    console.log(data);
+    // console.log(data);
     setCourseData(data);
     setCurrentStep(2);
   };
@@ -60,11 +69,7 @@ export default function CreateCourse() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => (currentStep > 1 ? setCurrentStep(1) : null)}
-          >
+          <Button variant="outline" size="lg" onClick={handleSteps}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -116,95 +121,12 @@ export default function CreateCourse() {
         </Card>
 
         {/* Step 1: Course Form */}
-        {currentStep === 1 && <CourseForm onSubmit={handleCourseFormSubmit} />}
+        {currentStep === 1 && (
+          <CreateCourseBasicInfo onSubmit={handleCourseFormSubmit} />
+        )}
 
         {/* Step 2: Media Upload */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            {/* Course Summary */}
-            {courseData && (
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle>Course Summary</CardTitle>
-                  <CardDescription>
-                    Review your course information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    <span>
-                      <strong>Title:</strong> {courseData.title}
-                    </span>
-                    <span>
-                      <strong>Price:</strong> ${courseData.price.toFixed(2)}
-                    </span>
-                    <span>
-                      <strong>Category:</strong> {courseData.category}
-                    </span>
-                  </div>
-                  <img
-                    src={courseData.file && courseData.file.preview}
-                    alt={courseData.file.title}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Introduction Video */}
-            {/* <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Introduction Video</CardTitle>
-                <CardDescription>
-                  Upload a short video introducing your course (optional)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CourseVideoUpload type="intro" onVideoChange={setIntroVideo} />
-              </CardContent>
-            </Card> */}
-
-            {/* Lesson Videos */}
-            {/* <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Lesson Videos</CardTitle>
-                <CardDescription>
-                  Upload videos for your course lessons
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CourseVideoUpload
-                  type="lesson"
-                  onVideoChange={setLessonVideos}
-                />
-              </CardContent>
-            </Card> */}
-
-            {/* Action Buttons */}
-            <Card className="shadow-card">
-              <CardContent className="p-6">
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Course Details
-                  </Button>
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={handleFinalSubmit}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Draft
-                    </Button>
-                    <Button
-                      onClick={handleFinalSubmit}
-                      // disabled={courseThumb && courseThumb.status === 'success'}
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Publish Course
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {currentStep === 2 && <CreateLessonsPage />}
       </div>
     </div>
   );
