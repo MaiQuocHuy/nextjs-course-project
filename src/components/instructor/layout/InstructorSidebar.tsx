@@ -60,7 +60,7 @@ const SidebarContent = () => {
                 <Button
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start h-11 px-4 text-white/80 hover:text-white hover:bg-white/10',
+                    'w-full justify-start h-11 px-4 text-white/80 cursor-pointer hover:text-white hover:bg-white/10',
                     isActive && 'bg-white/20 text-white font-medium'
                   )}
                 >

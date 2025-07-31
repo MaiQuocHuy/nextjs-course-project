@@ -1,6 +1,6 @@
 'use client';
 
-import { Courses } from '@/pages/instructor/Courses';
+import { Courses } from '@/pages/instructor/courses-page';
 
 export default function CoursesPage() {
   return <Courses />;
