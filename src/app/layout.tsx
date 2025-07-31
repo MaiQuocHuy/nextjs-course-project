@@ -1,16 +1,17 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-// import { SystemProvider } from '@/components/providers/SystemProvider';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { SystemProvider } from "@/components/providers/SystemProvider";
+import { Toaster } from "sonner";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Online Learning Platform',
-  description: '',
+  title: "Online Learning Platform",
+  description: "",
 };
 
-export default function RootLayout({  
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -18,7 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
+        <SystemProvider>{children}</SystemProvider>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );
