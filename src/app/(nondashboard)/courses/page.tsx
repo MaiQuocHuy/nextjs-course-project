@@ -12,7 +12,7 @@ import {
 } from "@/components/course/CourseSkeleton";
 import { EmptyState } from "@/components/course/EmptyState";
 import { useCourses } from "@/hooks/useCourses";
-import { Course } from "@/services/coursesApi";
+import { Course, useGetCoursesQuery } from "@/services/coursesApi";
 
 interface FilterState {
   categories: string[];
@@ -25,6 +25,7 @@ export default function CoursesPage() {
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,40 +86,51 @@ export default function CoursesPage() {
     sortBy,
   ]);
 
-  // Use the courses hook
-  const { courses, loading, error, totalPages, totalElements, refetch } =
-    useCourses(apiFilters);
+  // Fetch courses
+  const {
+    courses,
+    totalPages,
+    totalElements,
+    currentPage: responsePage,
+    pageSize,
+    loading,
+    error,
+    refetch,
+  } = useCourses(apiFilters);
 
   // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    filters.categories,
-    filters.priceRange,
-    filters.rating,
-    searchQuery,
-    sortBy,
-  ]);
+  // useEffect(() => {
+  //   setCurrentPage(1);
+  // }, [
+  //   filters.categories,
+  //   filters.priceRange,
+  //   filters.rating,
+  //   searchQuery,
+  //   sortBy,
+  // ]);
 
   // Handlers
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    console.log("CoursesPage: Filters changed:", newFilters);
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); // Reset về page 1 khi filter thay đổi
   }, []);
 
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
   }, []);
 
-  const handlePageChange = useCallback((page: number) => {
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Scroll to top khi chuyển page
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  };
 
-  const handleItemsPerPageChange = useCallback((itemsPerPage: number) => {
-    setItemsPerPage(itemsPerPage);
-    setCurrentPage(1);
-  }, []);
+  const handleItemsPerPageChange = (newSize: number) => {
+    setItemsPerPage(newSize);
+    setCurrentPage(1); // Reset về page 1 khi thay đổi page size
+  };
 
   const handleRetry = useCallback(() => {
     refetch();
@@ -126,20 +138,15 @@ export default function CoursesPage() {
 
   const handleClearFilters = useCallback(() => {
     console.log("CoursesPage: handleClearFilters called");
-
-    // Reset tất cả states về default
     setSearchQuery("");
-    // setSelectedLevel("all");
+    setSelectedLevel("all");
     setSortBy("newest");
     setCurrentPage(1);
-
     setFilters({
       categories: [],
       priceRange: [0, 500],
       rating: 0,
     });
-
-    console.log("CoursesPage: All filters cleared");
   }, []);
 
   const getActiveFiltersCount = () => {
@@ -147,6 +154,8 @@ export default function CoursesPage() {
     if (filters.categories.length > 0) count++;
     if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 500) count++;
     if (filters.rating > 0) count++;
+    if (searchQuery.trim()) count++;
+    if (selectedLevel !== "all") count++;
     return count;
   };
 
@@ -202,7 +211,6 @@ export default function CoursesPage() {
             onFiltersChange={handleFiltersChange}
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
-            className="lg:block"
           />
 
           {/* Main Content */}
@@ -242,10 +250,10 @@ export default function CoursesPage() {
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
+                {totalPages > 0 && (
                   <CoursePagination
-                    currentPage={currentPage + 1} // API sử dụng 0-based, UI sử dụng 1-based
-                    totalPages={totalPages}
+                    currentPage={currentPage} // API sử dụng 0-based, UI sử dụng 1-based
+                    totalPages={Math.max(totalPages, 1)} // Đảm bảo ít nhất 1 page
                     itemsPerPage={itemsPerPage}
                     totalItems={totalElements}
                     onPageChange={handlePageChange}

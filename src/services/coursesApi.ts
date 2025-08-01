@@ -66,13 +66,20 @@ export interface CoursesFilter {
   sort?: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  courseCount: number;
+}
+
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
   baseQuery: baseQuery,
-  tagTypes: ['Course'],
+  tagTypes: ['Course', 'Category'],
   endpoints: (builder) => ({
     // Lấy danh sách courses với filter và pagination
-getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
+  getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
   query: (filters = {}) => {
     const params = new URLSearchParams();
     
@@ -134,7 +141,24 @@ getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
           { type: 'Course', id: 'LIST' },
         ]
       : [{ type: 'Course', id: 'LIST' }],
-}),
+  }),
+
+    // Lấy danh sách categories
+    getCategories: builder.query<Category[], void>({
+      query: () => ({
+        url: '/categories',
+        method: 'GET',
+      }),
+      transformResponse: (response: ApiResponse<Category[]>) => {
+        console.log("Categories API Response:", response);
+        if (response.statusCode !== 200) {
+          throw new Error(response.message || 'Failed to fetch categories');
+        }
+        return response.data;
+      },
+      providesTags: [{ type: 'Category', id: 'LIST' }],
+    }),
+
 
     // Lấy thông tin course theo ID
     getCourseById: builder.query<Course, string>({
@@ -157,5 +181,6 @@ getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
 export const { 
   useGetCoursesQuery, 
   useGetCourseByIdQuery,
-  useLazyGetCoursesQuery
+  useLazyGetCoursesQuery,
+  useGetCategoriesQuery
 } = coursesApi;

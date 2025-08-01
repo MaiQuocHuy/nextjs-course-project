@@ -6,7 +6,7 @@ export const useCourses = (filters: CoursesFilter) => {
   // Tạo API filters, loại bỏ empty values
   const apiFilters = useMemo(() => {
     const params: any = {
-      page: filters.page || 0,
+      page: filters.page || 0, // API sử dụng 0-based indexing
       size: filters.size || 12,
     };
 
@@ -54,7 +54,8 @@ export const useCourses = (filters: CoursesFilter) => {
     courses: data?.content || [],
     totalPages: data?.page?.totalPages || 0,
     totalElements: data?.page?.totalElements || 0,
-    currentPage: data?.page?.number || 0,
+    currentPage: data?.page?.number || 0, // API trả về 0-based
+    pageSize: data?.page?.size || 12,
     loading: isLoading,
     error: error ? 'Failed to fetch courses' : null,
     refetch,

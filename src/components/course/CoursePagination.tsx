@@ -34,7 +34,8 @@ export function CoursePagination({
   onItemsPerPageChange,
   className = "",
 }: PaginationProps) {
-  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  // Tính toán items hiển thị
+  const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const getVisiblePages = () => {
