@@ -41,7 +41,7 @@ export function Header() {
   const pathname = usePathname();
   // const isLoggedIn = false; // Replace with actual auth state
   const userName = "John Doe"; // Replace with actual user data
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Example state for login status
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Example state for login status
 
   const handleLogout = () => {
     // Handle logout logic here
@@ -140,9 +140,7 @@ export function Header() {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-sm text-muted-foreground">
-                      john@example.com
-                    </span>
+                    <span className="text-sm text-muted-foreground">john@example.com</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -273,9 +271,7 @@ export function Header() {
                         </div>
                         <div className="flex flex-col">
                           <span className="font-medium">{userName}</span>
-                          <span className="text-sm text-muted-foreground">
-                            john@example.com
-                          </span>
+                          <span className="text-sm text-muted-foreground">john@example.com</span>
                         </div>
                       </div>
                       <div className="space-y-2">
