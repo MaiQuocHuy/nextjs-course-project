@@ -1,3 +1,4 @@
+import { ApiResponse, PaginatedData } from "@/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
@@ -34,23 +35,7 @@ export interface Course {
   };
 }
 
-export interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
 
-export interface PaginatedData<T> {
-  content: T[];
-  page: {
-    number: number;
-    size: number;
-    totalPages: number;
-    totalElements: number;
-    first: boolean;
-    last: boolean;
-  };
-}
 
 export interface CoursesFilter {
   page?: number;
