@@ -1,14 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
-import counterReducer from "./slices/student/counterSlice";
 import { authApi } from "@/services/authApi";
 import { coursesApi } from "@/services/coursesApi";
 import { studentApi } from "./slices/student/studentApi";
+import { authSlice } from "./slices/auth/authSlice";
 
 export const makeStore = () => {
   const store = configureStore({
     reducer: {
-      counter: counterReducer,
+      auth: authSlice.reducer,
+
+      // counter: counterReducer,
+
       [authApi.reducerPath]: authApi.reducer,
       [studentApi.reducerPath]: studentApi.reducer,
       [coursesApi.reducerPath]: coursesApi.reducer,
