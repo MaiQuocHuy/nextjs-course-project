@@ -16,20 +16,15 @@ import type { CourseFormData } from '@/lib/instructor/validations/course';
 import { CreateCourseBasicInfo } from '@/components/instructor/course/create-course/create-course-basic-info';
 import { useRouter } from 'next/navigation';
 import CreateLessonsPage from '@/components/instructor/course/create-course/create-lessons/create-lessons';
-
-// interface UploadedFile {
-//   id: string;
-//   file: File;
-//   preview: string;
-//   type: 'image' | 'video';
-//   progress: number;
-//   status: 'uploading' | 'success' | 'error';
-//   error?: string;
-// }
+import CreateLessonsPage2 from '@/components/instructor/course/create-course/create-lessons/create-lessons2';
+import { CourseCreationType } from '@/lib/instructor/create-course-validations/lessons-validations';
+import { set } from 'zod';
 
 export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseData, setCourseData] = useState<CourseFormData | null>(null);
+  const [finalCourseData, setFinalCourseData] =
+    useState<CourseCreationType | null>(null);
   const router = useRouter();
 
   const handleSteps = () => {
@@ -46,7 +41,10 @@ export default function CreateCoursePage() {
     setCurrentStep(2);
   };
 
-  const handleFinalSubmit = () => {};
+  const handleFinalSubmit = (data: CourseCreationType) => {
+    console.log('Final course data:', data);
+    setFinalCourseData(data);
+  };
 
   const getOverallProgress = () => {
     let progress = 0;
@@ -55,10 +53,8 @@ export default function CreateCoursePage() {
     if (courseData) progress += 50;
 
     // Step 2: Media uploads (50%)
-    if (currentStep >= 2) {
-      let mediaProgress = 0;
-
-      progress += mediaProgress;
+    if (finalCourseData) {
+      progress += 50;
     }
 
     return progress;
@@ -106,10 +102,10 @@ export default function CreateCoursePage() {
               </div>
               <div
                 className={`flex items-center gap-2 ${
-                  currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'
+                  finalCourseData ? 'text-green-600' : 'text-muted-foreground'
                 }`}
               >
-                {currentStep >= 2 ? (
+                {finalCourseData ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : (
                   <div className="w-4 h-4 rounded-full border-2" />
@@ -126,7 +122,9 @@ export default function CreateCoursePage() {
         )}
 
         {/* Step 2: Media Upload */}
-        {currentStep === 2 && <CreateLessonsPage />}
+        {currentStep === 2 && (
+          <CreateLessonsPage2 onSubmit={handleFinalSubmit} />
+        )}
       </div>
     </div>
   );
