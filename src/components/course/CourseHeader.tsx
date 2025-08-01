@@ -10,8 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Grid3X3, List, SlidersHorizontal } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, X, Grid3X3, List, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 interface CourseHeaderProps {
   totalCourses: number;
@@ -39,21 +39,62 @@ export function CourseHeader({
   className = "",
 }: CourseHeaderProps) {
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const debounceRef = useRef<NodeJS.Timeout>(undefined);
 
   // Sync local search query with prop when it changes
   useEffect(() => {
     setLocalSearchQuery(searchQuery);
   }, [searchQuery]);
 
+  // Improved search handler với auto-clear
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+
+    // Clear existing timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // Debounce search để tránh call API liên tục
+    debounceRef.current = setTimeout(() => {
+      onSearchChange(value); // Gọi với value (có thể là empty string)
+    }, 500);
+  };
+
+  // Handle manual search submit
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear debounce timeout và search ngay lập tức
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
     onSearchChange(localSearchQuery);
   };
 
+  // Clear search và trả về danh sách đầy đủ
   const handleSearchClear = () => {
     setLocalSearchQuery("");
+
+    // Clear debounce timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // Immediately clear search để load full course list
     onSearchChange("");
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -64,8 +105,17 @@ export function CourseHeader({
             All Courses
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Discover {totalCourses.toLocaleString()} courses to advance your
-            skills
+            {searchQuery ? (
+              <>
+                Found {totalCourses.toLocaleString()} courses matching "
+                {searchQuery}"
+              </>
+            ) : (
+              <>
+                Discover {totalCourses.toLocaleString()} courses to advance your
+                skills
+              </>
+            )}
           </p>
         </div>
 
@@ -99,17 +149,22 @@ export function CourseHeader({
               type="text"
               placeholder="Search courses by title, instructor, or topic..."
               value={localSearchQuery}
-              onChange={(e) => setLocalSearchQuery(e.target.value)}
-              className="pl-10 pr-4 h-11 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20"
+              onChange={handleSearchInputChange}
+              className="pl-10 pr-10 h-11 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20"
               aria-label="Search courses"
             />
-            {localSearchQuery && localSearchQuery !== searchQuery && (
+
+            {/* Clear button khi có text */}
+            {localSearchQuery && (
               <Button
-                type="submit"
+                type="button"
+                variant="ghost"
                 size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7"
+                onClick={handleSearchClear}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="Clear search"
               >
-                Search
+                <X className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -162,21 +217,23 @@ export function CourseHeader({
         </div>
       </div>
 
-      {/* Active Search Query */}
+      {/* Active Search Query Badge */}
       {searchQuery && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Showing results for:
           </span>
           <Badge variant="secondary" className="gap-2">
-            "{searchQuery}"
-            <button
+            <Search className="h-3 w-3" />"{searchQuery}"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleSearchClear}
-              className="hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-0.5"
+              className="h-4 w-4 p-0 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
               aria-label="Clear search"
             >
-              ×
-            </button>
+              <X className="h-3 w-3" />
+            </Button>
           </Badge>
         </div>
       )}
