@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Menu,
   X,
@@ -28,6 +28,12 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { set } from "zod";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { sign } from "crypto";
+import { signOut } from "next-auth/react";
+import { setAuthState } from "@/store/slices/auth/authSlice";
+// import React from "react";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -37,16 +43,32 @@ const navigation = [
 ];
 
 export function Header() {
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isAuthenticated);
+
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   // const isLoggedIn = false; // Replace with actual auth state
   const userName = "John Doe"; // Replace with actual user data
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Example state for login status
+  //const [isLoggedIn, setIsLoggedIn] = useState(isLogin); // Example state for login status
 
-  const handleLogout = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const isAuth = localStorage.getItem("isAuthenticated") === "true";
+    const token = localStorage.getItem("accessToken");
+
+    if (isAuth && token) {
+      dispatch(setAuthState(true));
+    }
+  }, []);
+
+  const handleLogout = async () => {
     // Handle logout logic here
     console.log("Logging out...");
-    setIsLoggedIn(false);
+    dispatch(setAuthState(false));
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("accessToken");
+    await signOut({ redirect: false }); // Dispatch logout action if using Redux
   };
 
   const isActiveLink = (href: string) => {
@@ -140,9 +162,7 @@ export function Header() {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-sm text-muted-foreground">
-                      john@example.com
-                    </span>
+                    <span className="text-sm text-muted-foreground">john@example.com</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -273,9 +293,7 @@ export function Header() {
                         </div>
                         <div className="flex flex-col">
                           <span className="font-medium">{userName}</span>
-                          <span className="text-sm text-muted-foreground">
-                            john@example.com
-                          </span>
+                          <span className="text-sm text-muted-foreground">john@example.com</span>
                         </div>
                       </div>
                       <div className="space-y-2">
