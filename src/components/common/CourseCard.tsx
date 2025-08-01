@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, Users, Clock, PlayCircle, BookOpen, Award } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Course } from "@/app/data/courses";
+import { Course } from "@/services/coursesApi";
 
 interface CourseCardProps {
   course: Course;
@@ -34,12 +34,8 @@ export function CourseCard({
   };
 
   const getTotalLessons = () => {
-    return (
-      course.sections?.reduce(
-        (total, section) => total + (section.lessons?.length || 0),
-        0
-      ) || 0
-    );
+    // Sử dụng sectionCount từ API thay vì tính toán từ sections
+    return course.sectionCount || 0;
   };
 
   const getDurationInHours = () => {
@@ -60,7 +56,7 @@ export function CourseCard({
           {/* Image Section - Centered vertically */}
           <div className="relative w-64 flex-shrink-0">
             <Image
-              src={course.thumbnail || "/placeholder-course.jpg"}
+              src={course.thumbnailUrl || "/placeholder-course.jpg"}
               alt={course.title}
               width={256}
               height={144}
@@ -73,7 +69,7 @@ export function CourseCard({
                 variant="secondary"
                 className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium text-xs px-2 py-1"
               >
-                {course.categories?.[0]?.name || "Course"}
+                {course.category?.name || "Course"}
               </Badge>
             </div>
 
@@ -132,7 +128,7 @@ export function CourseCard({
                         <Star
                           key={i}
                           className={`w-4 h-4 transition-colors ${
-                            i < Math.floor(course.rating || 0)
+                            i < Math.floor(course.averageRating || 0)
                               ? "fill-yellow-400 text-yellow-400"
                               : "text-gray-300"
                           }`}
@@ -140,10 +136,10 @@ export function CourseCard({
                       ))}
                     </div>
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {course.rating?.toFixed(1)}
+                      {course.averageRating?.toFixed(1)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      ({formatStudentsCount(course.studentsCount || 0)})
+                      ({formatStudentsCount(course.enrollCount || 0)})
                     </span>
                   </div>
 
@@ -159,7 +155,7 @@ export function CourseCard({
                     <div className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
                       <span>
-                        {formatStudentsCount(course.studentsCount || 0)}
+                        {formatStudentsCount(course.enrollCount || 0)}
                       </span>
                     </div>
                   </div>
@@ -198,7 +194,7 @@ export function CourseCard({
       {/* Image Section with Overlay */}
       <div className="relative overflow-hidden">
         <Image
-          src={course.thumbnail || "/placeholder-course.jpg"}
+          src={course.thumbnailUrl || "/placeholder-course.jpg"}
           alt={course.title}
           width={400}
           height={225}
@@ -221,7 +217,7 @@ export function CourseCard({
             variant="secondary"
             className="bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white border-0 shadow-sm font-medium text-xs px-2 py-1"
           >
-            {course.categories?.[0]?.name || "Course"}
+            {course.category?.name || "Course"}
           </Badge>
         </div>
 
@@ -232,7 +228,7 @@ export function CourseCard({
         </div>
 
         {/* Best Seller Badge */}
-        {course.rating && course.rating >= 4.5 && (
+        {course.averageRating && course.averageRating >= 4.5 && (
           <div className="absolute top-10 right-3">
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-md text-xs px-2 py-1">
               <Award className="w-3 h-3 mr-1" />
@@ -288,7 +284,7 @@ export function CourseCard({
                   <Star
                     key={i}
                     className={`w-4 h-4 transition-colors ${
-                      i < Math.floor(course.rating || 0)
+                      i < Math.floor(course.averageRating || 0)
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-gray-300"
                     }`}
@@ -296,10 +292,10 @@ export function CourseCard({
                 ))}
               </div>
               <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {course.rating?.toFixed(1)}
+                {course.averageRating?.toFixed(1)}
               </span>
               <span className="text-xs text-gray-500">
-                ({formatStudentsCount(course.studentsCount || 0)})
+                ({formatStudentsCount(course.enrollCount || 0)})
               </span>
             </div>
           </div>
@@ -329,7 +325,7 @@ export function CourseCard({
                 <Users className="w-4 h-4" />
               </div>
               <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                {formatStudentsCount(course.studentsCount || 0)}
+                {formatStudentsCount(course.enrollCount || 0)}
               </p>
             </div>
           </div>

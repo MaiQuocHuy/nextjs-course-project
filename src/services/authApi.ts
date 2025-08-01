@@ -1,16 +1,33 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getSession } from "next-auth/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: (headers, { getState }) => {
-    headers.set(
-      "Authorization",
-      `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSIsImlhdCI6MTc1MzcxMDcxMSwiZXhwIjoxNzUzNzE0MzExfQ.E8KcwjV07UuQh0tXa-y10DUclqX3gzaE94qUZN0kpM-8XKFAQ-CGVMwgrZtBr6_K`
-    );
+  // prepareHeaders: (headers, { getState }) => {
+  //   headers.set(
+  //     "Authorization",
+  //     `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSIsImlhdCI6MTc1Mzk1MDIxOCwiZXhwIjoxNzUzOTUzODE4fQ.V5nYTCx77oNaEEKBoXMbEJWvj2e9b8tWvUTWdbNaprqRz6IMxOFKf2NZMkZrLIQL`
+  //   );
 
-    return headers;
-  },
+  //   return headers;
+  // },
 });
+// const baseQueryWithSession = async (args:any, api:any, extraOptions:any) => {
+//   const session = await getSession();
+//   const token = session?.user?.accessToken; // lấy token từ session nè
+
+//   const baseQuery = fetchBaseQuery({
+//     baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+//     prepareHeaders: (headers) => {
+//       if (token) {
+//         headers.set("Authorization", `Bearer ${token}`); // gắn token vào
+//       }
+//       return headers;
+//     },
+//   });
+
+//   return baseQuery(args, api, extraOptions); // gọi tiếp API
+// };
 
 interface User {
   id: number;
