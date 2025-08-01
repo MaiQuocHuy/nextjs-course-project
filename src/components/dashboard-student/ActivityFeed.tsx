@@ -4,46 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
-
-// Mock activity feed data
-const mockActivityFeed = [
-  {
-    id: "a-001",
-    user_id: "u-001",
-    type: "LESSON_COMPLETED" as const,
-    title: "Completed Lesson: What is React?",
-    description:
-      "Successfully completed the introductory lesson on React fundamentals",
-    completed_at: "2024-07-20T16:30:00Z",
-  },
-  {
-    id: "a-002",
-    user_id: "u-001",
-    type: "QUIZ_SUBMITTED" as const,
-    title: "Submitted Quiz: JSX Basics",
-    description: "Quiz completed with a score of 85%",
-    completed_at: "2024-07-20T14:45:00Z",
-    score: 85,
-  },
-  {
-    id: "a-003",
-    user_id: "u-001",
-    type: "LESSON_COMPLETED" as const,
-    title: "Completed Lesson: TypeScript Interfaces",
-    description: "Mastered TypeScript interface definitions and usage",
-    completed_at: "2024-07-19T11:20:00Z",
-  },
-  {
-    id: "a-004",
-    user_id: "u-001",
-    type: "COURSE_ENROLLED" as const,
-    title: "Enrolled in Course: Advanced TypeScript",
-    description: "Started learning advanced TypeScript concepts",
-    completed_at: "2024-07-18T09:00:00Z",
-  },
-];
-
-type ActivityType = "LESSON_COMPLETED" | "QUIZ_SUBMITTED" | "COURSE_ENROLLED";
+import { useGetActivityFeedQuery } from "@/store/slices/student/studentApi";
+import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
+import type { ActivityType } from "@/types/student";
 
 function getActivityIcon(type: ActivityType) {
   switch (type) {
@@ -84,7 +47,41 @@ function getActivityBadge(type: ActivityType, score?: number) {
 }
 
 export function ActivityFeed() {
-  const activities = mockActivityFeed;
+  const {
+    data: activityData,
+    error,
+    isLoading,
+    refetch,
+  } = useGetActivityFeedQuery({ page: 0, size: 20 });
+
+  if (isLoading) {
+    return <ActivityFeedLoadingSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <Card className="h-fit">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="px-6 py-8">
+            <LoadingError
+              error={error}
+              variant="inline"
+              onRetry={refetch}
+              message="Failed to load activities"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const activities = activityData?.content || [];
 
   // Simple function to format relative time
   const formatTimeAgo = (dateString: string) => {
