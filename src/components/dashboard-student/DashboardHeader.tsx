@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MobileSidebar } from "./Sidebar";
+import { useGetCourseStatsQuery } from "@/store/slices/student/studentApi";
 
 // Mock user data
 const mockUser = {
@@ -12,18 +13,17 @@ const mockUser = {
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
 };
 
-// Mock stats data
-const mockStats = {
-  total_courses: 3,
-  completed_lessons: 12,
-  total_lessons: 18,
-  certificates_earned: 1,
-  hours_spent: 24,
-};
-
 export function DashboardHeader() {
+  const { data: stats } = useGetCourseStatsQuery();
+  const {
+    totalCourses = 0,
+    completedCourses = 0,
+    inProgressCourses = 0,
+    completedLessons = 0,
+    totalLessons = 0,
+  } = stats || {};
+
   const user = mockUser;
-  const stats = mockStats;
 
   const userInitials = user?.name
     ? user.name
@@ -49,22 +49,22 @@ export function DashboardHeader() {
                 Welcome, {user?.name || "Student"}!
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                You've completed {stats?.completed_lessons || 0} of{" "}
-                {stats?.total_lessons || 0} lessons
+                You've completed {stats?.completedLessons || 0} of{" "}
+                {stats?.totalLessons || 0} lessons
               </p>
             </div>
 
             <div className="flex items-center gap-4 mr-5">
               <div className="hidden sm:flex items-center gap-4 text-sm">
                 <div className="text-center">
-                  <div className="font-medium">{stats?.total_courses || 0}</div>
+                  <div className="font-medium">{stats?.totalCourses || 0}</div>
                   <div className="text-muted-foreground">Courses</div>
                 </div>
                 <div className="text-center">
                   <div className="font-medium">
-                    {stats?.certificates_earned || 0}
+                    {stats?.completedCourses || 0}
                   </div>
-                  <div className="text-muted-foreground">Certificates</div>
+                  <div className="text-muted-foreground">Completed</div>
                 </div>
               </div>
             </div>

@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { X, Filter } from "lucide-react";
 import { mockCategories } from "@/app/data/courses";
 import { useDebounce } from "@/hooks/useDebounce";
+import { Course, useGetCategoriesQuery } from "@/services/coursesApi";
+import { useCategories } from "@/hooks/useCategories";
 
 interface FilterState {
   categories: string[];
@@ -23,6 +25,7 @@ interface CourseSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   className?: string;
+  // allCourses?: Course[];
 }
 
 export function CourseSidebar({
@@ -31,7 +34,8 @@ export function CourseSidebar({
   isOpen,
   onClose,
   className = "",
-}: CourseSidebarProps) {
+}: // allCourses = [],
+CourseSidebarProps) {
   // Local state for price range để tránh trigger API call liên tục
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(
     filters.priceRange
@@ -42,6 +46,13 @@ export function CourseSidebar({
     localPriceRange,
     500
   );
+
+  // Lấy categories từ API riêng
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useGetCategoriesQuery();
 
   // Sync local state với props khi filters thay đổi từ bên ngoài
   useEffect(() => {
@@ -202,29 +213,49 @@ export function CourseSidebar({
 
           {/* Categories Filter */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader>
               <CardTitle className="text-base">Categories</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {mockCategories.map((category) => (
-                <div key={category.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`category-${category.id}`}
-                    checked={filters.categories.includes(category.id)}
-                    onCheckedChange={(checked) =>
-                      handleCategoryChange(category.id, checked as boolean)
-                    }
-                    aria-describedby={`category-${category.id}-label`}
-                  />
-                  <Label
-                    htmlFor={`category-${category.id}`}
-                    id={`category-${category.id}-label`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {category.name}
-                  </Label>
+              {categoriesLoading ? (
+                <div className="space-y-2">
+                  {/* Loading skeleton */}
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 bg-gray-200 rounded flex-1 animate-pulse" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : categoriesError ? (
+                <p className="text-sm text-red-500">
+                  Failed to load categories
+                </p>
+              ) : (
+                categories?.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center space-x-2"
+                  >
+                    <Checkbox
+                      id={category.id}
+                      checked={filters.categories.includes(category.id)}
+                      onCheckedChange={(checked) =>
+                        handleCategoryChange(category.id, checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor={category.id}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                    >
+                      {category.name}
+                      <span className="ml-1 text-gray-500">
+                        ({category.courseCount})
+                      </span>
+                    </label>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 
