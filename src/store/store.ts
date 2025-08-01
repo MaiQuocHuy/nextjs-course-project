@@ -2,14 +2,17 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import counterReducer from "./slices/student/counterSlice";
 import { authApi } from "@/services/authApi";
+import { coursesApi } from "@/services/coursesApi";
+
 export const makeStore = () => {
   const store = configureStore({
     reducer: {
       counter: counterReducer,
       [authApi.reducerPath]: authApi.reducer,
+      [coursesApi.reducerPath]: coursesApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(authApi.middleware),
+      getDefaultMiddleware().concat(authApi.middleware, coursesApi.middleware),
   });
 
   // Enable listener behavior for the store

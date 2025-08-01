@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { CourseList } from "@/components/common/CourseList";
 import { CourseSidebar } from "@/components/course/CourseSidebar";
@@ -11,12 +11,8 @@ import {
   SidebarSkeleton,
 } from "@/components/course/CourseSkeleton";
 import { EmptyState } from "@/components/course/EmptyState";
-import {
-  Course,
-  getPublishedCourses,
-  searchCourses,
-  getCoursesByCategory,
-} from "@/app/data/courses";
+import { useCourses } from "@/hooks/useCourses";
+import { Course } from "@/services/coursesApi";
 
 interface FilterState {
   categories: string[];
@@ -28,10 +24,6 @@ export default function CoursesPage() {
   const searchParams = useSearchParams();
 
   // State management
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -50,169 +42,116 @@ export default function CoursesPage() {
     const searchParam = searchParams?.get("search");
     if (searchParam) {
       setSearchQuery(searchParam);
-      console.log("Search param from URL:", searchParam); // Debug log
+      // console.log("Search param from URL:", searchParam);
     }
   }, [searchParams]);
 
-  // Load courses data
-  useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        const allCourses = getPublishedCourses();
-        setCourses(allCourses);
-      } catch (err) {
-        setError("Failed to load courses. Please try again.");
-        console.error("Error loading courses:", err);
-      } finally {
-        setIsLoading(false);
-      }
+  // Build API filters
+  const apiFilters = useMemo(() => {
+    return {
+      page: currentPage - 1, // API sử dụng 0-based indexing
+      size: itemsPerPage,
+      search: searchQuery.trim() || undefined,
+      categoryId:
+        filters.categories.length > 0 ? filters.categories[0] : undefined,
+      // Chỉ gửi price khi khác default [0, 500]
+      minPrice: filters.priceRange[0] !== 0 ? filters.priceRange[0] : undefined,
+      maxPrice:
+        filters.priceRange[1] !== 500 ? filters.priceRange[1] : undefined,
+      sort:
+        sortBy === "newest"
+          ? "createdAt,desc"
+          : sortBy === "oldest"
+          ? "createdAt,asc"
+          : sortBy === "price-low"
+          ? "price,asc"
+          : sortBy === "price-high"
+          ? "price,desc"
+          : sortBy === "rating"
+          ? "price,desc" // Tạm thời dùng price thay vì averageRating
+          : sortBy === "popular"
+          ? "price,desc" // Tạm thời dùng price thay vì enrollCount
+          : sortBy === "title"
+          ? "title,asc"
+          : undefined,
     };
+  }, [
+    currentPage,
+    itemsPerPage,
+    searchQuery,
+    filters.categories,
+    filters.priceRange,
+    filters.rating,
+    sortBy,
+  ]);
 
-    loadCourses();
-  }, []);
-
-  // Filter and search courses
-  const filteredAndSearchedCourses = useMemo(() => {
-    let result = courses;
-
-    // Apply search first
-    if (searchQuery.trim()) {
-      result = result.filter((course) => {
-        const searchTerm = searchQuery.toLowerCase();
-        return (
-          course.title.toLowerCase().includes(searchTerm) ||
-          course.description?.toLowerCase().includes(searchTerm) ||
-          course.instructor?.name.toLowerCase().includes(searchTerm) ||
-          course.categories?.some((cat) =>
-            cat.name.toLowerCase().includes(searchTerm)
-          )
-        );
-      });
-    }
-
-    // Apply filters
-    result = result.filter((course) => {
-      // Category filter
-      if (filters.categories.length > 0) {
-        const hasMatchingCategory = course.categories?.some((cat) =>
-          filters.categories.includes(cat.id)
-        );
-        if (!hasMatchingCategory) return false;
-      }
-
-      // Price range filter
-      if (
-        course.price < filters.priceRange[0] ||
-        course.price > filters.priceRange[1]
-      ) {
-        return false;
-      }
-
-      // Rating filter
-      if ((course.rating || 0) < filters.rating) {
-        return false;
-      }
-
-      return true;
-    });
-
-    console.log("Search query:", searchQuery); // Debug log
-    console.log("Filtered courses count:", result.length); // Debug log
-    return result;
-  }, [courses, searchQuery, filters]);
-
-  // Sort courses
-  const sortedCourses = useMemo(() => {
-    const sorted = [...filteredAndSearchedCourses];
-
-    switch (sortBy) {
-      case "newest":
-        return sorted.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      case "oldest":
-        return sorted.sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      case "price-low":
-        return sorted.sort((a, b) => a.price - b.price);
-      case "price-high":
-        return sorted.sort((a, b) => b.price - a.price);
-      case "rating":
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case "popular":
-        return sorted.sort(
-          (a, b) => (b.studentsCount || 0) - (a.studentsCount || 0)
-        );
-      case "title":
-        return sorted.sort((a, b) => a.title.localeCompare(b.title));
-      default:
-        return sorted;
-    }
-  }, [filteredAndSearchedCourses, sortBy]);
-
-  // Pagination
-  const totalPages = Math.ceil(sortedCourses.length / itemsPerPage);
-  const paginatedCourses = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedCourses.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedCourses, currentPage, itemsPerPage]);
+  // Use the courses hook
+  const { courses, loading, error, totalPages, totalElements, refetch } =
+    useCourses(apiFilters);
 
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters, searchQuery, sortBy]);
+  }, [
+    filters.categories,
+    filters.priceRange,
+    filters.rating,
+    searchQuery,
+    sortBy,
+  ]);
 
   // Handlers
-  const handleFiltersChange = (newFilters: FilterState) => {
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
-  };
+    setCurrentPage(1); // Reset to first page when filters change
+  }, []);
 
-  const handleSearchChange = (query: string) => {
+  const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
-  const handleItemsPerPageChange = (itemsPerPage: number) => {
+  const handleItemsPerPageChange = useCallback((itemsPerPage: number) => {
     setItemsPerPage(itemsPerPage);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleRetry = () => {
-    window.location.reload();
-  };
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
+    console.log("CoursesPage: handleClearFilters called");
+
+    // Reset tất cả states về default
+    setSearchQuery("");
+    // setSelectedLevel("all");
+    setSortBy("newest");
+    setCurrentPage(1);
+
     setFilters({
       categories: [],
       priceRange: [0, 500],
       rating: 0,
     });
-    setSearchQuery("");
-  };
+
+    console.log("CoursesPage: All filters cleared");
+  }, []);
 
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.categories.length > 0) count++;
-    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 500) count++;
+    if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 500) count++;
     if (filters.rating > 0) count++;
     return count;
   };
 
   // Loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-8">
@@ -283,7 +222,7 @@ export default function CoursesPage() {
             />
 
             {/* Results */}
-            {sortedCourses.length === 0 ? (
+            {courses.length === 0 ? (
               <EmptyState
                 type="no-results"
                 title="No courses found"
@@ -296,7 +235,7 @@ export default function CoursesPage() {
                 {/* Course List */}
                 <div className="mb-8">
                   <CourseList
-                    courses={paginatedCourses}
+                    courses={courses}
                     variant={viewMode}
                     className={viewMode === "list" ? "grid-cols-1" : ""}
                   />
@@ -305,10 +244,10 @@ export default function CoursesPage() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <CoursePagination
-                    currentPage={currentPage}
+                    currentPage={currentPage + 1} // API sử dụng 0-based, UI sử dụng 1-based
                     totalPages={totalPages}
                     itemsPerPage={itemsPerPage}
-                    totalItems={sortedCourses.length}
+                    totalItems={totalElements}
                     onPageChange={handlePageChange}
                     onItemsPerPageChange={handleItemsPerPageChange}
                   />
