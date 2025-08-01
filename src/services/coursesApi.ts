@@ -1,5 +1,6 @@
 import { ApiResponse, PaginatedData } from "@/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getSession } from "next-auth/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
@@ -12,6 +13,23 @@ const baseQuery = fetchBaseQuery({
   //   return headers;
   // },
 });
+
+// const baseQueryWithSession = async (args:any, api:any, extraOptions:any) => {
+//   const session = await getSession();
+//   const token = session?.user?.accessToken; // lấy token từ session nè
+
+//   const baseQuery = fetchBaseQuery({
+//     baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+//     prepareHeaders: (headers) => {
+//       if (token) {
+//         headers.set("Authorization", `Bearer ${token}`); // gắn token vào
+//       }
+//       return headers;
+//     },
+//   });
+
+//   return baseQuery(args, api, extraOptions); // gọi tiếp API
+// };
 
 // Interfaces cho Course API
 export interface Course {

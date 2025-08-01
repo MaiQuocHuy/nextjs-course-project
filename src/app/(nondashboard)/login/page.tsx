@@ -27,9 +27,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { getSession, useSession } from "next-auth/react";
 import { useRouter } from "next/dist/client/components/navigation";
 import { signIn } from "next-auth/react";
+import { useDispatch } from "react-redux";
+import { setAuthState } from "@/store/slices/auth/authSlice";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -57,6 +59,7 @@ export default function LoginPage() {
 
   const router = useRouter();
   const { status } = useSession();
+  const dispatch = useDispatch();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -80,12 +83,23 @@ export default function LoginPage() {
       if (result && result.ok) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
+
         setTimeout(() => {
-          router.push("/dashboard");
-        }, 1000); // hoặc 1000ms
-      } else {
-        setModalMessage(result?.error || "Login failed. Please check your credentials.");
-        setShowErrorModal(true);
+          router.push("/");
+        }, 1000);
+        dispatch(setAuthState(true));
+        const session = await getSession();
+        const accessToken = session?.user?.accessToken;
+
+        if (accessToken) {
+          localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("isAuthenticated", "true");
+        } else {
+          setModalMessage(result?.error || "Login failed. Please check your credentials.");
+          setShowErrorModal(true);
+          localStorage.removeItem("accessToken");
+          dispatch(setAuthState(false));
+        }
       }
     } catch (error) {
       setModalMessage("Something went wrong. Please try again.");

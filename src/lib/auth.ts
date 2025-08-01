@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
               'Content-Type': 'application/json',
             },
           });
-
+          
           if (!res.ok) {
             const errorData = await res.json();
             throw new Error(errorData.message || "Unauthorized");
