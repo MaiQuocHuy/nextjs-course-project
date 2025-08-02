@@ -5,19 +5,18 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
 } from "@/types/student";
-
-// Type for course stats
+import { getSession } from "next-auth/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: (headers) => {
+  prepareHeaders: async (headers) => {
+  const session = await getSession();
+  const token = session?.user?.accessToken;
     headers.set("Content-Type", "application/json");
-    headers.set(
-      "Authorization",
-      `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJTVFVERU5UIl0sInN1YiI6ImJvYkBleGFtcGxlLmNvbSIsImlhdCI6MTc1NDAzNjcxNSwiZXhwIjoxNzU0MDQwMzE1fQ.CMbpZPZH046vBfQMlFfngBAyWedu5ufsOnbaAQQ1_X_G1gGjqdRL5SNIMhKHuIFv`
-    );
-    return headers;
-  },
+
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return headers;
+},
 });
 
 export const studentApi = createApi({
