@@ -5,41 +5,11 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
 } from "@/types/student";
-import { getSession } from "next-auth/react";
-
-// Type for dashboard data
-export interface DashboardData {
-  stats: CourseStats;
-  activities: ActivityFeedResponse;
-}
-
-// Type for course stats
-
-// Custom base query that gets token from Next-Auth session
-const baseQueryWithSession = async (args: any, api: any, extraOptions: any) => {
-  // const session = await getSession();
-  // const token = session?.user?.accessToken;
-
-  const token =
-    "eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJTVFVERU5UIl0sInN1YiI6ImJvYkBleGFtcGxlLmNvbSIsImlhdCI6MTc1NDIyMjU1NywiZXhwIjoxNzU0MjI2MTU3fQ.RJZHSQHqHfzofAYfesnbuEEBxRZKla9vcnhDwSMtvbHF14r0Ac9e0d9yqavSeYdI";
-
-  const baseQuery = fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`); // gắn token vào
-      }
-      return headers;
-    },
-  });
-
-  return baseQuery(args, api, extraOptions); // gọi tiếp API
-};
+import { baseQueryWithReauth } from "@/services/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
-  baseQuery: baseQueryWithSession,
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
