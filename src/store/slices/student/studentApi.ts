@@ -20,7 +20,8 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
-    getEnrolledCourseDetails: builder.query<CourseSections, string>({
+    // Get course details with sections and lessons
+    getCourseDetails: builder.query<CourseSections, string>({
       query: (courseId) => ({
         url: `/student/courses/${courseId}`,
         method: "GET",
@@ -29,11 +30,19 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
-    // New endpoint to calculate course stats from enrolled courses
-    getCourseStats: builder.query<CourseStats, void>({
-      async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
+    // New optimized endpoint that combines stats and activities in one call
+    getDashboardData: builder.query<
+      DashboardData,
+      { page?: number; size?: number }
+    >({
+      async queryFn(
+        { page = 0, size = 10 },
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ
+      ) {
         try {
-          // First get enrolled courses
+          // Single API call to get enrolled courses
           const coursesResult = await fetchWithBQ({
             url: "/student/courses",
             method: "GET",
@@ -45,11 +54,24 @@ export const studentApi = createApi({
           if (!coursesData?.content) {
             return {
               data: {
-                totalCourses: 0,
-                completedCourses: 0,
-                inProgressCourses: 0,
-                completedLessons: 0,
-                totalLessons: 0,
+                stats: {
+                  totalCourses: 0,
+                  completedCourses: 0,
+                  inProgressCourses: 0,
+                  completedLessons: 0,
+                  totalLessons: 0,
+                },
+                activities: {
+                  content: [],
+                  page: {
+                    number: 0,
+                    size,
+                    totalPages: 0,
+                    totalElements: 0,
+                    first: true,
+                    last: true,
+                  },
+                },
               },
             };
           }
@@ -65,87 +87,21 @@ export const studentApi = createApi({
             (course: any) => course.completionStatus === "IN_PROGRESS"
           ).length;
 
-          // Fetch details for all courses to calculate lesson stats
+          // Fetch details for all courses to calculate lesson stats and build activities
           const detailsPromises = courses.map(async (course: any) => {
             const detailResult = await fetchWithBQ({
               url: `/student/courses/${course.courseId}`,
               method: "GET",
             });
-            return detailResult.data ? (detailResult.data as any).data : null;
-          });
-
-          const allDetails = await Promise.all(detailsPromises);
-          const validDetails = allDetails.filter(Boolean);
-
-          // Calculate lesson stats
-          let completedLessons = 0;
-          let totalLessons = 0;
-
-          validDetails.forEach((sections: any) => {
-            if (sections && Array.isArray(sections)) {
-              sections.forEach((section: any) => {
-                if (section.lessons && Array.isArray(section.lessons)) {
-                  totalLessons += section.lessons.length;
-                  completedLessons += section.lessons.filter(
-                    (lesson: any) => lesson.isCompleted
-                  ).length;
-                }
-              });
-            }
-          });
-
-          return {
-            data: {
-              totalCourses,
-              completedCourses,
-              inProgressCourses,
-              completedLessons,
-              totalLessons,
-            },
-          };
-        } catch (error) {
-          return { error: { status: "FETCH_ERROR", error: String(error) } };
-        }
-      },
-    }),
-    // Get activity feed - build from completed lessons in enrolled courses
-    getActivityFeed: builder.query<
-      ActivityFeedResponse,
-      { page?: number; size?: number }
-    >({
-      async queryFn(
-        { page = 0, size = 10 },
-        _queryApi,
-        _extraOptions,
-        fetchWithBQ
-      ) {
-        try {
-          // First get enrolled courses
-          const coursesResult = await fetchWithBQ({
-            url: "/student/courses",
-            method: "GET",
-          });
-
-          if (coursesResult.error) return { error: coursesResult.error };
-
-          const coursesData = (coursesResult.data as any)?.data;
-          if (!coursesData?.content) {
             return {
-              data: {
-                content: [],
-                page: {
-                  number: 0,
-                  size,
-                  totalPages: 0,
-                  totalElements: 0,
-                  first: true,
-                  last: true,
-                },
-              },
+              course,
+              sections: detailResult.data
+                ? (detailResult.data as any).data
+                : null,
             };
-          }
+          });
 
-          const courses = coursesData.content;
+          const courseDetails = await Promise.all(detailsPromises);
           const activities: any[] = [];
 
           // Add course enrollment activities
@@ -163,29 +119,21 @@ export const studentApi = createApi({
             });
           });
 
-          // Fetch details for courses to get completed lessons
-          const detailsPromises = courses.map(async (course: any) => {
-            const detailResult = await fetchWithBQ({
-              url: `/student/courses/${course.courseId}`,
-              method: "GET",
-            });
-            return {
-              course,
-              sections: detailResult.data
-                ? (detailResult.data as any).data
-                : null,
-            };
-          });
+          // Calculate lesson stats and build activities from course details
+          let completedLessons = 0;
+          let totalLessons = 0;
 
-          const courseDetails = await Promise.all(detailsPromises);
-
-          // Extract completed lessons and create activities
           courseDetails.forEach(({ course, sections }) => {
             if (sections && Array.isArray(sections)) {
               sections.forEach((section: any) => {
                 if (section.lessons && Array.isArray(section.lessons)) {
+                  totalLessons += section.lessons.length;
+
                   section.lessons.forEach((lesson: any) => {
                     if (lesson.isCompleted) {
+                      completedLessons++;
+
+                      // Add lesson completion activity
                       activities.push({
                         id: `lesson-${lesson.id}`,
                         user_id: "current-user",
@@ -230,24 +178,38 @@ export const studentApi = createApi({
               new Date(a.completed_at).getTime()
           );
 
-          // Implement pagination
+          // Implement pagination for activities
           const totalElements = activities.length;
           const totalPages = Math.ceil(totalElements / size);
           const startIndex = page * size;
           const endIndex = startIndex + size;
           const paginatedActivities = activities.slice(startIndex, endIndex);
 
+          // Build the final response
+          const stats: CourseStats = {
+            totalCourses,
+            completedCourses,
+            inProgressCourses,
+            completedLessons,
+            totalLessons,
+          };
+
+          const activitiesResponse: ActivityFeedResponse = {
+            content: paginatedActivities,
+            page: {
+              number: page,
+              size,
+              totalPages,
+              totalElements,
+              first: page === 0,
+              last: page >= totalPages - 1,
+            },
+          };
+
           return {
             data: {
-              content: paginatedActivities,
-              page: {
-                number: page,
-                size,
-                totalPages,
-                totalElements,
-                first: page === 0,
-                last: page >= totalPages - 1,
-              },
+              stats,
+              activities: activitiesResponse,
             },
           };
         } catch (error) {
@@ -260,7 +222,6 @@ export const studentApi = createApi({
 
 export const {
   useGetEnrolledCoursesQuery,
-  useGetEnrolledCourseDetailsQuery,
-  useGetCourseStatsQuery,
-  useGetActivityFeedQuery,
+  useGetDashboardDataQuery,
+  useGetCourseDetailsQuery,
 } = studentApi;

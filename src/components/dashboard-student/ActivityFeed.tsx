@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
-import { useGetActivityFeedQuery } from "@/store/slices/student/studentApi";
+import { useGetDashboardDataQuery } from "@/store/slices/student/studentApi";
 import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
 import type { ActivityType } from "@/types/student";
 
@@ -48,11 +48,11 @@ function getActivityBadge(type: ActivityType, score?: number) {
 
 export function ActivityFeed() {
   const {
-    data: activityData,
+    data: dashboardData,
     error,
     isLoading,
     refetch,
-  } = useGetActivityFeedQuery({ page: 0, size: 20 });
+  } = useGetDashboardDataQuery({ page: 0, size: 20 });
 
   if (isLoading) {
     return <ActivityFeedLoadingSkeleton />;
@@ -81,7 +81,7 @@ export function ActivityFeed() {
     );
   }
 
-  const activities = activityData?.content || [];
+  const activities = dashboardData?.activities?.content || [];
 
   // Simple function to format relative time
   const formatTimeAgo = (dateString: string) => {

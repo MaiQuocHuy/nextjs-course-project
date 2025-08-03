@@ -4,37 +4,11 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { PlayCircle, CheckCircle, Clock, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { useGetEnrolledCoursesQuery } from "@/store/slices/student/studentApi";
 import { Loading, CoursesLoadingSkeleton } from "./ui/Loading";
 import { LoadingError, CourseLoadError } from "./ui/LoadingError";
-
-function getStatusBadge(status: string) {
-  switch (status) {
-    case "COMPLETED":
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Completed
-        </Badge>
-      );
-    case "IN_PROGRESS":
-      return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          <Clock className="h-3 w-3 mr-1" />
-          In Progress
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="outline">
-          <PlayCircle className="h-3 w-3 mr-1" />
-          Not Started
-        </Badge>
-      );
-  }
-}
+import { CourseStatus } from "./CourseStatus";
 
 export function EnrolledCoursesSummary() {
   const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
@@ -79,7 +53,7 @@ export function EnrolledCoursesSummary() {
                     <CardTitle className="text-lg line-clamp-2 flex-1">
                       {enrollment.title}
                     </CardTitle>
-                    {getStatusBadge(enrollment.completionStatus)}
+                    <CourseStatus status={enrollment.completionStatus} />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     by {enrollment.instructor.name}

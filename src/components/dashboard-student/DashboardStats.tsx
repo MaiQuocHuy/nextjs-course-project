@@ -1,12 +1,12 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGetCourseStatsQuery } from "@/store/slices/student/studentApi";
+import { useGetDashboardDataQuery } from "@/store/slices/student/studentApi";
 import { BookOpen, Award, Clock, Target, TrendingUp } from "lucide-react";
 import { LoadingError, DashboardStatsLoadingSkeleton } from "./ui";
 
 export function DashboardStats() {
-  const { data: stats, error, isLoading, refetch } = useGetCourseStatsQuery();
+  const { data: dashboardData, error, isLoading, refetch } = useGetDashboardDataQuery({ page: 0, size: 20 });
 
   if (isLoading) {
     return <DashboardStatsLoadingSkeleton />;
@@ -15,14 +15,15 @@ export function DashboardStats() {
   if (error) {
     return <LoadingError onRetry={refetch} />;
   }
-  // Use stats from the API
+  
+  // Use stats from the dashboard data
   const {
     totalCourses = 0,
     completedCourses = 0,
     inProgressCourses = 0,
     completedLessons = 0,
     totalLessons = 0,
-  } = stats || {};
+  } = dashboardData?.stats || {};
 
   const statCards = [
     {

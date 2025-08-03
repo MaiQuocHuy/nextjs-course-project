@@ -191,3 +191,22 @@ export function ActivityFeedLoadingSkeleton() {
     </Card>
   );
 }
+
+//dashboardheader loading skeleton
+export function DashboardHeaderLoadingSkeleton() {
+  return (
+    <div className="flex items-center justify-between p-4 bg-muted animate-pulse rounded-md">
+      <div className="flex items-center space-x-4">
+        <div className="h-10 w-10 bg-muted animate-pulse rounded-full"></div>
+        <div className="space-y-2">
+          <div className="h-5 w-32 bg-muted animate-pulse rounded"></div>
+          <div className="h-3 w-48 bg-muted animate-pulse rounded"></div>
+        </div>
+      </div>
+      <div className="flex items-center space-x-6">
+        <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
+        <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
+      </div>
+    </div>
+  );
+}
