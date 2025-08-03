@@ -5,24 +5,11 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
 } from "@/types/student";
-
-// Type for course stats
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
-    headers.set(
-      "Authorization",
-      `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJTVFVERU5UIl0sInN1YiI6ImJvYkBleGFtcGxlLmNvbSIsImlhdCI6MTc1NDAzNjcxNSwiZXhwIjoxNzU0MDQwMzE1fQ.CMbpZPZH046vBfQMlFfngBAyWedu5ufsOnbaAQQ1_X_G1gGjqdRL5SNIMhKHuIFv`
-    );
-    return headers;
-  },
-});
+import { baseQueryWithReauth } from "@/services/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({

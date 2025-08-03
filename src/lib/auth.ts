@@ -10,11 +10,15 @@ interface UserType {
   refreshToken: string;
 }
 
+interface DecodedToken {
+  exp: number; // expires at
+  iat: number; // issued at
+}
+
 export const authOptions: NextAuthOptions = {
   debug: true,
   pages: {
-    signIn: "/login", //Dẫn đến trang login custom
-    // error: "/auth/error", // Custom error page
+    signIn: "/login", 
   },
   session: {
     strategy: "jwt",
@@ -84,6 +88,8 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
+      // Don't auto-refresh here - let baseQueryWithReauth handle it
+      // This prevents loops when getSession() is called
       return token;
     },
 
@@ -102,6 +108,37 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
+
+// !refresh access token //
+
+export async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    const res = await fetch(`${baseUrl}/api/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken: token.refreshToken }),
+    });
+
+    if (!res.ok) throw new Error("Failed to refresh access token");
+
+    const response = await res.json();
+    console.log("new access token:", response.data.accessToken); 
+
+    return {
+      ...token,
+      accessToken: response.data.accessToken,
+      refreshToken: response.data.refreshToken ?? token.refreshToken,
+    };
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
+}
 
 
 declare module "next-auth" {
