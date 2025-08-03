@@ -90,14 +90,17 @@ export default function LoginPage() {
         dispatch(setAuthState(true));
         const session = await getSession();
         const accessToken = session?.user?.accessToken;
+        const refreshToken = session?.user?.refreshToken;
 
-        if (accessToken) {
+        if (accessToken && refreshToken) {
           localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("refreshToken", refreshToken);
           localStorage.setItem("isAuthenticated", "true");
         } else {
           setModalMessage(result?.error || "Login failed. Please check your credentials.");
           setShowErrorModal(true);
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
           dispatch(setAuthState(false));
         }
       }
