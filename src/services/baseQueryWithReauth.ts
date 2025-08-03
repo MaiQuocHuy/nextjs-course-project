@@ -40,7 +40,7 @@ const refreshToken = async (): Promise<boolean> => {
       return false;
     }
 
-    const refreshUrl = `${process.env.NEXT_PUBLIC_API_BACKEND_URL}/auth/refresh`;
+    const refreshUrl = `${process.env.NEXT_PUBLIC_API_BACKEND_URL}/api/auth/refresh`;
     const refreshRes = await fetch(refreshUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
