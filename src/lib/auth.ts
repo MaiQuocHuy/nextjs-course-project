@@ -2,6 +2,7 @@ import type { NextAuthOptions, Session, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 import { decode } from "jsonwebtoken";
+import { getSession, signIn } from "next-auth/react";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080";
 
@@ -17,7 +18,7 @@ interface DecodedToken {
 }
 
 export const authOptions: NextAuthOptions = {
-  debug: process.env.NODE_ENV !== "production",
+  debug: true,
   pages: {
     signIn: "/login", 
   },
@@ -89,14 +90,8 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
-      const decoded = decode(token.accessToken || "") as DecodedToken | null;
-
-      if (decoded && decoded.exp * 1000 < Date.now()) {
-      console.log("Access token expired, refreshing...");
-      return await refreshAccessToken(token);
-  }
-      
-
+      // Don't auto-refresh here - let baseQueryWithReauth handle it
+      // This prevents loops when getSession() is called
       return token;
     },
 
@@ -131,6 +126,7 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
     if (!res.ok) throw new Error("Failed to refresh access token");
 
     const response = await res.json();
+    console.log("new access token:", response.data.accessToken); 
 
     return {
       ...token,

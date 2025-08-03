@@ -5,23 +5,11 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
 } from "@/types/student";
-import { getSession } from "next-auth/react";
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: async (headers) => {
-  const session = await getSession();
-  const token = session?.user?.accessToken;
-    headers.set("Content-Type", "application/json");
-
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-  return headers;
-},
-});
+import { baseQueryWithReauth } from "@/services/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
