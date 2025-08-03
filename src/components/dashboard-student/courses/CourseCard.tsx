@@ -1,82 +1,85 @@
-"use client";
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { CourseProgress } from "./CourseProgress";
-import { CourseStatus } from "./CourseStatus";
-
-interface Course {
-  id: string;
-  title: string;
-  instructor: string;
-  thumbnail: string;
-  completedLessons: number;
-  totalLessons: number;
-}
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PlayCircle, User } from "lucide-react";
+import { CourseStatus } from "../CourseStatus";
+import type { Course } from "@/types/student";
+import { Progress } from "@/components/ui/progress";
 
 interface CourseCardProps {
   course: Course;
 }
 
 export function CourseCard({ course }: CourseCardProps) {
-  const router = useRouter();
-  const isCompleted = course.completedLessons === course.totalLessons;
-
-  const handleNavigateToLearning = () => {
-    router.push(`/dashboard/learning/${course.id}`);
-  };
-
   return (
-    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow h-full pt-0">
-      <div className="flex flex-col h-full">
-        <CardHeader className="p-0">
-          <div className="aspect-video relative rounded-t-2xl overflow-hidden">
-            <Image
-              src={course.thumbnail}
-              alt={course.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-6 flex flex-col flex-1">
-          <div className="flex flex-col justify-between h-full space-y-4">
-            {/* Course Info - Fixed height section */}
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-lg font-semibold line-clamp-2 flex-1 min-h-[3.5rem]">
-                  {course.title}
-                </h3>
-                <CourseStatus isCompleted={isCompleted} />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                by {course.instructor}
-              </p>
-            </div>
-
-            {/* Progress Section */}
-            <CourseProgress
-              completedLessons={course.completedLessons}
-              totalLessons={course.totalLessons}
-            />
-
-            {/* CTA Button - Always at bottom */}
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      <CardHeader className="p-0">
+        <div className="aspect-video relative">
+          <Image
+            src={course.thumbnailUrl || "/api/placeholder/400/225"}
+            alt={course.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+          <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
             <Button
-              className="w-full hover:bg-primary/90 transition-colors mt-auto"
-              variant="default"
-              onClick={handleNavigateToLearning}
+              size="sm"
+              variant="secondary"
+              className="bg-white/90 hover:bg-white"
             >
-              {isCompleted ? "Review Course" : "Continue Learning"}
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <PlayCircle className="h-4 w-4 mr-2" />
+              Continue Learning
             </Button>
           </div>
-        </CardContent>
-      </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4">
+        <div className="space-y-3">
+          {/* Course Title and Status */}
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <CardTitle className="text-lg line-clamp-2 flex-1">
+                <Link
+                  href={`/dashboard/learning/${course.courseId}`}
+                  className="hover:text-primary transition-colors"
+                >
+                  {course.title}
+                </Link>
+              </CardTitle>
+              <CourseStatus status={course.completionStatus} />
+            </div>
+
+            {/* Instructor */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>{course.instructor.name}</span>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{course.progress * 100}%</span>
+            </div>
+            <Progress value={course.progress * 100} className="h-2" />
+          </div>
+
+          {/* Action Button */}
+          <div className="pt-2">
+            <Button asChild className="w-full">
+              <Link href={`/dashboard/learning/${course.courseId}`}>
+                {course.completionStatus === "COMPLETED"
+                  ? "Review Course"
+                  : "Continue Learning"}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }

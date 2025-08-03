@@ -15,37 +15,31 @@ export interface DashboardData {
 
 // Type for course stats
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
-    headers.set(
-      "Authorization",
-      `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJTVFVERU5UIl0sInN1YiI6ImJvYkBleGFtcGxlLmNvbSIsImlhdCI6MTc1NDIwMTMzNywiZXhwIjoxNzU0MjA0OTM3fQ.2j8rY78rAExWHvLni2Zl_K5Y4nrBbMJGkIrPCD9inuqfkjBzKsPnXU6-V0NJetCR`
-    );
-    return headers;
-  },
-});
-// const baseQueryWithSession = async (args: any, api: any, extraOptions: any) => {
-//   const session = await getSession();
-//   const token = session?.user?.accessToken; // lấy token từ session nè
+// Custom base query that gets token from Next-Auth session
+const baseQueryWithSession = async (args: any, api: any, extraOptions: any) => {
+  // const session = await getSession();
+  // const token = session?.user?.accessToken;
 
-//   const baseQuery = fetchBaseQuery({
-//     baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-//     prepareHeaders: (headers) => {
-//       if (token) {
-//         headers.set("Authorization", `Bearer ${token}`); // gắn token vào
-//       }
-//       return headers;
-//     },
-//   });
+  const token =
+    "eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJTVFVERU5UIl0sInN1YiI6ImJvYkBleGFtcGxlLmNvbSIsImlhdCI6MTc1NDIyMjU1NywiZXhwIjoxNzU0MjI2MTU3fQ.RJZHSQHqHfzofAYfesnbuEEBxRZKla9vcnhDwSMtvbHF14r0Ac9e0d9yqavSeYdI";
 
-//   return baseQuery(args, api, extraOptions); // gọi tiếp API
-// };
+  const baseQuery = fetchBaseQuery({
+    baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+    prepareHeaders: (headers) => {
+      headers.set("Content-Type", "application/json");
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`); // gắn token vào
+      }
+      return headers;
+    },
+  });
+
+  return baseQuery(args, api, extraOptions); // gọi tiếp API
+};
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
-  baseQuery: baseQuery,
+  baseQuery: baseQueryWithSession,
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
@@ -53,6 +47,16 @@ export const studentApi = createApi({
         method: "GET",
       }),
       transformResponse: (response: { data: PaginatedCourses }) => {
+        return response.data;
+      },
+    }),
+    // Get course details with sections and lessons
+    getCourseDetails: builder.query<CourseSections, string>({
+      query: (courseId) => ({
+        url: `/student/courses/${courseId}`,
+        method: "GET",
+      }),
+      transformResponse: (response: { data: CourseSections }) => {
         return response.data;
       },
     }),
@@ -246,5 +250,8 @@ export const studentApi = createApi({
   }),
 });
 
-export const { useGetEnrolledCoursesQuery, useGetDashboardDataQuery } =
-  studentApi;
+export const {
+  useGetEnrolledCoursesQuery,
+  useGetDashboardDataQuery,
+  useGetCourseDetailsQuery,
+} = studentApi;
