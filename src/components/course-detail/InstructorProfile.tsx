@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,293 +8,383 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Star,
   Users,
-  BookOpen,
+  PlayCircle,
   Award,
+  BookOpen,
+  MessageSquare,
+  ExternalLink,
+  Globe,
+  Linkedin,
+  Twitter,
+  Mail,
   MapPin,
   Calendar,
-  ExternalLink,
-  Mail,
-  MessageCircle,
+  TrendingUp,
 } from "lucide-react";
-import { User } from "@/app/data/courses";
+import { Course } from "@/services/coursesApi";
 import { cn } from "@/lib/utils";
 
 interface InstructorProfileProps {
-  instructor: User;
+  course: Course;
   className?: string;
+  variant?: "full" | "compact";
 }
 
 export function InstructorProfile({
-  instructor,
+  course,
   className = "",
+  variant = "full",
 }: InstructorProfileProps) {
-  // Mock instructor stats - in real app, these would come from API
-  const mockStats = {
-    totalCourses: 12,
-    totalStudents: 15420,
-    averageRating: 4.7,
-    totalReviews: 2834,
-    yearsTeaching: 8,
-    specializations: ["Web Development", "Mobile Apps", "UI/UX Design"],
+  const instructor = course.instructor;
+
+  // Mock instructor stats (in real app, this would come from API)
+  const instructorStats = {
+    totalStudents: Math.floor(Math.random() * 50000) + 10000,
+    totalCourses: Math.floor(Math.random() * 20) + 5,
+    averageRating: (Math.random() * 1 + 4).toFixed(1),
+    totalReviews: Math.floor(Math.random() * 5000) + 1000,
+    yearsExperience: Math.floor(Math.random() * 10) + 5,
+    expertise: ["Web Development", "JavaScript", "React", "Node.js"],
+    location: "San Francisco, CA",
+    joinedDate: "2019",
   };
-
-  const mockBio =
-    "John is a seasoned software engineer with over 8 years of experience in full-stack development. He has worked with major tech companies and startups, building scalable web applications and mentoring junior developers. His passion for teaching and clear communication style has helped thousands of students master modern web technologies.";
-
-  const mockAchievements = [
-    "Senior Software Engineer at Google",
-    "Published author of 3 programming books",
-    "Speaker at 25+ tech conferences",
-    "Mentor to 500+ developers worldwide",
-  ];
 
   const formatNumber = (num: number) => {
     if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`;
+      return `${(num / 1000).toFixed(1)}k`;
     }
     return num.toString();
   };
 
-  return (
-    <div className={cn("space-y-6", className)}>
-      {/* Instructor Header */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-4">
-            {/* Avatar and Basic Info */}
-            <div className="flex items-center gap-4">
-              <Avatar className="w-16 h-16">
-                <AvatarImage
-                  src={instructor.avatar}
-                  alt={instructor.name}
-                  className="object-cover"
-                />
-                <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-blue-600 to-purple-600 text-white">
-                  {instructor.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {instructor.name}
-                </h2>
-
-                <Badge variant="secondary" className="mt-1">
-                  {instructor.role === "INSTRUCTOR"
-                    ? "Course Instructor"
-                    : instructor.role}
-                </Badge>
-
-                <div className="flex items-center gap-3 mt-2 text-xs text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    <span>Since 2016</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    <span>San Francisco</span>
-                  </div>
-                </div>
-              </div>
-            </div>{" "}
-            {/* Stats Grid */}
-            <div className="w-full">
-              <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">
-                      {mockStats.averageRating}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Instructor Rating
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    {formatNumber(mockStats.totalReviews)} reviews
-                  </p>
-                </div>
-
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <Users className="w-4 h-4 text-blue-600" />
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">
-                      {formatNumber(mockStats.totalStudents)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Students
-                  </p>
-                </div>
-
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <BookOpen className="w-4 h-4 text-green-600" />
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">
-                      {mockStats.totalCourses}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Courses
-                  </p>
-                </div>
-
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <Award className="w-4 h-4 text-purple-600" />
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">
-                      {mockStats.yearsTeaching}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Years Teaching
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 text-xs"
-                >
-                  <MessageCircle className="w-3 h-3" />
-                  Message
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 text-xs"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Profile
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 text-xs"
-                >
-                  <Mail className="w-3 h-3" />
-                  Contact
-                </Button>
+  if (variant === "compact") {
+    return (
+      <Card className={cn("", className)}>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Instructor</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16 ring-2 ring-blue-100 dark:ring-blue-900">
+              <AvatarImage
+                src={
+                  instructor.avatar ||
+                  `https://ui-avatars.com/api/?name=${instructor.name}&background=3b82f6&color=fff`
+                }
+                alt={instructor.name}
+              />
+              <AvatarFallback className="bg-blue-600 text-white text-lg">
+                {instructor.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                {instructor.name}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Expert Instructor
+              </p>
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {instructorStats.averageRating}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  • {formatNumber(instructorStats.totalStudents)} students
+                </span>
               </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4 text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div>
+              <div className="text-lg font-bold text-blue-600">
+                {instructorStats.totalCourses}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Courses
+              </div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-green-600">
+                {formatNumber(instructorStats.totalReviews)}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Reviews
+              </div>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              // Navigate to instructor profile
+              console.log("View instructor profile");
+            }}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            View Profile
+          </Button>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Bio Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>About the Instructor</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-            {mockBio}
-          </p>
+  // Full variant
+  return (
+    <Card className={cn("overflow-hidden", className)}>
+      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+        <CardTitle className="flex items-center gap-2">
+          <Users className="w-5 h-5 text-blue-600" />
+          Your Instructor
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="space-y-6">
+          {/* Instructor Header */}
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex-shrink-0">
+              <Avatar className="h-24 w-24 ring-4 ring-blue-100 dark:ring-blue-900 shadow-lg">
+                <AvatarImage
+                  src={
+                    instructor.avatar ||
+                    `https://ui-avatars.com/api/?name=${instructor.name}&background=3b82f6&color=fff&size=96`
+                  }
+                  alt={instructor.name}
+                />
+                <AvatarFallback className="bg-blue-600 text-white text-2xl">
+                  {instructor.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
-          {/* Specializations */}
-          <div className="mb-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
-              Specializations
+            <div className="flex-1 space-y-4">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {instructor.name}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-3">
+                  Senior Software Engineer & Educator
+                </p>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <MapPin className="w-4 h-4" />
+                  <span>{instructorStats.location}</span>
+                  <span>•</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>Joined {instructorStats.joinedDate}</span>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <div className="text-lg font-bold text-blue-600">
+                    {formatNumber(instructorStats.totalStudents)}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Students
+                  </div>
+                </div>
+                <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                  <div className="text-lg font-bold text-green-600">
+                    {instructorStats.totalCourses}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Courses
+                  </div>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                  <div className="text-lg font-bold text-yellow-600">
+                    {instructorStats.averageRating}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Rating
+                  </div>
+                </div>
+                <div className="text-center p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
+                  <div className="text-lg font-bold text-purple-600">
+                    {instructorStats.yearsExperience}+
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Years
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bio Section */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+              About {instructor.name.split(" ")[0]}
+            </h4>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              With over {instructorStats.yearsExperience} years of experience in
+              software development,
+              {instructor.name} has worked with leading tech companies and has a
+              passion for teaching. They specialize in modern web technologies
+              and have helped thousands of students advance their careers in
+              technology.
+            </p>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+              As a seasoned educator, they believe in practical, hands-on
+              learning and creating courses that bridge the gap between theory
+              and real-world application. Their teaching style focuses on
+              building confidence through step-by-step guidance and practical
+              projects.
+            </p>
+          </div>
+
+          {/* Expertise */}
+          <div className="space-y-3">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Areas of Expertise
             </h4>
             <div className="flex flex-wrap gap-2">
-              {mockStats.specializations.map((spec, index) => (
+              {instructorStats.expertise.map((skill, index) => (
                 <Badge
                   key={index}
-                  variant="outline"
-                  className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                 >
-                  {spec}
+                  {skill}
                 </Badge>
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Achievements */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-yellow-600" />
-            Achievements & Experience
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          {/* Achievements */}
           <div className="space-y-3">
-            {mockAchievements.map((achievement, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0" />
-                <span className="text-gray-700 dark:text-gray-300">
-                  {achievement}
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Achievements
+            </h4>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    Top-Rated Instructor
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Consistently rated {instructorStats.averageRating}+ stars by
+                    students
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    High Impact Educator
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Taught {formatNumber(instructorStats.totalStudents)}+
+                    students worldwide
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    Course Creator
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Published {instructorStats.totalCourses} comprehensive
+                    courses
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Connect Section */}
+          <div className="space-y-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Connect with {instructor.name.split(" ")[0]}
+            </h4>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => console.log("View full profile")}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                View Full Profile
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => console.log("Send message")}
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Send Message
+              </Button>
+            </div>
+
+            {/* Social Links */}
+            <div className="flex items-center gap-4 pt-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Follow:
+              </span>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-gray-600 hover:text-blue-600"
+                  onClick={() => console.log("LinkedIn profile")}
+                >
+                  <Linkedin className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-gray-600 hover:text-blue-400"
+                  onClick={() => console.log("Twitter profile")}
+                >
+                  <Twitter className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-gray-600 hover:text-green-600"
+                  onClick={() => console.log("Website")}
+                >
+                  <Globe className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Reviews Summary */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h5 className="font-semibold text-gray-900 dark:text-white">
+                Student Reviews
+              </h5>
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {instructorStats.averageRating}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  ({formatNumber(instructorStats.totalReviews)} reviews)
                 </span>
               </div>
-            ))}
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+              "Excellent instructor with clear explanations and practical
+              examples. Highly recommend their courses!"
+            </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Other Courses by Instructor */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-blue-600" />
-              More courses by {instructor.name}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              View All
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Mock other courses */}
-            {[1, 2].map((courseNum) => (
-              <div
-                key={courseNum}
-                className="flex gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                <div className="w-16 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                  IMG
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">
-                    Advanced React Patterns & Performance Optimization
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-500" />
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
-                        4.8
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      ({formatNumber(1200 + courseNum * 300)} students)
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1">
-                    $79.99
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
