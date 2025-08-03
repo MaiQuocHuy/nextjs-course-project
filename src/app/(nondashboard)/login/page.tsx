@@ -8,7 +8,13 @@ import * as z from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -35,10 +41,13 @@ import { setAuthState } from "@/store/slices/auth/authSlice";
 
 // Zod validation schema
 const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
+    .min(1, "Password must be at least 1 character")
     // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   rememberMe: z.boolean().default(false),
@@ -95,7 +104,9 @@ export default function LoginPage() {
           localStorage.setItem("accessToken", accessToken);
           localStorage.setItem("isAuthenticated", "true");
         } else {
-          setModalMessage(result?.error || "Login failed. Please check your credentials.");
+          setModalMessage(
+            result?.error || "Login failed. Please check your credentials."
+          );
           setShowErrorModal(true);
           localStorage.removeItem("accessToken");
           dispatch(setAuthState(false));
@@ -114,14 +125,19 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Welcome back
+            </CardTitle>
             <CardDescription className="text-gray-600">
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 {/* Email Field */}
                 <FormField
                   control={form.control}
@@ -211,7 +227,11 @@ export default function LoginPage() {
                 />
 
                 {/* Submit Button */}
-                <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full h-11"
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -276,7 +296,11 @@ export default function LoginPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-center mt-6">
-              <Button onClick={() => setShowErrorModal(false)} variant="outline" className="px-8">
+              <Button
+                onClick={() => setShowErrorModal(false)}
+                variant="outline"
+                className="px-8"
+              >
                 Try Again
               </Button>
             </div>
