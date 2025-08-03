@@ -1,6 +1,7 @@
 import type { NextAuthOptions, Session, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
+import { decode } from "jsonwebtoken";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080";
 
@@ -10,11 +11,15 @@ interface UserType {
   refreshToken: string;
 }
 
+interface DecodedToken {
+  exp: number; // expires at
+  iat: number; // issued at
+}
+
 export const authOptions: NextAuthOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV !== "production",
   pages: {
-    signIn: "/login", //Dẫn đến trang login custom
-    // error: "/auth/error", // Custom error page
+    signIn: "/login", 
   },
   session: {
     strategy: "jwt",
@@ -84,6 +89,14 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
+      const decoded = decode(token.accessToken || "") as DecodedToken | null;
+
+      if (decoded && decoded.exp * 1000 < Date.now()) {
+      console.log("Access token expired, refreshing...");
+      return await refreshAccessToken(token);
+  }
+      
+
       return token;
     },
 
@@ -102,6 +115,36 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
+
+// !refresh access token //
+
+export async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    const res = await fetch(`${baseUrl}/api/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken: token.refreshToken }),
+    });
+
+    if (!res.ok) throw new Error("Failed to refresh access token");
+
+    const response = await res.json();
+
+    return {
+      ...token,
+      accessToken: response.data.accessToken,
+      refreshToken: response.data.refreshToken ?? token.refreshToken,
+    };
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
+}
 
 
 declare module "next-auth" {
