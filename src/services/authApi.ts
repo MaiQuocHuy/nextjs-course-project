@@ -39,18 +39,8 @@ export const authApi = createApi({
         };
       },
     }),
-    getUsers: builder.query<User[], void>({
-      query: () => ({
-        url: "/admin/users",
-        method: "GET",
-        credentials: "include", // Include credentials if needed
-      }),
-      transformResponse: (response: { data: User[] }) => {
-        console.log("Response data:", response);
-        return response.data;
-      },
-    }),
+    
   }),
 });
 
-export const { useLogoutMutation, useGetUsersQuery } = authApi;
+export const { useLogoutMutation } = authApi;
