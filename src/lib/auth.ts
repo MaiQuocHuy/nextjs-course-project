@@ -2,7 +2,7 @@ import type { NextAuthOptions, Session, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080";
+const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:8080/api";
 
 interface UserType {
   id: string;
@@ -41,7 +41,7 @@ export const authOptions: NextAuthOptions = {
 
         // Backend authentication - connecting to Spring Boot server
         try {
-          const res = await fetch(`${baseUrl}/api/auth/login`, {
+          const res = await fetch(`${baseUrl}/auth/login`, {
             method: 'POST',
             body: JSON.stringify({
               email: credentials.email,
@@ -113,7 +113,7 @@ export const authOptions: NextAuthOptions = {
 
 export async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    const res = await fetch(`${baseUrl}/api/auth/refresh`, {
+    const res = await fetch(`${baseUrl}/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
