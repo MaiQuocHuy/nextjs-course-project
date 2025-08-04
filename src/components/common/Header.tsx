@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Menu,
   X,
@@ -54,24 +54,32 @@ export function Header() {
   const dispatch = useDispatch();
   const [logout] = useLogoutMutation();
 
+  // Initialize auth state from localStorage on component mount
+  useEffect(() => {
+    const isAuth = localStorage.getItem("isAuthenticated") === "true";
+    const token = localStorage.getItem("accessToken");
+
+    if (isAuth && token) {
+      dispatch(setAuthState(true));
+    }
+  }, [dispatch]);
+
   const handleLogout = async () => {
     try {
-      // !logout
+      // Try the logout API call FIRST while tokens still exist
       try {
         await logout().unwrap();
       } catch (apiError) {}
 
+      localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
 
-      // Update Redux state
       dispatch(setAuthState(false));
 
-      // Navigate to home page last
       router.replace("/");
     } catch (error) {
-      // Fallback: ensure local state is cleared even if everything fails
-
+      localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       dispatch(setAuthState(false));
@@ -81,8 +89,6 @@ export function Header() {
       } catch (signOutError) {
         // Silent fallback
       }
-
-      // Still navigate to home even if logout API failed
       router.replace("/");
     }
   };
