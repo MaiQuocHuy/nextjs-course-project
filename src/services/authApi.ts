@@ -21,11 +21,31 @@ interface User {
   email: string;
 }
 
+interface RegisterUserRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
+interface RegisterUserResponse {
+  data: User;
+  message?: string;
+}
+
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQuery,
   endpoints: (builder) => ({
     // Define your endpoints here
+    registerUser: builder.mutation<RegisterUserResponse, RegisterUserRequest>({
+      query: ({ name, email, password, role }) => ({
+        url: "/auth/register",
+        method: "POST",
+        body: { name, email, password, role },
+      }),
+    }),
+    
     logout: builder.mutation<void, void>({
       query: () => {
         const refreshToken = typeof window !== 'undefined' 
@@ -43,4 +63,4 @@ export const authApi = createApi({
   }),
 });
 
-export const { useLogoutMutation } = authApi;
+export const { useRegisterUserMutation, useLogoutMutation } = authApi;

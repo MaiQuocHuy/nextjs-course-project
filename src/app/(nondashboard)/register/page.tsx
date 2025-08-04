@@ -22,6 +22,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2, Upload, X, CheckCircle, XCircle } from "lucide-react";
+import { useRegisterUserMutation } from "@/services/authApi";
+
+type RegistrationFormData = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: "STUDENT" | "INSTRUCTOR";
+  briefIntroduction?: string;
+  files?: File[];
+};
 
 // Zod schema for form validation
 const registrationSchema = z
@@ -34,7 +45,7 @@ const registrationSchema = z
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[0-9]/, "Password must contain at least one number"),
     confirmPassword: z.string(),
-    userType: z.enum(["student", "instructor"]),
+    role: z.enum(["STUDENT", "INSTRUCTOR"]),
     briefIntroduction: z.string().optional(),
     files: z.any().optional(),
   })
@@ -44,7 +55,7 @@ const registrationSchema = z
   })
   .refine(
     (data) => {
-      if (data.userType === "instructor") {
+      if (data.role === "INSTRUCTOR") {
         return data.briefIntroduction && data.briefIntroduction.trim().length > 0;
       }
       return true;
@@ -55,22 +66,16 @@ const registrationSchema = z
     }
   );
 
-type RegistrationFormData = {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  userType: "student" | "instructor";
-  briefIntroduction?: string;
-  files?: File[];
-};
-
 export default function RegisterPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failure">("success");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [modalMessage, setModalMessage] = useState("");
+
+  // RTK Query mutation hook
+  const [registerUser] = useRegisterUserMutation();
 
   const {
     register,
@@ -82,11 +87,11 @@ export default function RegisterPage() {
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-      userType: "student",
+      role: "STUDENT",
     },
   });
 
-  const userType = watch("userType");
+  const role = watch("role");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -103,15 +108,42 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegistrationFormData) => {
     setIsSubmitting(true);
 
-    // Simulate API call with random success/failure
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // Convert role to uppercase to match backend expectations
+      const role = data.role.toUpperCase();
 
-    // Mock 80% success rate
-    const isSuccess = Math.random() > 0.2;
+      const result = await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: role, // "STUDENT" or "INSTRUCTOR"
+      }).unwrap();
 
-    setModalType(isSuccess ? "success" : "failure");
-    setShowModal(true);
-    setIsSubmitting(false);
+      // console.log("Registration successful:", result);
+      setModalType("success");
+      setModalMessage(
+        "Your account has been created successfully. You will be redirected to the login page."
+      );
+      setShowModal(true);
+    } catch (error: any) {
+      // console.error("Registration failed:", error);
+      setModalType("failure");
+
+      // Handle different error types
+      if (error?.data?.message) {
+        setModalMessage(error.data.message);
+      } else if (error?.status === 409) {
+        setModalMessage("An account with this email already exists.");
+      } else if (error?.status === 400) {
+        setModalMessage("Please check your information and try again.");
+      } else {
+        setModalMessage("There was an error creating your account. Please try again later.");
+      }
+
+      setShowModal(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleModalClose = () => {
@@ -199,28 +231,28 @@ export default function RegisterPage() {
             <div className="space-y-3">
               <Label>I am a *</Label>
               <RadioGroup
-                value={userType}
-                onValueChange={(value) => setValue("userType", value as "student" | "instructor")}
+                value={role}
+                onValueChange={(value) => setValue("role", value as "STUDENT" | "INSTRUCTOR")}
                 className="flex flex-col space-y-2"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="student" id="student" className="border-gray-900" />
+                  <RadioGroupItem value="STUDENT" id="student" className="border-gray-900" />
                   <Label htmlFor="student" className="cursor-pointer">
                     Student
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="instructor" id="instructor" className="border-gray-900" />
+                  <RadioGroupItem value="INSTRUCTOR" id="instructor" className="border-gray-900" />
                   <Label htmlFor="instructor" className="cursor-pointer">
                     Instructor
                   </Label>
                 </div>
               </RadioGroup>
-              {errors.userType && <p className="text-sm text-red-500">{errors.userType.message}</p>}
+              {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
             </div>
 
             {/* Conditional Fields for Instructor */}
-            {userType === "instructor" && (
+            {role === "INSTRUCTOR" && (
               <div className="space-y-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <h3 className="text-lg font-semibold text-blue-900">Instructor Information</h3>
 
@@ -348,11 +380,7 @@ export default function RegisterPage() {
                 </>
               )}
             </DialogTitle>
-            <DialogDescription>
-              {modalType === "success"
-                ? "Your account has been created successfully. You will be redirected to the login page."
-                : "There was an error creating your account. Please try again later."}
-            </DialogDescription>
+            <DialogDescription>{modalMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={handleModalClose} className="w-full">
