@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { authApi } from "@/services/authApi";
 import { coursesApi } from "@/services/coursesApi";
-import { studentApi } from "./slices/student/studentApi";
+import { studentApi } from "../services/student/studentApi";
 import { authSlice } from "./slices/auth/authSlice";
 
 export const makeStore = () => {
