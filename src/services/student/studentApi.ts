@@ -5,9 +5,8 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
   DashboardData,
-  Course,
 } from "@/types/student";
-import { baseQueryWithReauth } from "@/services/baseQueryWithReauth";
+import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
