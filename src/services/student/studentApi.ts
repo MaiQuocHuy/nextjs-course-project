@@ -5,6 +5,7 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
   DashboardData,
+  Course,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
