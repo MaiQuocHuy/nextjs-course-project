@@ -101,7 +101,7 @@ export const coursesApi = createApi({
     
     // Default values
     params.append('page', (filters.page || 0).toString());
-    params.append('size', (filters.size || 12).toString());
+    params.append('size', (filters.size || 15).toString());
     
     // Optional filters - chỉ thêm khi có giá trị thực sự
     if (filters.search?.trim()) {
