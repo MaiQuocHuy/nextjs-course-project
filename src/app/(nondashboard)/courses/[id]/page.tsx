@@ -19,7 +19,6 @@ export default function CourseDetailPage({
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
 
-  // Unwrap params Promise using React.use()
   const { id } = use(params);
 
   const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id);
@@ -30,7 +29,7 @@ export default function CourseDetailPage({
       // Simulate enrollment API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setIsEnrolled(true);
-      // In real app, this would make an API call to enroll the user
+      // TODO: Make an API call to enroll the user
       console.log("Enrolling in course:", id);
     } catch (error) {
       console.error("Enrollment failed:", error);
