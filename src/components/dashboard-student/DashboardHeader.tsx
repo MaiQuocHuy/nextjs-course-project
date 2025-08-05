@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MobileSidebar } from "./Sidebar";
-import { useGetDashboardDataQuery } from "@/store/slices/student/studentApi";
+import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
 import { LoadingError } from "./ui";
 
