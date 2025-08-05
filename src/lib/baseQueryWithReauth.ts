@@ -1,18 +1,19 @@
 
 import { fetchBaseQuery, FetchArgs, BaseQueryFn, FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { signOut } from "next-auth/react";
+import { pendingRequests, processPendingRequests } from "@/utils/refreshToken/queueRequests";
+import { refreshToken, handleAuthFailure } from "@/utils/refreshToken/resetToken";
 
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
-let pendingRequests: Array<{ 
-  resolve: (value: any) => void; 
-  reject: (error: any) => void; 
-  args: string | FetchArgs; 
-  api: any; 
-  extraOptions: any; 
-}> = [];
+// let pendingRequests: Array<{ 
+//   resolve: (value: any) => void; 
+//   reject: (error: any) => void; 
+//   args: string | FetchArgs; 
+//   api: any; 
+//   extraOptions: any; 
+// }> = [];
 
-const baseQuery = fetchBaseQuery({
+export const baseQuery = fetchBaseQuery({
   baseUrl: (`${process.env.NEXT_PUBLIC_API_BACKEND_URL}`),
   prepareHeaders: async (headers) => {
     // Ensure we're in browser environment
@@ -29,77 +30,6 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
-
-const refreshToken = async (): Promise<boolean> => {
-  if (typeof window === 'undefined') return false;
-  
-  try {
-    const refreshToken = localStorage.getItem("refreshToken");
-    
-    if (!refreshToken) {
-      return false;
-    }
-
-    const refreshUrl = `${process.env.NEXT_PUBLIC_API_BACKEND_URL}/api/auth/refresh`;
-    const refreshRes = await fetch(refreshUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (refreshRes.ok) {
-      const data = await refreshRes.json();
-      
-      localStorage.setItem("accessToken", data.data.accessToken);
-      if (data.data.refreshToken) {
-        localStorage.setItem("refreshToken", data.data.refreshToken);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  } catch (error) {
-    return false;
-  }
-};
-
-const handleAuthFailure = async () => {
-  // Check if we actually have tokens before attempting signOut
-  const hasAccessToken = localStorage.getItem("accessToken");
-  const hasRefreshToken = localStorage.getItem("refreshToken");
-  
-  // Clear tokens first
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("isAuthenticated");
-  
-  // Only call signOut if we had tokens (to prevent loops with already signed out users)
-  if (hasAccessToken || hasRefreshToken) {
-    try {
-      await signOut({ redirect: false });
-    } catch (error) {
-      console.error("Error during signOut:", error);
-    }
-  }
-};
-
-const processPendingRequests = async (refreshSuccess: boolean) => {
-  const requests = [...pendingRequests];
-  pendingRequests = [];
-  
-  for (const request of requests) {
-    try {
-      if (refreshSuccess) {
-        const result = await baseQuery(request.args, request.api, { ...request.extraOptions, isRetry: true });
-        request.resolve(result);
-      } else {
-        request.resolve({ error: { status: 401, data: "Token refresh failed" } });
-      }
-    } catch (error) {
-      request.reject(error);
-    }
-  }
-};
 
 export const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
@@ -165,3 +95,4 @@ export const baseQueryWithReauth: BaseQueryFn<
 
   return result;
 };
+

@@ -26,14 +26,14 @@ import {
 import { SearchBar } from "@/components/common/SearchBar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { set } from "zod";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { sign } from "crypto";
 import { signOut } from "next-auth/react";
 import { setAuthState } from "@/store/slices/auth/authSlice";
-// import React from "react";
+import { useLogoutMutation } from "@/services/authApi";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -47,28 +47,44 @@ export function Header() {
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  // const isLoggedIn = false; // Replace with actual auth state
-  const userName = "John Doe"; // Replace with actual user data
-  //const [isLoggedIn, setIsLoggedIn] = useState(isLogin); // Example state for login status
+  const router = useRouter();
+
+  const userName = "John Doe";
 
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    const isAuth = localStorage.getItem("isAuthenticated") === "true";
-    const token = localStorage.getItem("accessToken");
-
-    if (isAuth && token) {
-      dispatch(setAuthState(true));
-    }
-  }, []);
+  const [logout] = useLogoutMutation();
 
   const handleLogout = async () => {
-    // Handle logout logic here
-    console.log("Logging out...");
-    dispatch(setAuthState(false));
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("accessToken");
-    await signOut({ redirect: false }); // Dispatch logout action if using Redux
+    try {
+      // !logout
+      try {
+        await logout().unwrap();
+      } catch (apiError) {}
+
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      // Update Redux state
+      dispatch(setAuthState(false));
+
+      // Navigate to home page last
+      router.replace("/");
+    } catch (error) {
+      // Fallback: ensure local state is cleared even if everything fails
+
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      dispatch(setAuthState(false));
+
+      try {
+        await signOut({ redirect: false });
+      } catch (signOutError) {
+        // Silent fallback
+      }
+
+      // Still navigate to home even if logout API failed
+      router.replace("/");
+    }
   };
 
   const isActiveLink = (href: string) => {

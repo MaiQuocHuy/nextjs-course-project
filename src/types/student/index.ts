@@ -104,3 +104,8 @@ export interface ActivityFeedResponse {
     last: boolean;
   };
 }
+
+export interface DashboardData {
+  stats: CourseStats;
+  activities: ActivityFeedResponse;
+}

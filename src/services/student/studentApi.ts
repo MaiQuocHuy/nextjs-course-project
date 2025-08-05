@@ -4,8 +4,10 @@ import type {
   CourseStats,
   PaginatedCourses,
   ActivityFeedResponse,
+  DashboardData,
+  Course,
 } from "@/types/student";
-import { baseQueryWithReauth } from "@/services/baseQueryWithReauth";
+import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
@@ -217,6 +219,74 @@ export const studentApi = createApi({
         }
       },
     }),
+    // Combined hook to get course with sections for learning page
+    getCourseWithSections: builder.query<
+      { course: Course; sections: CourseSections; progress: number },
+      string
+    >({
+      async queryFn(courseId, _queryApi, _extraOptions, fetchWithBQ) {
+        try {
+          // Fetch enrolled courses to get course info
+          const coursesResult = await fetchWithBQ({
+            url: "/student/courses",
+            method: "GET",
+          });
+
+          if (coursesResult.error) return { error: coursesResult.error };
+
+          const coursesData = (coursesResult.data as any)?.data;
+          const course = coursesData?.content?.find(
+            (c: any) => c.courseId === courseId
+          );
+
+          if (!course) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: "Course not found",
+                data: "Course not found",
+              },
+            };
+          }
+
+          // Fetch course sections
+          const sectionsResult = await fetchWithBQ({
+            url: `/student/courses/${courseId}`,
+            method: "GET",
+          });
+
+          if (sectionsResult.error) return { error: sectionsResult.error };
+
+          const sections = (sectionsResult.data as any)?.data || [];
+
+          // Calculate progress based on completed lessons
+          let completedLessons = 0;
+          let totalLessons = 0;
+
+          sections.forEach((section: any) => {
+            if (section.lessons && Array.isArray(section.lessons)) {
+              totalLessons += section.lessons.length;
+              completedLessons += section.lessons.filter(
+                (lesson: any) => lesson.isCompleted
+              ).length;
+            }
+          });
+
+          const progress =
+            totalLessons > 0 ? completedLessons / totalLessons : 0;
+
+          return {
+            data: {
+              course,
+              sections,
+              progress,
+            },
+          };
+        } catch (error) {
+          return { error: { status: "FETCH_ERROR", error: String(error) } };
+        }
+      },
+    }),
   }),
 });
 
@@ -224,4 +294,5 @@ export const {
   useGetEnrolledCoursesQuery,
   useGetDashboardDataQuery,
   useGetCourseDetailsQuery,
+  useGetCourseWithSectionsQuery,
 } = studentApi;

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
-import { useGetDashboardDataQuery } from "@/store/slices/student/studentApi";
+import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
 import type { ActivityType } from "@/types/student";
 
