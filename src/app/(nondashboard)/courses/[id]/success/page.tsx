@@ -12,12 +12,13 @@ import {
   Clock,
   BookOpen,
   ArrowRight,
-  Mail,
-  CreditCard,
-  Calendar,
+  Download,
   Star,
   Users,
   PlayCircle,
+  Mail,
+  CreditCard,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,8 @@ export default function PaymentSuccessPage({
     refetchOnMountOrArgChange: true,
   });
 
+  // const course = courseResponse?.data;
+
   // Handle missing session ID
   useEffect(() => {
     if (mounted && !sessionId) {
@@ -84,22 +87,11 @@ export default function PaymentSuccessPage({
     toast.info("Checking payment status...");
   };
 
-  // Format date function
-  const formatPaymentDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   // Loading state
   if (!mounted || isPaymentLoading || isCourseLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:from-green-950/20 dark:via-blue-950/20 dark:to-purple-950/20 flex items-center justify-center">
-        <Card className="w-full max-w-2xl mx-4 shadow-xl">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 flex items-center justify-center">
+        <Card className="w-full max-w-2xl mx-4">
           <CardContent className="p-8">
             <div className="flex flex-col items-center space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -118,27 +110,49 @@ export default function PaymentSuccessPage({
     );
   }
 
-  // Error state
-  if (paymentError || courseError || !paymentData || !course) {
+  // Payment failed or cancelled
+  if (
+    !paymentData ||
+    paymentData.status === "FAILED" ||
+    paymentData.status === "CANCELLED"
+  ) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 flex items-center justify-center">
-        <Card className="w-full max-w-2xl mx-4 shadow-xl">
+        <Card className="w-full max-w-2xl mx-4">
           <CardContent className="p-8">
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col items-center space-y-6 text-center">
               <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-red-600" />
+                <div className="w-8 h-8 text-red-600 dark:text-red-400">✕</div>
               </div>
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-red-600">
-                  Payment Verification Failed
-                </h3>
+
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  Payment Failed
+                </h1>
                 <p className="text-muted-foreground">
-                  We couldn&apos;t verify your payment. Please try again.
+                  {paymentData?.status === "CANCELLED"
+                    ? "Payment was cancelled"
+                    : "There was an issue processing your payment"}
                 </p>
               </div>
-              <Button onClick={handleRetryPaymentCheck} variant="outline">
-                Retry Verification
-              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <Button
+                  onClick={handleRetryPaymentCheck}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Check Again
+                </Button>
+                <Button
+                  onClick={() => router.push(`/courses/${courseId}`)}
+                  className="flex-1"
+                >
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -146,6 +160,62 @@ export default function PaymentSuccessPage({
     );
   }
 
+  // Payment pending
+  if (paymentData.status === "PENDING") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 flex items-center justify-center">
+        <Card className="w-full max-w-2xl mx-4">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center space-y-6 text-center">
+              <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
+                <Clock className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+              </div>
+
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  Payment Processing
+                </h1>
+                <p className="text-muted-foreground">
+                  Your payment is being processed. This may take a few moments.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <Button
+                  onClick={handleRetryPaymentCheck}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Check Status
+                </Button>
+                <Button
+                  onClick={() => router.push("/dashboard/courses")}
+                  className="flex-1"
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  My Courses
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Format date function
+  const formatPaymentDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Payment successful
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:from-green-950/20 dark:via-blue-950/20 dark:to-purple-950/20">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -160,8 +230,8 @@ export default function PaymentSuccessPage({
               🎉 Thank you! Your payment was successful.
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              You have successfully enrolled in the course &quot;{course.title}
-              &quot;
+              You have successfully enrolled in the course &quot;
+              {course?.title || "Loading..."}&quot;
             </p>
           </div>
 
@@ -254,7 +324,7 @@ export default function PaymentSuccessPage({
                 {/* Course Image */}
                 <div className="md:w-1/3">
                   <div className="relative aspect-video rounded-lg overflow-hidden shadow-lg">
-                    {course.thumbnailUrl ? (
+                    {course?.thumbnailUrl ? (
                       <Image
                         src={course.thumbnailUrl}
                         alt={course.title}
@@ -273,10 +343,10 @@ export default function PaymentSuccessPage({
                 <div className="md:w-2/3 space-y-4">
                   <div>
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                      {course.title}
+                      {course?.title || "Course Title"}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300 line-clamp-2">
-                      {course.description}
+                      {course?.description || "Course description loading..."}
                     </p>
                   </div>
 

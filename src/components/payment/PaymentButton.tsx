@@ -71,15 +71,6 @@ export function PaymentButton({
       }).unwrap();
 
       console.log("Checkout session created:", response);
-      console.log("Response keys:", Object.keys(response));
-      console.log("Session ID:", response.sessionId);
-      console.log("Session URL:", response.sessionUrl);
-
-      // Check if sessionId exists
-      if (!response.sessionId) {
-        console.error("No sessionId in response:", response);
-        throw new Error("No session ID received from server");
-      }
 
       // Get Stripe instance
       const stripe = await getStripe();
@@ -87,8 +78,6 @@ export function PaymentButton({
       if (!stripe) {
         throw new Error("Stripe failed to initialize");
       }
-
-      console.log("Redirecting to Stripe with sessionId:", response.sessionId);
 
       // Redirect to Stripe Checkout
       const { error } = await stripe.redirectToCheckout({

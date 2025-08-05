@@ -1,5 +1,5 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import { baseQueryWithReauth } from "./baseQueryWithReauth";
+import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export interface CreateCheckoutSessionRequest {
   courseId: string;
