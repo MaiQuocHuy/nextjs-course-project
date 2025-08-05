@@ -12,12 +12,14 @@ import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 export const studentApi = createApi({
   reducerPath: "studentApi",
   baseQuery: baseQueryWithReauth,
+  tagTypes: ["Course", "Lesson"],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
         url: "/student/courses",
         method: "GET",
       }),
+      providesTags: ["Course"],
       transformResponse: (response: { data: PaginatedCourses }) => {
         return response.data;
       },
@@ -28,6 +30,10 @@ export const studentApi = createApi({
         url: `/student/courses/${courseId}`,
         method: "GET",
       }),
+      providesTags: (result, error, courseId) => [
+        { type: "Course", id: courseId },
+        "Lesson",
+      ],
       transformResponse: (response: { data: CourseSections }) => {
         return response.data;
       },
@@ -286,6 +292,29 @@ export const studentApi = createApi({
           return { error: { status: "FETCH_ERROR", error: String(error) } };
         }
       },
+      providesTags: (result, error, courseId) => [
+        { type: "Course", id: courseId },
+        "Lesson",
+      ],
+    }),
+
+    // Complete a lesson
+    completeLesson: builder.mutation<
+      { success: boolean; message: string },
+      { sectionId: string; lessonId: string; courseId: string }
+    >({
+      query: ({ sectionId, lessonId }) => ({
+        url: `/student/sections/${sectionId}/lessons/${lessonId}/complete`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, { courseId }) => [
+        { type: "Course", id: courseId },
+        "Lesson",
+        "Course", // Invalidate all courses to update progress
+      ],
+      transformResponse: (response: { success: boolean; message: string }) => {
+        return response;
+      },
     }),
   }),
 });
@@ -295,4 +324,5 @@ export const {
   useGetDashboardDataQuery,
   useGetCourseDetailsQuery,
   useGetCourseWithSectionsQuery,
+  useCompleteLessonMutation,
 } = studentApi;

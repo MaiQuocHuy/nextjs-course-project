@@ -4,14 +4,17 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Play, FileText, HelpCircle } from "lucide-react";
+import { CheckCircle, Play, FileText, HelpCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCompleteLessonMutation } from "@/services/student/studentApi";
 import type { Lesson, Section, QuizQuestion } from "@/types/student";
 
 interface LearningContentProps {
   currentLesson?: Lesson;
   section?: Section;
+  courseId: string;
   onMarkComplete?: (lessonId: string) => void;
+  onRefetchCourse?: () => void;
 }
 
 interface QuizState {
@@ -20,16 +23,38 @@ interface QuizState {
   showResults: boolean;
 }
 
-const VideoContent = ({ lesson }: { lesson: Lesson }) => {
+const VideoContent = ({
+  lesson,
+  onAutoComplete,
+}: {
+  lesson: Lesson;
+  onAutoComplete?: () => void;
+}) => {
   if (!lesson.video) return null;
+
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const { currentTime, duration } = video;
+
+    // Auto complete when user watches >= 90% of video
+    if (
+      duration > 0 &&
+      currentTime >= duration * 0.9 &&
+      !lesson.isCompleted &&
+      onAutoComplete
+    ) {
+      onAutoComplete();
+    }
+  };
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      <div className="aspect-video bg-black rounded-lg overflow-hidden ">
+      <div className="aspect-video bg-black rounded-lg overflow-hidden">
         <video
           controls
           className="w-full h-full"
           poster="/placeholder-video.jpg"
+          onTimeUpdate={handleTimeUpdate}
         >
           <source src={lesson.video.url} type="video/mp4" />
           Your browser does not support the video tag.
@@ -38,6 +63,12 @@ const VideoContent = ({ lesson }: { lesson: Lesson }) => {
       <div className="text-xs sm:text-sm text-gray-600">
         Duration: {Math.floor(lesson.video.duration / 60)} minutes
       </div>
+      {lesson.isCompleted && (
+        <div className="flex items-center gap-2 text-green-600 text-xs sm:text-sm">
+          <CheckCircle className="h-4 w-4" />
+          <span>Video completed!</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -228,8 +259,13 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
 export function LearningContent({
   currentLesson,
   section,
+  courseId,
   onMarkComplete,
+  onRefetchCourse,
 }: LearningContentProps) {
+  const [completeLesson, { isLoading: isCompleting }] =
+    useCompleteLessonMutation();
+
   if (!currentLesson || !section) {
     return (
       <div className="flex items-center justify-center h-full p-4">
@@ -248,9 +284,50 @@ export function LearningContent({
     );
   }
 
-  const handleMarkComplete = () => {
-    if (onMarkComplete) {
-      onMarkComplete(currentLesson.id);
+  const handleMarkComplete = async () => {
+    if (!section?.id || isCompleting || currentLesson.isCompleted) return;
+
+    try {
+      await completeLesson({
+        sectionId: section.id,
+        lessonId: currentLesson.id,
+        courseId,
+      }).unwrap();
+
+      // Call parent callback if provided
+      if (onMarkComplete) {
+        onMarkComplete(currentLesson.id);
+      }
+
+      // Refetch course data to update progress and UI
+      if (onRefetchCourse) {
+        onRefetchCourse();
+      }
+    } catch (error) {
+      console.error("Failed to mark lesson as complete:", error);
+    }
+  };
+
+  const handleAutoComplete = async () => {
+    // Same logic as manual complete but for auto-completion
+    if (!section?.id || isCompleting || currentLesson.isCompleted) return;
+
+    try {
+      await completeLesson({
+        sectionId: section.id,
+        lessonId: currentLesson.id,
+        courseId,
+      }).unwrap();
+
+      if (onMarkComplete) {
+        onMarkComplete(currentLesson.id);
+      }
+
+      if (onRefetchCourse) {
+        onRefetchCourse();
+      }
+    } catch (error) {
+      console.error("Failed to auto-complete lesson:", error);
     }
   };
 
@@ -268,6 +345,15 @@ export function LearningContent({
   };
 
   const getLessonTypeBadge = () => {
+    if (currentLesson.isCompleted) {
+      return (
+        <Badge variant="secondary" className="bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Completed
+        </Badge>
+      );
+    }
+
     switch (currentLesson.type) {
       case "VIDEO":
         return (
@@ -326,7 +412,10 @@ export function LearningContent({
         {/* Content */}
         <div className="flex-1 p-3 sm:p-4 lg:p-6">
           {currentLesson.type === "VIDEO" && (
-            <VideoContent lesson={currentLesson} />
+            <VideoContent
+              lesson={currentLesson}
+              onAutoComplete={handleAutoComplete}
+            />
           )}
           {currentLesson.type === "QUIZ" && (
             <QuizContent lesson={currentLesson} />
@@ -340,10 +429,15 @@ export function LearningContent({
         <div className="border-t border-gray-200 p-3 sm:p-4 lg:p-6 bg-white">
           <Button
             onClick={handleMarkComplete}
-            disabled={currentLesson.isCompleted}
+            disabled={currentLesson.isCompleted || isCompleting}
             className="w-full h-10 sm:h-11"
           >
-            {currentLesson.isCompleted ? (
+            {isCompleting ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm sm:text-base">Completing...</span>
+              </div>
+            ) : currentLesson.isCompleted ? (
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm sm:text-base">Completed</span>

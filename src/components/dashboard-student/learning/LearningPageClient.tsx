@@ -64,9 +64,13 @@ export default function LearningPageClient({
   };
 
   const handleMarkComplete = (lessonId: string) => {
-    // In a real app, this would make an API call to mark the lesson as complete
-    console.log("Marking lesson as complete:", lessonId);
-    // You would typically refetch the data or update the cache here
+    // Callback from LearningContent - just log for now
+    // The actual API call is handled in LearningContent component
+    console.log("Lesson marked as complete:", lessonId);
+  };
+
+  const handleRefetchCourse = () => {
+    // Refetch course data to update progress and sidebar
     refetch();
   };
 
@@ -194,7 +198,9 @@ export default function LearningPageClient({
           <LearningContent
             currentLesson={currentLesson}
             section={currentSection}
+            courseId={courseId}
             onMarkComplete={handleMarkComplete}
+            onRefetchCourse={handleRefetchCourse}
           />
         </div>
       </div>
