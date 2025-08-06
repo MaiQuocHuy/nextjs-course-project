@@ -66,7 +66,7 @@ export function Header() {
     }
 
     dispatch(setHydrated());
-  }, []);
+  }, [dispatch]);
 
   const handleLogout = async () => {
     dispatch(setLoading(true));
