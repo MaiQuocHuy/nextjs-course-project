@@ -9,7 +9,7 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Dashboard Stats */}
+        {/* Dashboard Stats - Uses getDashboardData for optimized data fetching */}
         <DashboardStats />
 
         {/* Main Content Grid */}
@@ -19,7 +19,7 @@ export default function DashboardPage() {
             <EnrolledCoursesSummary />
           </div>
 
-          {/* Activity Feed - Takes up 1 column on large screens */}
+          {/* Activity Feed - Uses getDashboardData for optimized data fetching */}
           <div className="lg:col-span-1">
             <ActivityFeed />
           </div>

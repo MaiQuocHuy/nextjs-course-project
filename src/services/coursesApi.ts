@@ -33,6 +33,8 @@ const baseQuery = fetchBaseQuery({
 
 // Interfaces cho Course API
 export interface Course {
+  rating: any;
+  updatedAt: string;
   id: string;
   title: string;
   description: string;
@@ -42,6 +44,7 @@ export interface Course {
   enrollCount: number;
   averageRating: number;
   sectionCount: number;
+  sections?: Section[];
   category: {
     id: string;
     name: string;
@@ -52,7 +55,6 @@ export interface Course {
     avatar: string;
   };
 }
-
 
 
 export interface CoursesFilter {
@@ -73,6 +75,20 @@ export interface Category {
   courseCount: number;
 }
 
+export interface Section {
+  id: string;
+  title: string;
+  lessons: Lesson[];
+}
+
+export interface Lesson {
+  id: string;
+  title: string;
+  type: "VIDEO" | "TEXT" | "DISCUSSION" | "PROJECT" | "QUIZ";
+  duration?: number;
+  isPreview?: boolean;
+}
+
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
   baseQuery: baseQuery,
@@ -85,7 +101,7 @@ export const coursesApi = createApi({
     
     // Default values
     params.append('page', (filters.page || 0).toString());
-    params.append('size', (filters.size || 12).toString());
+    params.append('size', (filters.size || 15).toString());
     
     // Optional filters - chỉ thêm khi có giá trị thực sự
     if (filters.search?.trim()) {

@@ -1,33 +1,22 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+<<<<<<< HEAD
 // import { getSession } from "next-auth/react";
+=======
+
+>>>>>>> bec99807c15d241ec355835e9b6f0398396fba24
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  // prepareHeaders: (headers, { getState }) => {
-  //   headers.set(
-  //     "Authorization",
-  //     `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSIsImlhdCI6MTc1Mzk1MDIxOCwiZXhwIjoxNzUzOTUzODE4fQ.V5nYTCx77oNaEEKBoXMbEJWvj2e9b8tWvUTWdbNaprqRz6IMxOFKf2NZMkZrLIQL`
-  //   );
-
-  //   return headers;
-  // },
+  prepareHeaders: async (headers, api) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    } 
+    return headers;
+  },
 });
-// const baseQueryWithSession = async (args:any, api:any, extraOptions:any) => {
-//   const session = await getSession();
-//   const token = session?.user?.accessToken; // lấy token từ session nè
-
-//   const baseQuery = fetchBaseQuery({
-//     baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-//     prepareHeaders: (headers) => {
-//       if (token) {
-//         headers.set("Authorization", `Bearer ${token}`); // gắn token vào
-//       }
-//       return headers;
-//     },
-//   });
-
-//   return baseQuery(args, api, extraOptions); // gọi tiếp API
-// };
 
 interface User {
   id: number;
@@ -35,30 +24,83 @@ interface User {
   email: string;
 }
 
+interface RegisterStudentRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+interface RegisterInstructorRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  portfolioUrl: string;
+  certificateFile: File ;
+  cvFile: File ;
+  supportingFile?: File;
+}
+
+interface RegisterUserResponse {
+  data: User;
+  message?: string;
+}
+
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQuery,
   endpoints: (builder) => ({
     // Define your endpoints here
-    login: builder.mutation({
-      query: ({ email, password }: { email: string; password: string }) => ({
-        url: "/auth/login",
-        method: "POST",
-        body: { email, password },
-      }),
-    }),
-    getUsers: builder.query<User[], void>({
-      query: () => ({
-        url: "/admin/users",
-        method: "GET",
-        credentials: "include", // Include credentials if needed
-      }),
-      transformResponse: (response: { data: User[] }) => {
-        console.log("Response data:", response);
-        return response.data;
+
+    //* Register for Instructor
+    registerInstructor: builder.mutation<RegisterUserResponse, RegisterInstructorRequest>({
+      query: ({ name, email, password, role, portfolioUrl, certificateFile, cvFile, supportingFile }) => {
+        const formData = new FormData();
+        
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('password', password);
+        formData.append('role', role);
+        formData.append('portfolio', portfolioUrl); 
+        formData.append('certificate', certificateFile);
+        formData.append('cv', cvFile);
+
+        if (supportingFile) {
+          formData.append('other', supportingFile);
+        }
+        
+        return {
+          url: "/auth/register-application",
+          method: "POST",
+          body: formData,
+        };
       },
     }),
+
+    //* Register for Student
+    registerStudent: builder.mutation<RegisterUserResponse, RegisterStudentRequest>({
+      query: ({ name, email, password, role }) => ({
+        url: "/auth/register",
+        method: "POST",
+        body: { name, email, password, role },
+      }),
+    }),
+    
+    logout: builder.mutation<void, void>({
+      query: () => {
+        const refreshToken = typeof window !== 'undefined' 
+          ? localStorage.getItem("refreshToken") 
+          : null;
+        
+        return {
+          url: "/auth/logout",
+          method: "POST",
+          body: refreshToken ? { refreshToken } : {},
+        };
+      },
+    }),
+    
   }),
 });
 
-export const { useLoginMutation, useGetUsersQuery } = authApi;
+export const { useRegisterStudentMutation, useRegisterInstructorMutation, useLogoutMutation } = authApi;

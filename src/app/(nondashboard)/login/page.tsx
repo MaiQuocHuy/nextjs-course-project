@@ -38,7 +38,7 @@ const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
+    // .min(8, "Password must be at least 8 characters")
     // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   rememberMe: z.boolean().default(false),
@@ -58,14 +58,14 @@ export default function LoginPage() {
   const [modalMessage, setModalMessage] = useState("");
 
   const router = useRouter();
-  const { status } = useSession();
+  // const { status } = useSession();
   const dispatch = useDispatch();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "charlie@example.com",
-      password: "charlie123",
+      email: "bob@example.com",
+      password: "bob123",
       rememberMe: false,
     },
   });
@@ -83,21 +83,24 @@ export default function LoginPage() {
       if (result && result.ok) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
+        localStorage.setItem("isAuthenticated", "true");
 
         setTimeout(() => {
-          router.push("/");
-        }, 1000);
+          router.replace("/");
+        }, 500);
         dispatch(setAuthState(true));
         const session = await getSession();
         const accessToken = session?.user?.accessToken;
+        const refreshToken = session?.user?.refreshToken;
 
-        if (accessToken) {
+        if (accessToken && refreshToken) {
           localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("isAuthenticated", "true");
+          localStorage.setItem("refreshToken", refreshToken);
         } else {
           setModalMessage(result?.error || "Login failed. Please check your credentials.");
           setShowErrorModal(true);
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
           dispatch(setAuthState(false));
         }
       }

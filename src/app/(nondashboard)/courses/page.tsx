@@ -116,8 +116,11 @@ export default function CoursesPage() {
     setCurrentPage(1); // Reset về page 1 khi filter thay đổi
   }, []);
 
+  // Debounced search handler
   const handleSearchChange = useCallback((query: string) => {
-    setSearchQuery(query);
+    console.log("Search query changed:", query);
+    setSearchQuery(query); // Set to empty string sẽ trigger full course list
+    setCurrentPage(1); // Reset to first page
   }, []);
 
   // Pagination handlers
@@ -136,6 +139,7 @@ export default function CoursesPage() {
     refetch();
   }, [refetch]);
 
+  // Clear filters handler
   const handleClearFilters = useCallback(() => {
     console.log("CoursesPage: handleClearFilters called");
     setSearchQuery("");

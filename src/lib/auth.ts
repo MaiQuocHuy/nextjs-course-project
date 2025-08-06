@@ -2,7 +2,7 @@ import type { NextAuthOptions, Session, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080";
+const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:8080/api";
 
 interface UserType {
   id: string;
@@ -10,11 +10,15 @@ interface UserType {
   refreshToken: string;
 }
 
+interface DecodedToken {
+  exp: number; // expires at
+  iat: number; // issued at
+}
+
 export const authOptions: NextAuthOptions = {
   debug: true,
   pages: {
-    signIn: "/login", //Dẫn đến trang login custom
-    // error: "/auth/error", // Custom error page
+    signIn: "/login", 
   },
   session: {
     strategy: "jwt",
@@ -37,7 +41,7 @@ export const authOptions: NextAuthOptions = {
 
         // Backend authentication - connecting to Spring Boot server
         try {
-          const res = await fetch(`${baseUrl}/api/auth/login`, {
+          const res = await fetch(`${baseUrl}/auth/login`, {
             method: 'POST',
             body: JSON.stringify({
               email: credentials.email,
@@ -84,6 +88,8 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
+      // Don't auto-refresh here - let baseQueryWithReauth handle it
+      // This prevents loops when getSession() is called
       return token;
     },
 
@@ -102,6 +108,37 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
+
+// !refresh access token //
+
+export async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    const res = await fetch(`${baseUrl}/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken: token.refreshToken }),
+    });
+
+    if (!res.ok) throw new Error("Failed to refresh access token");
+
+    const response = await res.json();
+    console.log("new access token:", response.data.accessToken); 
+
+    return {
+      ...token,
+      accessToken: response.data.accessToken,
+      refreshToken: response.data.refreshToken ?? token.refreshToken,
+    };
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
+}
 
 
 declare module "next-auth" {
