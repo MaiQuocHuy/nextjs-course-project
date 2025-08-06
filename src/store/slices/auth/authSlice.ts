@@ -20,14 +20,14 @@ export const authSlice = createSlice({
       state.isAuthenticated = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
-    state.loading = action.payload;
+      state.loading = action.payload;
     },
     setHydrated: (state) => {
-    state.isHydrated = true;
+      state.isHydrated = true;
     },
     logoutState: (state) => {
-    state.isAuthenticated = false;
-    state.loading = false;
+      state.isAuthenticated = false;
+      state.loading = false;
     }
 }
 });
