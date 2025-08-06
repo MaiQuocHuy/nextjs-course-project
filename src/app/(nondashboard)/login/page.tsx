@@ -30,8 +30,9 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { getSession, useSession } from "next-auth/react";
 import { useRouter } from "next/dist/client/components/navigation";
 import { signIn } from "next-auth/react";
-import { useDispatch } from "react-redux";
-import { setAuthState } from "@/store/slices/auth/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { setAuthState, setLoading } from "@/store/slices/auth/authSlice";
+import { RootState } from "@/store/store";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -52,14 +53,14 @@ type LoginFormValues = {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
   const router = useRouter();
-  // const { status } = useSession();
   const dispatch = useDispatch();
+
+  const isLoading = useSelector((state: RootState) => state.auth.loading);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -71,7 +72,7 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    setIsLoading(true);
+    dispatch(setLoading(true));
 
     try {
       const result = await signIn("credentials", {
@@ -81,34 +82,37 @@ export default function LoginPage() {
       });
 
       if (result && result.ok) {
-        setModalMessage("Login successful!");
-        setShowSuccessModal(true);
-        localStorage.setItem("isAuthenticated", "true");
-
-        setTimeout(() => {
-          router.replace("/");
-        }, 500);
-        dispatch(setAuthState(true));
         const session = await getSession();
+
         const accessToken = session?.user?.accessToken;
         const refreshToken = session?.user?.refreshToken;
 
         if (accessToken && refreshToken) {
           localStorage.setItem("accessToken", accessToken);
           localStorage.setItem("refreshToken", refreshToken);
+
+          dispatch(setAuthState(true));
+
+          setModalMessage("Login successful!");
+          setShowSuccessModal(true);
+
+          setTimeout(() => {
+            router.replace("/");
+          }, 500);
         } else {
+          dispatch(setAuthState(false));
           setModalMessage(result?.error || "Login failed. Please check your credentials.");
           setShowErrorModal(true);
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
-          dispatch(setAuthState(false));
         }
       }
     } catch (error) {
+      dispatch(setAuthState(false));
       setModalMessage("Something went wrong. Please try again.");
       setShowErrorModal(true);
     } finally {
-      setIsLoading(false);
+      dispatch(setLoading(false));
     }
   };
 

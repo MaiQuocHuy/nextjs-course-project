@@ -32,7 +32,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { sign } from "crypto";
 import { signOut } from "next-auth/react";
-import { setAuthState } from "@/store/slices/auth/authSlice";
+import { setAuthState, setHydrated, setLoading, logoutState } from "@/store/slices/auth/authSlice";
 import { useLogoutMutation } from "@/services/authApi";
 
 const navigation = [
@@ -54,43 +54,41 @@ export function Header() {
   const dispatch = useDispatch();
   const [logout] = useLogoutMutation();
 
-  // Initialize auth state from localStorage on component mount
   useEffect(() => {
-    const isAuth = localStorage.getItem("isAuthenticated") === "true";
-    const token = localStorage.getItem("accessToken");
+    // Chỉ hydrate 1 lần
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
 
-    if (isAuth && token) {
+    if (accessToken && refreshToken) {
       dispatch(setAuthState(true));
+    } else {
+      dispatch(setAuthState(false));
     }
-  }, [dispatch]);
+
+    dispatch(setHydrated());
+  }, []);
 
   const handleLogout = async () => {
+    dispatch(setLoading(true));
+
     try {
-      // Try the logout API call FIRST while tokens still exist
-      try {
-        await logout().unwrap();
-      } catch (apiError) {}
-
-      localStorage.removeItem("isAuthenticated");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      dispatch(setAuthState(false));
-
-      router.replace("/");
-    } catch (error) {
-      localStorage.removeItem("isAuthenticated");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      dispatch(setAuthState(false));
-
-      try {
-        await signOut({ redirect: false });
-      } catch (signOutError) {
-        // Silent fallback
-      }
-      router.replace("/");
+      await logout().unwrap();
+    } catch (apiError) {
+      console.warn("Logout API failed (ignored):", apiError);
     }
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    dispatch(logoutState());
+
+    try {
+      await signOut({ redirect: false });
+    } catch (signOutError) {
+      console.warn("NextAuth signOut failed (ignored):", signOutError);
+    }
+
+    router.replace("/");
   };
 
   const isActiveLink = (href: string) => {
