@@ -10,7 +10,7 @@ import TestComponent from "@/components/common/TestComponent";
 const HomePage = () => {
   return (
     <main className="min-h-screen">
-      {/* <TestComponent /> */}
+      <TestComponent />
       <HeroSection />
       <TopCoursesSection />
       <AboutSection />

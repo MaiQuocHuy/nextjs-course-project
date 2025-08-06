@@ -2,14 +2,14 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: (headers, { getState }) => {
-    headers.set(
-      "Authorization",
-      `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSIsImlhdCI6MTc1MzcxMDcxMSwiZXhwIjoxNzUzNzE0MzExfQ.E8KcwjV07UuQh0tXa-y10DUclqX3gzaE94qUZN0kpM-8XKFAQ-CGVMwgrZtBr6_K`
-    );
+  // prepareHeaders: (headers, { getState }) => {
+  //   headers.set(
+  //     "Authorization",
+  //     `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSIsImlhdCI6MTc1MzcxMDcxMSwiZXhwIjoxNzUzNzE0MzExfQ.E8KcwjV07UuQh0tXa-y10DUclqX3gzaE94qUZN0kpM-8XKFAQ-CGVMwgrZtBr6_K`
+  //   );
 
-    return headers;
-  },
+  //   return headers;
+  // },
 });
 
 interface User {
