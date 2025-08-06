@@ -175,13 +175,24 @@ export const videoSchema = z.object({
     .instanceof(File)
     .refine(
       (file) => {
-        const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+        const allowedTypes = [
+          'video/mp4',
+          'video/mpeg',
+          'video/quicktime',
+          'video/x-msvideo', // AVI
+          'video/x-ms-wmv', // WMV
+          'video/webm',
+          'video/ogg',
+        ];
         return allowedTypes.includes(file.type);
       },
-      { message: 'Only MP4, WebM, and OGG video files are allowed' }
+      {
+        message:
+          'Only MP4, MPEG, QuickTime, AVI, WMV, WebM, and OGG video files are allowed',
+      }
     )
-    .refine((file) => file.size <= 500 * 1024 * 1024, {
-      message: 'Video size must not exceed 500MB',
+    .refine((file) => file.size <= 100 * 1024 * 1024, {
+      message: 'Video size must not exceed 100MB',
     }),
 });
 
@@ -198,9 +209,9 @@ export const lessonSchema = z
   .object({
     id: z.string(),
     title: z.string().min(1, 'Lesson title cannot be empty'),
-    order: z.number().min(1),
+    order: z.number().min(0),
     documents: z.array(documentSchema), // Multiple documents
-    type: z.enum(['video', 'quiz']),
+    type: z.enum(['VIDEO', 'QUIZ']).default('VIDEO'),
     questions: z.array(quizQuestionSchema),
     video: videoSchema.optional(),
     quizType: z.enum(['ai', 'upload']).optional(),
@@ -209,10 +220,10 @@ export const lessonSchema = z
   })
   .refine(
     (data) => {
-      if (data.type === 'video') {
+      if (data.type === 'VIDEO') {
         return data.video !== undefined;
       }
-      if (data.type === 'quiz') {
+      if (data.type === 'QUIZ') {
         return data.questions.length > 0;
       }
       return true;
@@ -225,8 +236,20 @@ export const lessonSchema = z
 
 export const sectionSchema = z.object({
   id: z.string(),
-  title: z.string().min(1, 'Section title cannot be empty'),
-  order: z.number().min(1),
+  title: z
+    .string()
+    .min(1, 'Course title is required')
+    .min(3, 'Course title must be at least 5 characters')
+    .max(255, 'Course title must be less than 255 characters')
+    .regex(
+      /^[a-zA-Z0-9\s\-_:()&.,!?]+$/,
+      'Course title contains invalid characters'
+    ),
+  description: z
+    .string()
+    .max(255, 'Description must be less than 255 characters')
+    .optional(),
+  order: z.number().min(0),
   lessons: z
     .array(lessonSchema)
     .min(1, 'Each section must have at least one lesson'),

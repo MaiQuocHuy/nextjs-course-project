@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { InstructorSidebar } from '@/components/instructor/layout/InstructorSidebar';
 import { InstructorHeader } from '@/components/instructor/layout/InstructorHeader';
+import { LoadingOverlay } from '@/components/instructor/loading-overlay';
 
 export default function InstructorLayout({
   children,
@@ -12,12 +13,15 @@ export default function InstructorLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-instructor-bg">
-      <InstructorSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-      <div className="lg:pl-72">
-        <InstructorHeader onMenuClick={() => setSidebarOpen(true)} />
-        <main className="p-6">{children}</main>
+    <>
+      <LoadingOverlay />
+      <div className="min-h-screen bg-instructor-bg">
+        <InstructorSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+        <div className="lg:pl-72">
+          <InstructorHeader onMenuClick={() => setSidebarOpen(true)} />
+          <main className="p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

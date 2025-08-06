@@ -113,10 +113,11 @@ export function DragDropReorder<T extends { id: string; order: number }>({
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, item.id)}
         >
-          <div className="absolute left-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <div className="flex flex-col gap-1">
+          <div className="absolute left-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <div className="flex flex-col items-center gap-1">
               <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
               <div className="flex flex-col gap-1">
+                {/* Move up button */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -127,6 +128,8 @@ export function DragDropReorder<T extends { id: string; order: number }>({
                 >
                   <ChevronUp className="h-3 w-3" />
                 </Button>
+
+                {/* Move down button */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -138,13 +141,15 @@ export function DragDropReorder<T extends { id: string; order: number }>({
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </div>
+
+              {/* Edit order button */}
               <div className="flex items-center gap-1">
                 {editingOrder === item.id ? (
                   <Input
                     type="number"
                     min="1"
                     max={items.length}
-                    defaultValue={item.order}
+                    defaultValue={item.order + 1}
                     className="h-6 w-12 text-xs"
                     onBlur={(e) =>
                       handleOrderChange(
@@ -173,7 +178,7 @@ export function DragDropReorder<T extends { id: string; order: number }>({
                     className="h-6 w-8 p-0 text-xs"
                     onClick={() => setEditingOrder(item.id)}
                   >
-                    {item.order}
+                    {item.order + 1}
                   </Button>
                 )}
               </div>

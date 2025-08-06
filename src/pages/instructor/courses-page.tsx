@@ -40,12 +40,18 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import {
-  Category,
-  Course,
-  getAllCourses,
-  mockCategories,
-} from '@/app/data/courses';
+
+import { Category, getAllCourses, mockCategories } from '@/app/data/courses';
+import { useGetCoursesQuery } from '@/services/instructor/courses-api';
+import { Course } from '@/types';
+import { useGetCategoriesQuery } from '@/services/coursesApi';
+import { useRouter } from 'next/navigation';
+
+const coursesParams = {
+  page: 0,
+  size: 12,
+  sort: 'createdAt,DESC',
+};
 
 export const Courses = () => {
   const initFilterValues = useRef({
@@ -60,35 +66,48 @@ export const Courses = () => {
     },
     date: 'latest',
   });
-  const [courses, setCourses] = useState<Course[]>();
+  const {
+    data: courses,
+    isLoading,
+    isError,
+    error,
+  } = useGetCoursesQuery(coursesParams);
+  const {
+    data: categories,
+    isLoading: isLoadingCategories,
+    isError: isErrorCategories,
+    error: errorCategories,
+  } = useGetCategoriesQuery();
   const [filteredCourses, setFilterdCourses] = useState<Course[]>();
-  const [categories, setCategories] = useState<Category[]>();
+  // const [categories, setCategories] = useState<Category[]>();
   const [filters, setFilters] = useState(initFilterValues.current);
   const [showFilters, setShowFilters] = useState(false);
+  const router = useRouter();
+  console.log(courses);
 
   // Get all courses and categories
+  // useEffect(() => {
+  //   const courses = getAllCourses();
+  //   // Ordering courses by latest date as default
+  //   const orderedCourses = orderCoursesByDate(courses, 'latest');
+  //   setCourses(orderedCourses);
+
+  //   setCategories(mockCategories);
+  // }, []);
+
   useEffect(() => {
-    const courses = getAllCourses();
-    // Ordering courses by latest date as default
-    const orderedCourses = orderCoursesByDate(courses, 'latest');
-    setCourses(orderedCourses);
-
-    setCategories(mockCategories);
-  }, []);
-
-  useEffect(() => {
-    if (courses && courses.length > 0) {
-      setFilterdCourses(courses);
-
+    if (courses && courses.content && courses.content.length > 0) {
+      setFilterdCourses(courses.content);
+      // console.log('Courses data:', courses.content[0].category);
       // Get course that have the most min and max price
-      getPriceRange(courses);
+      getPriceRange(courses.content);
     }
   }, [courses]);
 
   // Handle filters
   useEffect(() => {
-    if (courses && courses.length > 0) {
-      let matchedCourses = [...courses];
+    if (courses && courses.content && courses.content.length > 0) {
+      let matchedCourses = [...courses.content];
 
       // Search
       const searchTerm = filters.searchTerm.trim().toLowerCase();
@@ -113,7 +132,7 @@ export const Courses = () => {
       // Category
       if (filters.category !== 'all') {
         matchedCourses = matchedCourses.filter((course) => {
-          const categories = course.categories.map((category) =>
+          const categories = course.categories.map((category: any) =>
             category.name.toLowerCase()
           );
           return categories.includes(filters.category);
@@ -163,14 +182,14 @@ export const Courses = () => {
     if (value === 'latest') {
       return course.sort(
         (a, b) =>
-          new Date(b.created_at.split('T')[0]).getTime() -
-          new Date(a.created_at.split('T')[0]).getTime()
+          new Date(b.createdAt.split('T')[0]).getTime() -
+          new Date(a.createdAt.split('T')[0]).getTime()
       );
     } else {
       return course.sort(
         (a, b) =>
-          new Date(a.created_at.split('T')[0]).getTime() -
-          new Date(b.created_at.split('T')[0]).getTime()
+          new Date(a.createdAt.split('T')[0]).getTime() -
+          new Date(b.createdAt.split('T')[0]).getTime()
       );
     }
   };
@@ -478,117 +497,146 @@ export const Courses = () => {
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredCourses.map((course) => (
-              <Card
-                key={course.id}
-                className="shadow-card hover:shadow-elegant transition-shadow"
-              >
-                <div className="relative">
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <span
-                    className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                      getCourseStatus(course.is_published, course.is_approved)
-                    )}`}
-                  >
-                    {getCourseStatus(course.is_published, course.is_approved)}
-                  </span>
-                  {/* Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-3 right-3 bg-white/90 hover:bg-white"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Eye className="mr-1 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Edit className="mr-1 h-4 w-4" />
-                        Edit Course
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        variant="destructive"
-                      >
-                        <Trash2 className="mr-1 h-4 w-4" />
-                        Delete Course
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+              <Link href={`/instructor/courses/${course.id}`} key={course.id}>
+                <Card
+                  key={course.id}
+                  className="shadow-card hover:shadow-elegant transition-shadow"
+                >
+                  <div className="relative">
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
+                    {/* <span
+                      className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
+                        getCourseStatus(course.is_published, course.is_approved)
+                      )}`}
+                    >
+                      {getCourseStatus(course.is_published, course.is_approved)}
+                    </span> */}
 
-                <CardHeader>
-                  <CardTitle className="line-clamp-2">{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {course.description}
-                  </CardDescription>
-                </CardHeader>
+                    <span
+                      className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
+                        'published'
+                      )}`}
+                    >
+                      Published
+                    </span>
+                    {/* Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-3 right-3 bg-white/90 hover:bg-white"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Eye className="mr-1 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Edit className="mr-1 h-4 w-4" />
+                          Edit Course
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          variant="destructive"
+                        >
+                          <Trash2 className="mr-1 h-4 w-4" />
+                          Delete Course
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Categories */}
-                    <div className="flex flex-col gap-1 text-sm">
-                      <span className="text-muted-foreground">Category</span>
-                      <div>
-                        {course.categories?.map((category) => {
-                          return (
-                            <Badge key={category.id} variant="outline">
-                              {category.name}
+                  <CardHeader>
+                    <CardTitle className="line-clamp-2">
+                      {course.title}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {course.description}
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Categories */}
+                      <div
+                        className={`flex text-sm ${
+                          Array.isArray(course.category) &&
+                          course.category.length > 1
+                            ? 'flex-col items-end gap-1'
+                            : 'justify-between'
+                        }`}
+                      >
+                        <span className="text-muted-foreground">Category</span>
+                        <div>
+                          {Array.isArray(course.category) ? (
+                            course.category?.map((category) => {
+                              return (
+                                <Badge key={category.id} variant="outline">
+                                  {category.name}
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <Badge variant="outline">
+                              {course.category.name}
                             </Badge>
-                          );
-                        })}
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.studentsCount} students</span>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span>{course.totalStudents} students</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <BookOpen className="h-4 w-4 text-muted-foreground" />
+                          <span>{course.sectionCount} sections</span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.sections?.length} lessons</span>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span>{course.rating || 'No rating'}</span>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <span>{course.averageRating || 'No rating'}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>
+                            {new Date(course.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {new Date(course.created_at).toLocaleDateString()}
+
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-2xl font-bold text-primary">
+                          ${course.price}
                         </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-2xl font-bold text-primary">
-                        ${course.price}
-                      </span>
-                      <Link href={`/instructor/courses/${course.id}`}>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/instructor/courses/${course.id}`)
+                          }
+                        >
                           View Course
                         </Button>
-                      </Link>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>

@@ -108,7 +108,7 @@ export function CombinedFileUpload({
         return;
       }
 
-      if (acceptedFiles.length > 0) {
+      if (acceptedFiles.length > 0) {       
         const file = acceptedFiles[0];
         onVideoSelect(file);
 

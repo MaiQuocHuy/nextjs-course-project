@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -34,6 +35,7 @@ import {
   AlertCircle,
   ChevronRight,
   FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import { CourseSummary } from '@/components/instructor/course/create-course/create-lessons/course-summary';
 import EnhancedFileUpload from '@/components/instructor/course/create-course/create-lessons/file-upload/enhanced-file-upload';
@@ -52,47 +54,72 @@ import {
   validateExcelFormat,
 } from '@/lib/instructor/create-course-validations/excel-parser';
 import { CombinedFileUpload } from './file-upload/combined-file-upload';
-import { set } from 'zod';
+import {
+  courseBasicInfoType,
+  getCharacterCount,
+  getWordCount,
+} from '@/lib/instructor/create-course-validations/course-basic-info-validation';
+import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  useCreateLessonMutation,
+  useCreateSectionMutation,
+} from '@/services/instructor/courses-api';
+import {
+  startLoading,
+  stopLoading,
+} from '@/store/slices/instructor/loadingAnimaSlice';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/store/store';
 
-// Mock course data
-const mockCourse = {
-  title: 'React Programming: From Basics to Advanced',
-  description:
-    'A comprehensive course on React, covering everything from basic concepts to advanced techniques like hooks, context, and performance optimization.',
-  category: 'Programming',
-  level: 'Intermediate',
-  price: 199,
-  thumbnail: '/placeholder.svg?height=200&width=300&text=React+Course',
-};
+const tempTitle = 'Complete Web Development Bootcamp';
+const tempDes =
+  'Learn HTML, CSS, JavaScript, React, Node.js and more in this comprehensive web development course. Perfect for beginners who want to become full-stack developers.';
 
 interface CreateLessonsPageProps {
-  onSubmit: (data: CourseCreationType) => void;
+  courseBasicInfo: courseBasicInfoType;
+  setProgress: (progress: number) => void;
 }
 
 export default function CreateLessonsPage({
-  onSubmit,
+  courseBasicInfo,
+  setProgress,
 }: CreateLessonsPageProps) {
-  const [step, setStep] = useState<'create' | 'review' | 'success'>('create');
-  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
-  const [isParsingExcel, setIsParsingExcel] = useState(false);
-  const [finalCourseData, setFinalCourseData] =
-    useState<CourseCreationType | null>(null);
-
   const form = useForm<CourseCreationType>({
     resolver: zodResolver(courseCreationSchema),
     defaultValues: {
       sections: [
         {
           id: `section-${crypto.randomUUID()}`,
-          title: '',
+          title: tempTitle,
+          description: tempDes,
+          order: 0,
+          isCollapsed: false,
+          lessons: [
+            {
+              id: `lesson-${crypto.randomUUID()}`,
+              title: 'Set up React Environment',
+              order: 0,
+              type: 'VIDEO',
+              video: {},
+              documents: [], // Multiple documents
+              questions: [],
+              isCollapsed: false,
+            },
+          ],
+        },
+        {
+          id: `section-${crypto.randomUUID()}`,
+          title: tempTitle + '2',
+          description: tempDes + '2',
           order: 1,
           isCollapsed: false,
           lessons: [
             {
               id: `lesson-${crypto.randomUUID()}`,
-              title: '',
-              order: 1,
-              type: 'video',
+              title: 'Set up React Environment 2',
+              order: 0,
+              type: 'VIDEO',
               documents: [], // Multiple documents
               questions: [],
               isCollapsed: false,
@@ -102,6 +129,36 @@ export default function CreateLessonsPage({
       ],
     },
   });
+
+  const {
+    formState: { errors },
+  } = form;
+
+  const [createSection, { isLoading: isCreatingSection }] =
+    useCreateSectionMutation();
+  const [createLesson, { isLoading: isCreatingLesson }] =
+    useCreateLessonMutation();
+
+  const [step, setStep] = useState<'create' | 'review' | 'success'>('create');
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [isParsingExcel, setIsParsingExcel] = useState(false);
+  const [lessonsData, setLessonsData] = useState<CourseCreationType | null>(
+    null
+  );
+  const dispatch: AppDispatch = useDispatch();
+
+  // Handle loading state
+  useEffect(() => {
+    if (isCreatingSection || isCreatingLesson) {
+      dispatch(startLoading('Creating section(s) and lesson(s)...'));
+    } else {
+      dispatch(stopLoading());
+    }
+
+    return () => {
+      dispatch(stopLoading());
+    };
+  }, [isCreatingSection, isCreatingLesson, dispatch]);
 
   const handleRemoveSec = (sectionIndex: number) => {
     const currentSections = form.getValues('sections');
@@ -119,6 +176,7 @@ export default function CreateLessonsPage({
   const addSection = () => {
     const newSection: SectionType = {
       id: `section-${crypto.randomUUID()}`,
+      description: '',
       title: '',
       order: form.watch('sections').length + 1,
       isCollapsed: false,
@@ -204,6 +262,7 @@ export default function CreateLessonsPage({
       `sections.${sectionIndex}.lessons.${lessonIndex}.questions`,
       mockQuestions
     );
+
     setIsGeneratingQuiz(false);
   };
 
@@ -254,18 +313,64 @@ export default function CreateLessonsPage({
   };
 
   const onSubmitData = (data: CourseCreationType) => {
-    // console.log('Form data:', data);
+    console.log('Form data:', data);
     setStep('review');
-    setFinalCourseData(data);
+    setLessonsData(data);
   };
 
   const handleFinalSubmit = async () => {
-    // Simulate API call
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
-    if (finalCourseData) {
-      onSubmit(finalCourseData);
+    if (lessonsData) {
+      let isCreatedSuccessfully = true;
+      const courseId = 'db73892c-7932-48ce-8bd6-e340e87cb531';
+      try {
+        for (const section of lessonsData.sections) {
+          // Create each section
+          const sectionData = {
+            title: section.title,
+            description: section.description,
+          };
+          const createSecRes = await createSection({
+            courseId,
+            sectionData,
+          }).unwrap();
+          // Create each lesson in the section
+          if ('statusCode' in createSecRes && createSecRes.statusCode === 201) {
+            if ('data' in createSecRes) {
+              const sectionId = createSecRes.data.id;
+              for (const lesson of section.lessons) {
+                const lessonData = {
+                  title: lesson.title,
+                  type: lesson.type.toUpperCase(),
+                  videoFile: lesson.video?.file,
+                };
+                const createLessRes = await createLesson({
+                  sectionId,
+                  lessonData,
+                }).unwrap();
+                if (
+                  'statusCode' in createLessRes &&
+                  createLessRes.statusCode !== 201
+                ) {
+                  isCreatedSuccessfully = false;
+                  return;
+                }
+              }
+            }
+          } else {
+            isCreatedSuccessfully = false;
+            return;
+          }
+        }
+      } catch (error) {
+        isCreatedSuccessfully = false;
+        console.error('Error creating sections and lessons:', error);
+      }
+
+      if (isCreatedSuccessfully) {
+        setStep('success');
+        setProgress(100); // Update progress to 100% on success
+      }
     }
-    setStep('success');
   };
 
   if (step === 'success') {
@@ -297,7 +402,7 @@ export default function CreateLessonsPage({
 
     return (
       <div className="container mx-auto py-8">
-        <CourseSummary course={mockCourse} />
+        {courseBasicInfo && <CourseSummary course={courseBasicInfo} />}
 
         <Card>
           <CardHeader>
@@ -307,27 +412,27 @@ export default function CreateLessonsPage({
             {formData.sections.map((section, sectionIndex) => (
               <div key={section.id} className="space-y-4">
                 <h3 className="text-lg font-semibold">
-                  Section {section.order}: {section.title}
+                  Section {section.order + 1}: {section.title}
                 </h3>
 
                 {section.lessons.map((lesson, lessonIndex) => (
                   <Card key={lesson.id} className="ml-4">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        {lesson.type === 'video' ? (
+                        {lesson.type === 'VIDEO' ? (
                           <Video className="h-4 w-4" />
                         ) : (
                           <Brain className="h-4 w-4" />
                         )}
                         <span className="font-medium">
-                          Lesson {lesson.order}: {lesson.title}
+                          Lesson {lesson.order + 1}: {lesson.title}
                         </span>
                         <Badge
                           variant={
-                            lesson.type === 'video' ? 'default' : 'secondary'
+                            lesson.type === 'VIDEO' ? 'default' : 'secondary'
                           }
                         >
-                          {lesson.type === 'video' ? 'Video' : 'Quiz'}
+                          {lesson.type === 'VIDEO' ? 'VIDEO' : 'QUIZ'}
                         </Badge>
                       </div>
 
@@ -362,7 +467,9 @@ export default function CreateLessonsPage({
                 Back to Edit
               </Button>
               <Button onClick={handleFinalSubmit}>
-                Confirm and Submit for Approval
+                {isCreatingSection || isCreatingLesson
+                  ? 'Creating sections and lessons...'
+                  : 'Confirm and Submit for Approval'}
               </Button>
             </div>
           </CardContent>
@@ -381,7 +488,7 @@ export default function CreateLessonsPage({
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-5 w-5 transition-transform data-[state=open]:rotate-90" />
                 <BookOpen className="h-5 w-5" />
-                <span>Section {section.order}</span>
+                <span>Section {section.order + 1}</span>
 
                 {section.title && (
                   <span className="text-base font-normal text-muted-foreground">
@@ -412,11 +519,91 @@ export default function CreateLessonsPage({
               name={`sections.${sectionIndex}.title`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Section Title</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Course Title <strong className="text-red-500">*</strong>
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter section title..." {...field} />
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Enter section title"
+                        {...field}
+                        className={cn(
+                          errors.sections?.[sectionIndex]?.title &&
+                            'border-red-500',
+                          !errors.sections?.[sectionIndex]?.title &&
+                            field.value &&
+                            'border-green-500'
+                        )}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{field.value.length}/255 characters</span>
+                        {!errors.sections?.[sectionIndex]?.title &&
+                          field.value && (
+                            <span className="text-green-600 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" />
+                              Valid title
+                            </span>
+                          )}
+                      </div>
+                    </div>
                   </FormControl>
                   <FormMessage />
+                  <FormDescription>
+                    Create a clear, descriptive title that tells students what
+                    they'll learn
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name={`sections.${sectionIndex}.description`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Course Description (Optional)</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Describe what students will learn, what skills they'll gain, and why they should take this course..."
+                        className={cn(
+                          'min-h-32 resize-none',
+                          errors.sections?.[sectionIndex]?.description &&
+                            'border-red-500',
+                          !errors.sections?.[sectionIndex]?.description &&
+                            field.value &&
+                            'border-green-500'
+                        )}
+                        {...field}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <div className="space-x-4">
+                          <span>
+                            {field.value ? getCharacterCount(field.value) : 0}
+                            /255 characters
+                          </span>
+                          {/* <span>
+                            {getWordCount(field.value)} words (min: 10)
+                          </span> */}
+                        </div>
+                        {!errors.sections?.[sectionIndex]?.description &&
+                          field.value &&
+                          getWordCount(field.value) >= 20 && (
+                            <span className="text-green-600 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" />
+                              Good description
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                  <FormDescription>
+                    Write a compelling description that explains the value and
+                    outcomes of your course
+                  </FormDescription>
                 </FormItem>
               )}
             />
@@ -477,7 +664,7 @@ export default function CreateLessonsPage({
               <CardTitle className="text-base flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-                  <span>Lesson {lesson.order}</span>
+                  <span>Lesson {lesson.order + 1}</span>
                   {lesson.title && (
                     <span className="text-sm font-normal text-muted-foreground">
                       - {lesson.title}
@@ -556,7 +743,7 @@ export default function CreateLessonsPage({
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem
-                            value="video"
+                            value="VIDEO"
                             id={`video-${sectionIndex}-${lessonIndex}`}
                           />
                           <Label
@@ -568,7 +755,7 @@ export default function CreateLessonsPage({
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem
-                            value="quiz"
+                            value="QUIZ"
                             id={`quiz-${sectionIndex}-${lessonIndex}`}
                           />
                           <Label
@@ -588,7 +775,7 @@ export default function CreateLessonsPage({
               {/* Video upload */}
               {form.watch(
                 `sections.${sectionIndex}.lessons.${lessonIndex}.type`
-              ) === 'video' && (
+              ) === 'VIDEO' && (
                 <div>
                   <CombinedFileUpload
                     videoFile={
@@ -615,7 +802,7 @@ export default function CreateLessonsPage({
               {/* Quiz section */}
               {form.watch(
                 `sections.${sectionIndex}.lessons.${lessonIndex}.type`
-              ) === 'quiz' && (
+              ) === 'QUIZ' && (
                 <div className="space-y-4">
                   {/* Quiz method */}
                   <FormField
@@ -803,7 +990,7 @@ export default function CreateLessonsPage({
 
   return (
     <div className="container mx-auto py-8">
-      <CourseSummary course={mockCourse} />
+      {courseBasicInfo && <CourseSummary course={courseBasicInfo} />}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmitData)} className="space-y-6">
@@ -814,7 +1001,7 @@ export default function CreateLessonsPage({
               const updatedSections = reorderedSections.map(
                 (section, index) => ({
                   ...section,
-                  order: index + 1,
+                  order: index,
                 })
               );
               form.setValue('sections', updatedSections);

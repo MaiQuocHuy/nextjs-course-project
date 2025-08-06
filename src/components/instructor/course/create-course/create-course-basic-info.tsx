@@ -8,7 +8,7 @@ import {
   getWordCount,
   getCharacterCount,
   fullCourseFormSchema,
-} from '@/lib/instructor/validations/course';
+} from '@/lib/instructor/create-course-validations/course-basic-info-validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,6 +46,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useGetCategoriesQuery } from '@/services/coursesApi';
 
 interface CourseFormProps {
   onSubmit?: (data: CourseFormData) => void;
@@ -57,7 +58,6 @@ interface UploadedFile {
   file: File;
   preview: string;
   type: 'image' | 'video';
-  // progress: number;
   status: 'uploading' | 'success' | 'error';
   error?: string;
 }
@@ -65,11 +65,15 @@ interface UploadedFile {
 const accept = 'image/*,video/*';
 const maxFiles = 1;
 const maxSize = 10;
-const tempTitle = 'Complete Web Development Bootcamp';
+const tempTitle = 'Data Science with Python';
 const tempDes =
-  'Learn HTML, CSS, JavaScript, React, Node.js and more in this comprehensive web development course. Perfect for beginners who want to become full-stack developers.';
+  'Master data science concepts using Python. Learn pandas, numpy, matplotlib, seaborn, and machine learning fundamentals.';
 
-export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) {
+export function CreateCourseBasicInfo({
+  onSubmit,
+  className,
+}: CourseFormProps) {
+  const { data: categories } = useGetCategoriesQuery();
   const [courseThumb, setCourseThumb] = useState<UploadedFile | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,8 +84,8 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
       title: tempTitle,
       description: tempDes,
       price: 0,
-      category: 'programming',
-      level: 'beginner',
+      categoryIds: ['cat-007'],
+      level: 'BEGINNER',
     },
     mode: 'onChange', // Enable real-time validation
   });
@@ -93,24 +97,38 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
 
   const watchThumbnail = watch('file');
 
-  // Set value for course's thumbnail
+  // Clear thumbnail if file is invalid
   useEffect(() => {
-    const handleCourseThumb = async (file: File) => {
-      const preview = await createFilePreview(file);
-      const courseThumb: UploadedFile = {
-        id: crypto.randomUUID(),
-        file,
-        preview,
-        type: file.type.startsWith('image/') ? 'image' : 'video',
-        status: 'success',
-      };
-      setCourseThumb(courseThumb);
-    };
-
-    if (watchThumbnail && watchThumbnail.size > 0) {
-      handleCourseThumb(watchThumbnail);
+    if (errors.file !== undefined) {
+      setCourseThumb(null);
     }
-  }, [watchThumbnail]);
+  }, [errors.file]);
+
+  // Set thumbnail only if file is valid
+  useEffect(() => {
+    // Only set thumbnail if file exists and is valid
+    if (
+      watchThumbnail &&
+      watchThumbnail.size > 0 &&
+      errors.file === undefined
+    ) {
+      const handleCourseThumb = async (file: File) => {
+        const preview = await createFilePreview(file);
+        const courseThumb: UploadedFile = {
+          id: crypto.randomUUID(),
+          file,
+          preview,
+          type: file.type.startsWith('image/') ? 'image' : 'video',
+          status: 'success',
+        };
+        setCourseThumb(courseThumb);
+      };
+      handleCourseThumb(watchThumbnail);
+    } else {
+      // Clear thumbnail if file is invalid or removed
+      setCourseThumb(null);
+    }
+  }, [watchThumbnail, errors.file]);
 
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -143,7 +161,7 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
     const fields = [
       watch('title'),
       watch('price') >= 0,
-      watch('category'),
+      watch('categoryIds').length > 0,
       watch('description'),
       watchThumbnail,
     ];
@@ -301,137 +319,139 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
                 )}
               />
 
-              <div className="flex items-start gap-6">
-                {/* Category */}
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Category <strong className="text-red-500">*</strong>
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger
-                            className={cn(
-                              errors.category && 'border-red-500',
-                              !errors.category &&
-                                field.value &&
-                                'border-green-500'
-                            )}
-                          >
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="programming">
-                            Programming
-                          </SelectItem>
-                          <SelectItem value="design">Design</SelectItem>
-                          <SelectItem value="data-science">
-                            Data Science
-                          </SelectItem>
-                          <SelectItem value="business">Business</SelectItem>
-                          <SelectItem value="marketing">Marketing</SelectItem>
-                          <SelectItem value="photography">
-                            Photography
-                          </SelectItem>
-                          <SelectItem value="music">Music</SelectItem>
-                          <SelectItem value="language">Language</SelectItem>
-                          <SelectItem value="health">
-                            Health & Fitness
-                          </SelectItem>
-                          <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Level */}
-                <FormField
-                  control={form.control}
-                  name="level"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Course Level <strong className="text-red-500">*</strong>
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger
-                            className={cn(
-                              errors.level && 'border-red-500',
-                              !errors.level && field.value && 'border-green-500'
-                            )}
-                          >
-                            <SelectValue placeholder="Select difficulty level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="beginner">Beginner</SelectItem>
-                          <SelectItem value="intermediate">
-                            Intermediate
-                          </SelectItem>
-                          <SelectItem value="advanced">Advanced</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Price */}
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel className="flex items-center gap-2">
-                        Price (USD) <strong className="text-red-500">*</strong>
-                      </FormLabel>
+              {/* Categories */}
+              <FormField
+                control={form.control}
+                name="categoryIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Categories <strong className="text-red-500">*</strong>
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value[0]}
+                    >
                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="999.99"
-                            placeholder="0.00"
-                            className={cn(
-                              'pl-8',
-                              errors.price && 'border-red-500',
-                              !errors.price &&
-                                field.value >= 0 &&
-                                'border-green-500'
-                            )}
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(
-                                Number.parseFloat(e.target.value) || 0
-                              )
-                            }
-                          />
-                          <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <div className="flex gap-x-4 gap-y-2 flex-wrap">
+                          {categories && categories.length > 0 ? (
+                            categories.map((cat) => (
+                              <label
+                                key={cat.id}
+                                className="flex items-center gap-2 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  value={cat.id}
+                                  checked={field.value.includes(cat.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      field.onChange([...field.value, cat.id]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter(
+                                          (id: string) => id !== cat.id
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  className="accent-primary"
+                                />
+                                <span className="text-sm">{cat.name}</span>
+                              </label>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              No categories available
+                            </span>
+                          )}
                         </div>
                       </FormControl>
-                      <FormMessage />
-                      {/* <FormDescription>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Level */}
+              <FormField
+                control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Course Level <strong className="text-red-500">*</strong>
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger
+                          className={cn(
+                            errors.level && 'border-red-500',
+                            !errors.level && field.value && 'border-green-500',
+                            'min-w-[150px]'
+                          )}
+                        >
+                          <SelectValue placeholder="Select difficulty level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="BEGINNER">Beginner</SelectItem>
+                        <SelectItem value="INTERMEDIATE">
+                          Intermediate
+                        </SelectItem>
+                        <SelectItem value="ADVANCED">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Price */}
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel className="flex items-center gap-2">
+                      Price (USD) <strong className="text-red-500">*</strong>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="999.99"
+                          placeholder="0.00"
+                          className={cn(
+                            'pl-8',
+                            errors.price && 'border-red-500',
+                            !errors.price &&
+                              field.value >= 0 &&
+                              'border-green-500'
+                          )}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              Number.parseFloat(e.target.value) || 0
+                            )
+                          }
+                        />
+                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                    {/* <FormDescription>
                         Set a competitive price for your course (free courses:
                         $0.00)
                       </FormDescription> */}
-                    </FormItem>
-                  )}
-                />
-              </div>
+                  </FormItem>
+                )}
+              />
 
               {/* Course Image Upload */}
               <FormField
@@ -507,8 +527,8 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
                                     </span>
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Supports images and videos up to {maxSize}MB
-                                    each
+                                    Supports images and videos up to {maxSize}
+                                    MB each
                                   </p>
                                 </div>
                               </div>
@@ -569,13 +589,13 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
 
                                     {/* Error Message */}
                                     {/* {errors.file && (
-                                      <div className="mt-2 flex items-center space-x-2">
-                                        <AlertCircle className="w-4 h-4 text-red-500" />
-                                        <p className="text-sm text-red-600 dark:text-red-400">
-                                          {errors.file.message?.toString()}
-                                        </p>
-                                      </div>
-                                    )} */}
+                                        <div className="mt-2 flex items-center space-x-2">
+                                          <AlertCircle className="w-4 h-4 text-red-500" />
+                                          <p className="text-sm text-red-600 dark:text-red-400">
+                                            {errors.file.message?.toString()}
+                                          </p>
+                                        </div>
+                                      )} */}
                                   </div>
 
                                   {/* Status & Actions */}

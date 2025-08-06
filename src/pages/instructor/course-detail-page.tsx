@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Edit, Eye, Users, Clock, BookOpen, Video, Brain } from 'lucide-react';
 import { CourseSummary } from '@/components/instructor/course/create-course/create-lessons/course-summary';
 import type { CourseCreationType } from '@/lib/instructor/create-course-validations/lessons-validations';
+import { useGetCourseDetailsQuery } from '@/services/instructor/courses-api';
 
 // Mock course data - in real app, this would come from API
 const mockCourseData: CourseCreationType & {
   id: string;
   title: string;
   description: string;
-  category: string;
+  categoryIds: string[];
   level: string;
   price: number;
   thumbnail: string;
@@ -27,7 +28,7 @@ const mockCourseData: CourseCreationType & {
   title: 'React Programming: From Basics to Advanced',
   description:
     'A comprehensive course on React, covering everything from basic concepts to advanced techniques like hooks, context, and performance optimization.',
-  category: 'Programming',
+  categoryIds: ['cat-007', 'cat-008'],
   level: 'Intermediate',
   price: 199,
   thumbnail: '/placeholder.svg?height=200&width=300&text=React+Course',
@@ -45,13 +46,12 @@ const mockCourseData: CourseCreationType & {
           id: 'lesson-1',
           title: 'What is React?',
           order: 1,
-          type: 'video',
+          type: 'VIDEO',
           documents: [
             {
               file: new File([''], 'react-intro.pdf', {
                 type: 'application/pdf',
               }),
-              status: 'publish',
             },
           ],
           questions: [],
@@ -64,7 +64,7 @@ const mockCourseData: CourseCreationType & {
           id: 'lesson-2',
           title: 'React Fundamentals Quiz',
           order: 2,
-          type: 'quiz',
+          type: 'QUIZ',
           documents: [],
           questions: [
             {
@@ -93,13 +93,11 @@ export default function CourseDetailPage() {
   const params = useParams<{ id: string }>();
   const [isEditing, setIsEditing] = useState(false);
   const [courseData, setCourseData] = useState(mockCourseData);
-
-  // In real app, fetch course data based on courseId
-  useEffect(() => {
-    // fetchCourseData(courseId).then(setCourseData)
-    if (params) {
-    }
-  }, [params]);
+  // const courseData = params
+  //   ? useGetCourseDetailsQuery(params.id, {
+  //       skip: !params.id,
+  //     }).data
+  //   : null;
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
@@ -126,12 +124,12 @@ export default function CourseDetailPage() {
     const videoLessons = courseData.sections.reduce(
       (acc, section) =>
         acc +
-        section.lessons.filter((lesson) => lesson.type === 'video').length,
+        section.lessons.filter((lesson) => lesson.type === 'VIDEO').length,
       0
     );
     const quizLessons = courseData.sections.reduce(
       (acc, section) =>
-        acc + section.lessons.filter((lesson) => lesson.type === 'quiz').length,
+        acc + section.lessons.filter((lesson) => lesson.type === 'QUIZ').length,
       0
     );
     const totalQuestions = courseData.sections.reduce(
@@ -143,7 +141,6 @@ export default function CourseDetailPage() {
         ),
       0
     );
-
     return { totalLessons, videoLessons, quizLessons, totalQuestions };
   };
 
@@ -183,8 +180,8 @@ export default function CourseDetailPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">{courseData.title}</h1>
           <div className="flex items-center gap-4">
-            <Badge className={getStatusColor(courseData.status)}>
-              {courseData.status.toUpperCase()}
+            <Badge className={getStatusColor('Published')}>
+              {'Published'}.toUpperCase()
             </Badge>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Users className="h-4 w-4" />
@@ -285,7 +282,7 @@ export default function CourseDetailPage() {
                         className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
-                          {lesson.type === 'video' ? (
+                          {lesson.type === 'VIDEO' ? (
                             <Video className="h-5 w-5 text-green-500" />
                           ) : (
                             <Brain className="h-5 w-5 text-purple-500" />
@@ -295,8 +292,8 @@ export default function CourseDetailPage() {
                               Lesson {lesson.order}: {lesson.title}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {lesson.type === 'video' && 'Video lesson'}
-                              {lesson.type === 'quiz' &&
+                              {lesson.type === 'VIDEO' && 'Video lesson'}
+                              {lesson.type === 'QUIZ' &&
                                 `Quiz with ${lesson.questions.length} questions`}
                               {lesson.documents.length > 0 &&
                                 ` • ${lesson.documents.length} documents`}
@@ -305,10 +302,10 @@ export default function CourseDetailPage() {
                         </div>
                         <Badge
                           variant={
-                            lesson.type === 'video' ? 'default' : 'secondary'
+                            lesson.type === 'VIDEO' ? 'default' : 'secondary'
                           }
                         >
-                          {lesson.type === 'video' ? 'Video' : 'Quiz'}
+                          {lesson.type === 'VIDEO' ? 'Video' : 'Quiz'}
                         </Badge>
                       </div>
                     ))}
