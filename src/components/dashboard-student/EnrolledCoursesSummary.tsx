@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen } from "lucide-react";
-import { useGetEnrolledCoursesQuery } from "@/store/slices/student/studentApi";
+import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { Loading, CoursesLoadingSkeleton } from "./ui/Loading";
 import { LoadingError, CourseLoadError } from "./ui/LoadingError";
 import { CourseStatus } from "./CourseStatus";
@@ -27,7 +28,7 @@ export function EnrolledCoursesSummary() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">My Courses</h2>
         <Button variant="outline" size="sm">
-          View All
+          <Link href="/dashboard/my-courses">View All</Link>
         </Button>
       </div>
 
@@ -83,9 +84,11 @@ export function EnrolledCoursesSummary() {
                         : "default"
                     }
                   >
-                    {enrollment.completionStatus === "COMPLETED"
-                      ? "Review Course"
-                      : "Continue Learning"}
+                    <Link href={`/dashboard/learning/${enrollment.courseId}`}>
+                      {enrollment.completionStatus === "COMPLETED"
+                        ? "Review Course"
+                        : "Continue Learning"}
+                    </Link>
                   </Button>
                 </div>
               </CardContent>

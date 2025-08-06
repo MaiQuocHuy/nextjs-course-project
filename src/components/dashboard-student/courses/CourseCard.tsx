@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlayCircle, User } from "lucide-react";
+import { User } from "lucide-react";
 import { CourseStatus } from "../CourseStatus";
 import type { Course } from "@/types/student";
 import { Progress } from "@/components/ui/progress";
@@ -29,8 +29,11 @@ export function CourseCard({ course }: CourseCardProps) {
               variant="secondary"
               className="bg-white/90 hover:bg-white"
             >
-              <PlayCircle className="h-4 w-4 mr-2" />
-              Continue Learning
+              <Link href={`/dashboard/learning/${course.courseId}`}>
+                {course.completionStatus === "COMPLETED"
+                  ? "Review Course"
+                  : "Continue Learning"}
+              </Link>
             </Button>
           </div>
         </div>

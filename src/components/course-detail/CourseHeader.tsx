@@ -18,6 +18,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { Course } from "@/services/coursesApi";
+import {
+  PaymentButton,
+  CompactPaymentButton,
+} from "@/components/payment/PaymentButton";
 import { cn } from "@/lib/utils";
 
 interface CourseHeaderProps {
@@ -96,34 +100,13 @@ export function CourseHeader({
             </div>
 
             {/* Enroll Button */}
-            {isEnrolled ? (
-              <Button
-                className="w-full bg-green-600 hover:bg-green-700"
-                disabled
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Enrolled
-              </Button>
-            ) : (
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                onClick={onEnroll}
-                disabled={isEnrolling}
-                size="lg"
-              >
-                {isEnrolling ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Enrolling...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Enroll Now
-                  </>
-                )}
-              </Button>
-            )}
+            {/* Enroll Button */}
+            <CompactPaymentButton
+              courseId={course.id}
+              courseTitle={course.title}
+              price={course.price}
+              isEnrolled={isEnrolled}
+            />
 
             {/* Course Includes */}
             <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -293,35 +276,14 @@ export function CourseHeader({
                 </div>
               )}
 
-              <Button
-                onClick={onEnroll}
-                disabled={isEnrolling || isEnrolled}
+              <PaymentButton
+                courseId={course.id}
+                courseTitle={course.title}
+                price={course.price}
+                isEnrolled={isEnrolled}
                 size="lg"
-                className={cn(
-                  "h-12 px-8 text-lg font-semibold transition-all duration-300",
-                  isEnrolled
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl",
-                  !isEnrolled && "sm:w-auto w-full"
-                )}
-              >
-                {isEnrolling ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </div>
-                ) : isEnrolled ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5" />
-                    Enrolled
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5" />
-                    Enroll Now
-                  </div>
-                )}
-              </Button>
+                className="h-12 px-8 text-lg font-semibold"
+              />
             </div>
           </div>
         </div>

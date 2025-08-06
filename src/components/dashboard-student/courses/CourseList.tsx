@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useGetEnrolledCoursesQuery } from "@/store/slices/student/studentApi";
+import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
 import { CourseFilter } from "./CourseFilter";
 import { Skeleton } from "@/components/ui/skeleton";
