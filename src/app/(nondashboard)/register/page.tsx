@@ -30,9 +30,9 @@ type RegistrationFormData = {
   confirmPassword: string;
   role: "STUDENT" | "INSTRUCTOR";
   portfolioUrl?: string;
-  certificateFiles?: File[];
-  cvFile?: File[];
-  supportingFiles?: File[];
+  certificateFile?: File;
+  cvFile?: File;
+  supportingFile?: File;
 };
 
 // Zod schema for form validation
@@ -90,9 +90,9 @@ export default function RegisterPage() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failure">("success");
   const [modalMessage, setModalMessage] = useState("");
-  const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
-  const [supportingFiles, setSupportingFiles] = useState<File[]>([]);
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [currentStep, setCurrentStep] = useState(1);
   const maxSteps = 2;
@@ -160,15 +160,18 @@ export default function RegisterPage() {
           role: data.role,
         }).unwrap();
       } else {
+        if (!certificateFile || !cvFile) {
+          throw new Error("Certificate and CV files are required for instructor registration.");
+        }
         await registerInstructor({
           name: data.name,
           email: data.email,
           password: data.password,
           role: data.role,
           portfolioUrl: data.portfolioUrl ?? "",
-          certificateFiles: certificateFiles,
-          cvFile: cvFile ? [cvFile] : [],
-          supportingFiles: supportingFiles.length > 0 ? supportingFiles : undefined,
+          certificateFile: certificateFile,
+          cvFile: cvFile,
+          supportingFile: supportingFile ?? undefined,
         }).unwrap();
       }
 
@@ -204,11 +207,15 @@ export default function RegisterPage() {
     ];
 
     if (file.size > maxSizeBytes) {
-      return `File size must be less than ${maxSizeMB}MB`;
+      const error = `File size must be less than ${maxSizeMB}MB`;
+      alert(error);
+      return error;
     }
 
     if (!allowedTypes.includes(file.type)) {
-      return "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
+      const error = "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
+      alert(error);
+      return error;
     }
 
     return null;
@@ -438,33 +445,27 @@ export default function RegisterPage() {
                 {/* Certificate Upload */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>Certificate(s) *</Label>
-                    {certificateFiles.length > 0 && (
+                    <Label>Certificate *</Label>
+                    {certificateFile && (
                       <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        {certificateFiles.length} file{certificateFiles.length > 1 ? "s" : ""}{" "}
-                        uploaded
+                        Uploaded
                       </span>
                     )}
                   </div>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
                     <input
                       type="file"
-                      multiple
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                       onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        const validFiles: File[] = [];
-
-                        files.forEach((file) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
                           const error = validateFile(file);
                           if (!error) {
-                            validFiles.push(file);
+                            setCertificateFile(file);
+                            setValue("certificateFile", file);
                             simulateUpload(`cert-${file.name}`);
                           }
-                        });
-
-                        setCertificateFiles((prev) => [...prev, ...validFiles]);
-                        setValue("certificateFiles", [...certificateFiles, ...validFiles]);
+                        }
                       }}
                       className="hidden"
                       id="certificate-upload"
@@ -474,48 +475,42 @@ export default function RegisterPage() {
                       className="cursor-pointer block text-center"
                     >
                       <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm text-gray-600 font-medium">Upload Certificate(s)</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        PDF, DOCX, JPG, PNG (Max 15MB each)
-                      </p>
+                      <p className="text-sm text-gray-600 font-medium">Upload Certificate</p>
+                      <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG (Max 15MB)</p>
                     </label>
                   </div>
 
-                  {certificateFiles.length > 0 && (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {certificateFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                            {uploadProgress[`cert-${file.name}`] !== undefined &&
-                              uploadProgress[`cert-${file.name}`] < 100 && (
-                                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                  <div
-                                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                    style={{ width: `${uploadProgress[`cert-${file.name}`]}%` }}
-                                  ></div>
-                                </div>
-                              )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newFiles = certificateFiles.filter((_, i) => i !== index);
-                              setCertificateFiles(newFiles);
-                              setValue("certificateFiles", newFiles);
-                            }}
-                            className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
+                  {certificateFile && (
+                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{certificateFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatFileSize(certificateFile.size)}
+                        </p>
+                        {uploadProgress[`cert-${certificateFile.name}`] !== undefined &&
+                          uploadProgress[`cert-${certificateFile.name}`] < 100 && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                              <div
+                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${uploadProgress[`cert-${certificateFile.name}`]}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCertificateFile(null);
+                          setValue("certificateFile", undefined);
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -540,7 +535,7 @@ export default function RegisterPage() {
                           const error = validateFile(file);
                           if (!error) {
                             setCvFile(file);
-                            setValue("cvFile", [file]);
+                            setValue("cvFile", file);
                             simulateUpload(`cv-${file.name}`);
                           }
                         }
@@ -576,7 +571,7 @@ export default function RegisterPage() {
                         size="sm"
                         onClick={() => {
                           setCvFile(null);
-                          setValue("cvFile", []);
+                          setValue("cvFile", undefined);
                         }}
                         className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
                       >
@@ -590,33 +585,28 @@ export default function RegisterPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>
-                      Supporting Documents <span className="text-gray-500 text-sm">(Optional)</span>
+                      Supporting Document <span className="text-gray-500 text-sm">(Optional)</span>
                     </Label>
-                    {supportingFiles.length > 0 && (
+                    {supportingFile && (
                       <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                        {supportingFiles.length} file{supportingFiles.length > 1 ? "s" : ""}
+                        Uploaded
                       </span>
                     )}
                   </div>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
                     <input
                       type="file"
-                      multiple
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                       onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        const validFiles: File[] = [];
-
-                        files.forEach((file) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
                           const error = validateFile(file);
                           if (!error) {
-                            validFiles.push(file);
+                            setSupportingFile(file);
+                            setValue("supportingFile", file);
                             simulateUpload(`support-${file.name}`);
                           }
-                        });
-
-                        setSupportingFiles((prev) => [...prev, ...validFiles]);
-                        setValue("supportingFiles", [...supportingFiles, ...validFiles]);
+                        }
                       }}
                       className="hidden"
                       id="supporting-upload"
@@ -624,51 +614,45 @@ export default function RegisterPage() {
                     <label htmlFor="supporting-upload" className="cursor-pointer block text-center">
                       <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
                       <p className="text-sm text-gray-600 font-medium">
-                        Upload Supporting Documents
+                        Upload Supporting Document
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Degrees, certifications, portfolios (Max 15MB each)
+                        Degrees, certifications, portfolio (Max 15MB)
                       </p>
                     </label>
                   </div>
 
-                  {supportingFiles.length > 0 && (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {supportingFiles.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                            {uploadProgress[`support-${file.name}`] !== undefined &&
-                              uploadProgress[`support-${file.name}`] < 100 && (
-                                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                  <div
-                                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                    style={{
-                                      width: `${uploadProgress[`support-${file.name}`]}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newFiles = supportingFiles.filter((_, i) => i !== index);
-                              setSupportingFiles(newFiles);
-                              setValue("supportingFiles", newFiles);
-                            }}
-                            className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
+                  {supportingFile && (
+                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{supportingFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatFileSize(supportingFile.size)}
+                        </p>
+                        {uploadProgress[`support-${supportingFile.name}`] !== undefined &&
+                          uploadProgress[`support-${supportingFile.name}`] < 100 && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                              <div
+                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${uploadProgress[`support-${supportingFile.name}`]}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSupportingFile(null);
+                          setValue("supportingFile", undefined);
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -698,7 +682,7 @@ export default function RegisterPage() {
                     isSubmitting ||
                     (role === "INSTRUCTOR" &&
                       currentStep === 2 &&
-                      (!watch("portfolioUrl") || certificateFiles.length === 0 || !cvFile))
+                      (!watch("portfolioUrl") || !certificateFile || !cvFile))
                   }
                 >
                   {isSubmitting ? (

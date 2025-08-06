@@ -32,9 +32,9 @@ interface RegisterInstructorRequest {
   password: string;
   role: string;
   portfolioUrl: string;
-  certificateFiles: File[];
-  cvFile: File[];
-  supportingFiles?: File[];
+  certificateFile: File ;
+  cvFile: File ;
+  supportingFile?: File;
 }
 
 interface RegisterUserResponse {
@@ -50,7 +50,7 @@ export const authApi = createApi({
 
     //* Register for Instructor
     registerInstructor: builder.mutation<RegisterUserResponse, RegisterInstructorRequest>({
-      query: ({ name, email, password, role, portfolioUrl, certificateFiles, cvFile, supportingFiles }) => {
+      query: ({ name, email, password, role, portfolioUrl, certificateFile, cvFile, supportingFile }) => {
         const formData = new FormData();
         
         formData.append('name', name);
@@ -58,21 +58,11 @@ export const authApi = createApi({
         formData.append('password', password);
         formData.append('role', role);
         formData.append('portfolio', portfolioUrl); 
-        
-        if (certificateFiles.length > 0) {
-          formData.append('certificate', certificateFiles[0]); // Backend expects single certificate file
-        }
-        
-        if (cvFile.length > 0) {
-          formData.append('cv', cvFile[0]); 
-        }
+        formData.append('certificate', certificateFile);
+        formData.append('cv', cvFile);
 
-        if (supportingFiles && supportingFiles.length > 0) {
-          formData.append('other', supportingFiles[0]);
-        }
-        
-        for (let [key, value] of formData.entries()) {
-          console.log(key, value instanceof File ? `File: ${value.name}` : value);
+        if (supportingFile) {
+          formData.append('other', supportingFile);
         }
         
         return {
