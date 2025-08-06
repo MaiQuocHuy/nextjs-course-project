@@ -83,6 +83,7 @@ export default function LoginPage() {
       if (result && result.ok) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
+        localStorage.setItem("isAuthenticated", "true");
 
         setTimeout(() => {
           router.replace("/");
