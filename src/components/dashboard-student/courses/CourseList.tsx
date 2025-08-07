@@ -4,11 +4,9 @@ import { useState, useMemo } from "react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
 import { CourseFilter } from "./CourseFilter";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BookOpen, RefreshCw } from "lucide-react";
-import type { Course } from "@/types/student";
+import { CoursesLoadingSkeleton, EnrolledCoursesError } from "../ui";
 
 export function CourseList() {
   const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
@@ -72,7 +70,7 @@ export function CourseList() {
     return (
       <div className="space-y-6">
         <CourseFilter />
-        <CourseListSkeleton />
+        <CoursesLoadingSkeleton />
       </div>
     );
   }
@@ -81,20 +79,7 @@ export function CourseList() {
     return (
       <div className="space-y-6">
         <CourseFilter />
-        <Alert variant="destructive">
-          <AlertDescription className="flex items-center justify-between">
-            <span>Failed to load courses. Please try again.</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="ml-4"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <EnrolledCoursesError onRetry={refetch} />
       </div>
     );
   }
@@ -131,26 +116,6 @@ export function CourseList() {
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function CourseListSkeleton() {
-  return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="border rounded-lg overflow-hidden">
-          <Skeleton className="aspect-video w-full" />
-          <div className="p-4 space-y-3">
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <Skeleton className="h-2 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

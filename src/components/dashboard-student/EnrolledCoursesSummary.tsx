@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { BookOpen } from "lucide-react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { Loading, CoursesLoadingSkeleton } from "./ui/Loading";
-import { LoadingError, CourseLoadError } from "./ui/LoadingError";
+import { LoadingError, EnrolledCoursesError } from "./ui/LoadingError";
 import { CourseStatus } from "./CourseStatus";
 
 export function EnrolledCoursesSummary() {
@@ -18,7 +18,7 @@ export function EnrolledCoursesSummary() {
     return <CoursesLoadingSkeleton />;
   }
   if (error) {
-    return <CourseLoadError onRetry={refetch} />;
+    return <EnrolledCoursesError onRetry={refetch} />;
   }
 
   const courses = data?.content || [];

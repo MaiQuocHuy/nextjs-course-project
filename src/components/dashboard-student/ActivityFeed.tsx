@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
 import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
+import { ActivityFeedError } from "./ui/LoadingError";
 import type { ActivityType } from "@/types/student";
 
 function getActivityIcon(type: ActivityType) {
@@ -68,13 +69,8 @@ export function ActivityFeed() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="px-6 py-8">
-            <LoadingError
-              error={error}
-              variant="inline"
-              onRetry={refetch}
-              message="Failed to load activities"
-            />
+          <div className="px-6 py-0">
+            <ActivityFeedError onRetry={refetch} />
           </div>
         </CardContent>
       </Card>

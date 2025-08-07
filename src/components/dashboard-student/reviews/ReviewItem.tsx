@@ -48,8 +48,10 @@ export function ReviewItem({ review }: ReviewItemProps) {
 
       toast.success("Review updated successfully!");
       setIsEditDialogOpen(false);
-    } catch (error) {
-      toast.error("Failed to update review. Please try again.");
+    } catch (error: any) {
+      // More detailed error handling
+      let errorMessage = "Failed to update review. Please try again.";
+      toast.error(errorMessage);
     }
   };
 

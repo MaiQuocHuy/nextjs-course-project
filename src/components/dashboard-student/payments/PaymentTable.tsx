@@ -1,88 +1,25 @@
 "use client";
 
 import React from "react";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { Table, TableBody } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useGetPaymentsQuery } from "@/services/student/studentApi";
 import { PaymentTableHead } from "./PaymentTableHead";
 import { PaymentTableRow } from "./PaymentTableRow";
-import { AlertCircle, Receipt } from "lucide-react";
+import { Receipt } from "lucide-react";
 import { PaymentMobileCard } from "./PaymentMobileCard";
+import { PaymentTableLoadingSkeleton } from "../ui/Loading";
+import { PaymentsError } from "../ui/LoadingError";
 
 export function PaymentTable() {
-  const { data: payments, isLoading, error } = useGetPaymentsQuery();
+  const { data: payments, isLoading, error, refetch } = useGetPaymentsQuery();
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Payment History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Mobile Loading */}
-          <div className="block md:hidden space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <Skeleton className="h-10 w-10 rounded" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-32 mb-1" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                  <Skeleton className="h-6 w-16" />
-                </div>
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Desktop Loading */}
-          <div className="hidden md:block space-y-4">
-            <div className="grid grid-cols-6 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-4" />
-              ))}
-            </div>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="grid grid-cols-6 gap-4">
-                {Array.from({ length: 6 }).map((_, j) => (
-                  <Skeleton key={j} className="h-8" />
-                ))}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <PaymentTableLoadingSkeleton />;
   }
 
   if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Payment History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Failed to load payment history. Please try again later.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
+    return <PaymentsError onRetry={refetch} />;
   }
 
   if (!payments || payments.length === 0) {

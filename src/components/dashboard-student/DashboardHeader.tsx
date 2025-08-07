@@ -4,7 +4,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MobileSidebar } from "./Sidebar";
 import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
-import { LoadingError } from "./ui";
+import {
+  StatsError,
+  LoadingError,
+  DashboardHeaderError,
+} from "./ui/LoadingError";
 
 // Mock user data
 const mockUser = {
@@ -29,7 +33,7 @@ export function DashboardHeader() {
     return <DashboardHeaderLoadingSkeleton />;
   }
   if (error) {
-    return <LoadingError onRetry={refetch} />;
+    return <DashboardHeaderError onRetry={refetch} />;
   }
   const {
     totalCourses = 0,

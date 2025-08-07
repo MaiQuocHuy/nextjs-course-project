@@ -2,19 +2,13 @@
 
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useGetPaymentsQuery } from "@/services/student/studentApi";
-import {
-  DollarSign,
-  CreditCard,
-  Calendar,
-  TrendingUp,
-  AlertCircle,
-} from "lucide-react";
+import { DollarSign, CreditCard, Calendar, TrendingUp } from "lucide-react";
+import { StatsLoadingSkeleton } from "../ui/Loading";
+import { StatsError } from "../ui/LoadingError";
 
 export function PaymentStats() {
-  const { data: payments, isLoading, error } = useGetPaymentsQuery();
+  const { data: payments, isLoading, error, refetch } = useGetPaymentsQuery();
 
   const stats = useMemo(() => {
     if (!payments) return null;
@@ -62,33 +56,11 @@ export function PaymentStats() {
   }, [payments]);
 
   if (isLoading) {
-    return (
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-6 md:h-8 w-16 mb-1" />
-              <Skeleton className="h-3 w-24" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <StatsLoadingSkeleton />;
   }
 
   if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Failed to load payment statistics. Please try again later.
-        </AlertDescription>
-      </Alert>
-    );
+    return <StatsError onRetry={refetch} />;
   }
 
   if (!stats) {
