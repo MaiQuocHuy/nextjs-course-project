@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
 import { EnrolledCoursesListProps } from "../types";
-import { CourseCard } from "../coursecard/page";
+import { CourseCard } from "../course-card/page";
 
 export function EnrolledCoursesList({ courses }: EnrolledCoursesListProps) {
   return (
