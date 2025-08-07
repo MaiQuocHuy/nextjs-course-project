@@ -45,6 +45,7 @@ interface RegisterUserResponse {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQuery,
+  tagTypes: ['Auth'],
   endpoints: (builder) => ({
     // Define your endpoints here
 
@@ -94,6 +95,7 @@ export const authApi = createApi({
           body: refreshToken ? { refreshToken } : {},
         };
       },
+      invalidatesTags: ['Auth'],
     }),
     
   }),

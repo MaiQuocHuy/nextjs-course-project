@@ -1,5 +1,4 @@
 export interface UserData {
-  id: string
   name: string
   email: string
   role: "Student" | "Instructor"
@@ -8,7 +7,7 @@ export interface UserData {
 }
 
 export interface Course {
-  id: string
+  id : string
   title: string
   instructor: string
   thumbnail: string
