@@ -143,14 +143,45 @@ export interface PaymentDetail extends Payment {
   // Payment detail might have additional fields
 }
 
-export interface PaymentsResponse {
-  statusCode: number;
-  message: string;
-  data: Payment[];
+// Review types
+export interface ReviewCourse {
+  id: string;
+  title: string;
 }
 
-export interface PaymentDetailResponse {
-  statusCode: number;
-  message: string;
-  data: PaymentDetail;
+export interface Review {
+  id: string;
+  course: ReviewCourse;
+  rating: number;
+  reviewText: string;
+  reviewedAt: string; // ISO date string
+}
+
+export interface PaginatedReviews {
+  content: Review[];
+  page: {
+    number: number;
+    size: number;
+    totalPages: number;
+    totalElements: number;
+    first: boolean;
+    last: boolean;
+  };
+}
+
+export interface UpdateReviewRequest {
+  rating: number;
+  reviewText: string;
+}
+
+export interface UpdateReviewResponse {
+  id: string;
+  rating: number;
+  reviewText: string;
+  reviewedAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
 }

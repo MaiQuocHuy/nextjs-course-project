@@ -6,17 +6,18 @@ import type {
   ActivityFeedResponse,
   DashboardData,
   Course,
-  PaymentsResponse,
-  PaymentDetailResponse,
   Payment,
   PaymentDetail,
+  PaginatedReviews,
+  UpdateReviewRequest,
+  UpdateReviewResponse,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Course", "Lesson", "Payment"],
+  tagTypes: ["Course", "Lesson", "Payment", "Review"],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
@@ -329,7 +330,7 @@ export const studentApi = createApi({
         method: "GET",
       }),
       providesTags: ["Payment"],
-      transformResponse: (response: PaymentsResponse) => {
+      transformResponse: (response: { data: Payment[] }) => {
         return response.data;
       },
     }),
@@ -343,7 +344,35 @@ export const studentApi = createApi({
       providesTags: (result, error, paymentId) => [
         { type: "Payment", id: paymentId },
       ],
-      transformResponse: (response: PaymentDetailResponse) => {
+      transformResponse: (response: { data: PaymentDetail }) => {
+        return response.data;
+      },
+    }),
+
+    // Get student reviews
+    getStudentReviews: builder.query<PaginatedReviews, void>({
+      query: () => ({
+        url: "/student/reviews",
+        method: "GET",
+      }),
+      providesTags: ["Review"],
+      transformResponse: (response: { data: PaginatedReviews }) => {
+        return response.data;
+      },
+    }),
+
+    // Update review
+    updateReview: builder.mutation<
+      UpdateReviewResponse,
+      { reviewId: string; data: UpdateReviewRequest }
+    >({
+      query: ({ reviewId, data }) => ({
+        url: `/student/reviews/${reviewId}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Review"],
+      transformResponse: (response: { data: UpdateReviewResponse }) => {
         return response.data;
       },
     }),
@@ -358,4 +387,6 @@ export const {
   useCompleteLessonMutation,
   useGetPaymentsQuery,
   useGetPaymentDetailQuery,
+  useGetStudentReviewsQuery,
+  useUpdateReviewMutation,
 } = studentApi;
