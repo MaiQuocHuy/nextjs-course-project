@@ -13,6 +13,7 @@ export interface Course {
     name: string;
     avatar: string;
   };
+  enrolledAt: string; // ISO date string
 }
 
 export interface PaginatedCourses {
@@ -108,4 +109,48 @@ export interface ActivityFeedResponse {
 export interface DashboardData {
   stats: CourseStats;
   activities: ActivityFeedResponse;
+}
+
+// Payment types
+export interface PaymentCourse {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+}
+
+export interface PaymentCard {
+  last4: string;
+  brand: string;
+  expMonth: number;
+  expYear: number;
+}
+
+export interface Payment {
+  id: string;
+  amount: number;
+  currency: string;
+  status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  paymentMethod: "stripe" | "paypal" | "bank_transfer";
+  createdAt: string; // ISO date string
+  transactionId?: string | null;
+  stripeSessionId?: string | null;
+  receiptUrl?: string | null;
+  card?: PaymentCard | null;
+  course: PaymentCourse;
+}
+
+export interface PaymentDetail extends Payment {
+  // Payment detail might have additional fields
+}
+
+export interface PaymentsResponse {
+  statusCode: number;
+  message: string;
+  data: Payment[];
+}
+
+export interface PaymentDetailResponse {
+  statusCode: number;
+  message: string;
+  data: PaymentDetail;
 }

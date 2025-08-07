@@ -6,13 +6,17 @@ import type {
   ActivityFeedResponse,
   DashboardData,
   Course,
+  PaymentsResponse,
+  PaymentDetailResponse,
+  Payment,
+  PaymentDetail,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Course", "Lesson"],
+  tagTypes: ["Course", "Lesson", "Payment"],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
@@ -113,16 +117,17 @@ export const studentApi = createApi({
           const activities: any[] = [];
 
           // Add course enrollment activities
-          courses.forEach((course: any) => {
+          courses.forEach((course: Course) => {
             activities.push({
               id: `course-${course.courseId}`,
               user_id: "current-user",
               type: "COURSE_ENROLLED",
               title: `Enrolled in Course: ${course.title}`,
               description: `Started learning ${course.title}`,
-              completed_at: new Date(
-                Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-              ).toISOString(), // Random date within last week
+              // completed_at: new Date(
+              //   Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
+              // ).toISOString(),
+              completed_at: course.enrolledAt,
               courseId: course.courseId,
             });
           });
@@ -316,6 +321,32 @@ export const studentApi = createApi({
         return response;
       },
     }),
+
+    // Get all payments
+    getPayments: builder.query<Payment[], void>({
+      query: () => ({
+        url: "/student/payments",
+        method: "GET",
+      }),
+      providesTags: ["Payment"],
+      transformResponse: (response: PaymentsResponse) => {
+        return response.data;
+      },
+    }),
+
+    // Get payment detail
+    getPaymentDetail: builder.query<PaymentDetail, string>({
+      query: (paymentId) => ({
+        url: `/student/payments/${paymentId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, paymentId) => [
+        { type: "Payment", id: paymentId },
+      ],
+      transformResponse: (response: PaymentDetailResponse) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -325,4 +356,6 @@ export const {
   useGetCourseDetailsQuery,
   useGetCourseWithSectionsQuery,
   useCompleteLessonMutation,
+  useGetPaymentsQuery,
+  useGetPaymentDetailQuery,
 } = studentApi;
