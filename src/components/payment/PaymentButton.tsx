@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import getStripe from "@/lib/stripe";
 import { cn } from "@/lib/utils";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface PaymentButtonProps {
   courseId: string;
@@ -34,6 +36,9 @@ export function PaymentButton({
   const [isProcessing, setIsProcessing] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
+  const isLoggedIn = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
 
   const [createCheckoutSession] = useCreateCheckoutSessionMutation();
 
@@ -46,7 +51,7 @@ export function PaymentButton({
 
   const handlePayment = async () => {
     // Check if user is logged in
-    if (status === "unauthenticated") {
+    if (!isLoggedIn) {
       toast.error("Please login to enroll in this course");
       router.push("/login");
       return;
