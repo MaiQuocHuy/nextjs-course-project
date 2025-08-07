@@ -23,6 +23,29 @@ export function EnrolledCoursesSummary() {
 
   const courses = data?.content || [];
 
+  if (courses.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardContent className="py-12">
+          <div className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium">No courses enrolled</h3>
+              <p className="text-muted-foreground">
+                Discover and enroll in courses to start your learning journey.
+              </p>
+              <Button asChild>
+                <Link href="/">Browse Courses</Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

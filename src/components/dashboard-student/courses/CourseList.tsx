@@ -1,18 +1,29 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
 import { CourseFilter } from "./CourseFilter";
 import { Button } from "@/components/ui/button";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { CoursesLoadingSkeleton, EnrolledCoursesError } from "../ui";
+import { Card } from "@/components/ui/card";
+import Link from "next/link";
+import { useAppSelector, useAppDispatch } from "@/store/hook";
+import {
+  resetFilters,
+  CourseFilterStatus,
+  CourseSortBy,
+} from "@/store/slices/student/courseFilterSlice";
 
 export function CourseList() {
   const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("recent");
+  const dispatch = useAppDispatch();
+  const {
+    searchQuery,
+    filter: filterStatus,
+    sort: sortBy,
+  } = useAppSelector((state) => state.courseFilter);
 
   const courses = data?.content || [];
 
@@ -31,15 +42,15 @@ export function CourseList() {
     }
 
     // Apply status filter
-    if (filterStatus !== "all") {
+    if (filterStatus !== CourseFilterStatus.ALL) {
       filtered = filtered.filter((course) => {
         const status = course.completionStatus?.toUpperCase();
         switch (filterStatus) {
-          case "completed":
+          case CourseFilterStatus.COMPLETED:
             return status === "COMPLETED";
-          case "in_progress":
+          case CourseFilterStatus.IN_PROGRESS:
             return status === "IN_PROGRESS";
-          case "not_started":
+          case CourseFilterStatus.NOT_STARTED:
             return status === "NOT_STARTED" || !status;
           default:
             return true;
@@ -50,13 +61,13 @@ export function CourseList() {
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "title":
+        case CourseSortBy.TITLE:
           return a.title.localeCompare(b.title);
-        case "instructor":
+        case CourseSortBy.INSTRUCTOR:
           return a.instructor.name.localeCompare(b.instructor.name);
-        case "progress":
+        case CourseSortBy.PROGRESS:
           return (b.progress || 0) - (a.progress || 0);
-        case "recent":
+        case CourseSortBy.RECENT:
         default:
           // For recent, we can sort by courseId as a proxy since we don't have enrolledAt
           return b.courseId.localeCompare(a.courseId);
@@ -84,21 +95,31 @@ export function CourseList() {
     );
   }
 
+  if (courses.length === 0) {
+    return (
+      <Card className="p-6 text-center">
+        <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No courses enrolled</h3>
+        <p className="text-muted-foreground mb-4">
+          Start your learning journey by browsing and enrolling in courses.
+        </p>
+        <Button asChild>
+          <Link href="/courses">Browse Courses</Link>
+        </Button>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <CourseFilter
-        onSearch={setSearchQuery}
-        onFilter={setFilterStatus}
-        onSort={setSortBy}
-      />
+      <CourseFilter />
 
       {filteredAndSortedCourses.length === 0 ? (
         <EmptyState
-          hasFilter={searchQuery.trim() !== "" || filterStatus !== "all"}
-          onClearFilter={() => {
-            setSearchQuery("");
-            setFilterStatus("all");
-          }}
+          hasFilter={
+            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+          }
+          onClearFilter={() => dispatch(resetFilters())}
         />
       ) : (
         <>

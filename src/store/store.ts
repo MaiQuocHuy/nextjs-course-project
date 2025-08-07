@@ -5,11 +5,13 @@ import { coursesApi } from "@/services/coursesApi";
 import { paymentApi } from "@/services/paymentApi";
 import { studentApi } from "@/services/student/studentApi";
 import { authSlice } from "./slices/auth/authSlice";
+import courseFilterReducer from "./slices/student/courseFilterSlice";
 
 export const makeStore = () => {
   const store = configureStore({
     reducer: {
       auth: authSlice.reducer,
+      courseFilter: courseFilterReducer,
 
       // counter: counterReducer,
 
