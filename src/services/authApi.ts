@@ -58,6 +58,8 @@ interface RefreshTokenResponse {
   data: {
     accessToken: string;
     refreshToken?: string;
+    refreshTokenExpires?: number;
+    user?: User; // Optional updated user info
   };
 }
 

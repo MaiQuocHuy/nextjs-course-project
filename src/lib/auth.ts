@@ -12,6 +12,9 @@ interface UserType {
   thumbnailUrl?: string;
   bio?: string;
   isActive?: boolean;
+  thumbnailUrl?: string;
+  bio?: string;
+  isActive?: boolean;
   accessToken: string;
   refreshToken: string;
   accessTokenExpires?: number;
@@ -104,7 +107,7 @@ export const authOptions: NextAuthOptions = {
           const response = await res.json();
 
           if (response && response.data) {
-            // Decode tokens to get expiration times
+            // Decode access token to get expiration time
             const accessTokenDecoded = decodeJWT(response.data.accessToken);
 
             return {
@@ -250,7 +253,8 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
     // Decode new access token to get expiration time
     const newAccessTokenDecoded = decodeJWT(response.data.accessToken);
 
-    return {
+    // Update token with new values and optionally updated user info
+    const updatedToken = {
       ...token,
       accessToken: response.data.accessToken,
       refreshToken: response.data.refreshToken ?? token.refreshToken,
@@ -259,6 +263,19 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
         response.data.refreshTokenExpires ?? token.refreshTokenExpires,
       error: undefined, // Clear any previous errors
     };
+
+    // If backend sends updated user info during refresh, update it
+    if (response.data.user) {
+      updatedToken.email = response.data.user.email ?? token.email;
+      updatedToken.name = response.data.user.name ?? token.name;
+      updatedToken.role = response.data.user.role ?? token.role;
+      updatedToken.thumbnailUrl =
+        response.data.user.thumbnailUrl ?? token.thumbnailUrl;
+      updatedToken.bio = response.data.user.bio ?? token.bio;
+      updatedToken.isActive = response.data.user.isActive ?? token.isActive;
+    }
+
+    return updatedToken;
   } catch (error) {
     console.error("Refresh token error:", error);
     return {
@@ -285,6 +302,9 @@ export async function forceTokenRefresh(): Promise<boolean> {
       email: session.user.email,
       name: session.user.name,
       role: session.user.role,
+      thumbnailUrl: session.user.thumbnailUrl,
+      bio: session.user.bio,
+      isActive: session.user.isActive,
       accessToken: session.user.accessToken,
       refreshToken: session.user.refreshToken,
       accessTokenExpires: session.user.accessTokenExpires,
