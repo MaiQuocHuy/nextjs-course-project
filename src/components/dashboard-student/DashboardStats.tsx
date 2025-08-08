@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { BookOpen, Award, Clock, Target, TrendingUp } from "lucide-react";
-import { LoadingError, DashboardStatsLoadingSkeleton } from "./ui";
+import { StatsLoadingSkeleton } from "./ui/Loading";
+import { StatsError } from "./ui/LoadingError";
 
 export function DashboardStats() {
   const {
@@ -14,11 +15,11 @@ export function DashboardStats() {
   } = useGetDashboardDataQuery({ page: 0, size: 20 });
 
   if (isLoading) {
-    return <DashboardStatsLoadingSkeleton />;
+    return <StatsLoadingSkeleton />;
   }
 
   if (error) {
-    return <LoadingError onRetry={refetch} />;
+    return <StatsError onRetry={refetch} />;
   }
 
   // Use stats from the dashboard data

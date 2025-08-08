@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,6 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,6 +21,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2, Upload, X, CheckCircle, XCircle } from "lucide-react";
+import { useRegisterInstructorMutation, useRegisterStudentMutation } from "@/services/authApi";
+
+type RegistrationFormData = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: "STUDENT" | "INSTRUCTOR";
+  portfolioUrl?: string;
+  certificateFile?: File;
+  cvFile?: File;
+  supportingFile?: File;
+};
 
 // Zod schema for form validation
 const registrationSchema = z
@@ -34,8 +46,8 @@ const registrationSchema = z
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[0-9]/, "Password must contain at least one number"),
     confirmPassword: z.string(),
-    userType: z.enum(["student", "instructor"]),
-    briefIntroduction: z.string().optional(),
+    role: z.enum(["STUDENT", "INSTRUCTOR"]),
+    portfolioUrl: z.string().optional(),
     files: z.any().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -44,81 +56,135 @@ const registrationSchema = z
   })
   .refine(
     (data) => {
-      if (data.userType === "instructor") {
-        return data.briefIntroduction && data.briefIntroduction.trim().length > 0;
+      if (data.role === "INSTRUCTOR") {
+        return data.portfolioUrl && data.portfolioUrl.trim().length > 0;
       }
       return true;
     },
     {
-      message: "Brief introduction is required for instructors",
-      path: ["briefIntroduction"],
+      message: "Portfolio URL is required for instructors",
+      path: ["portfolioUrl"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.role === "INSTRUCTOR" && data.portfolioUrl) {
+        try {
+          new URL(data.portfolioUrl);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message: "Please enter a valid URL",
+      path: ["portfolioUrl"],
     }
   );
-
-type RegistrationFormData = {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  userType: "student" | "instructor";
-  briefIntroduction?: string;
-  files?: File[];
-};
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failure">("success");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [modalMessage, setModalMessage] = useState("");
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [currentStep, setCurrentStep] = useState(1);
+  const maxSteps = 2;
+
+  // RTK Query mutation hook
+  const [registerUser] = useRegisterStudentMutation();
+  const [registerInstructor] = useRegisterInstructorMutation();
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    trigger,
     formState: { errors },
-    reset,
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-      userType: "student",
+      role: "STUDENT",
     },
   });
 
-  const userType = watch("userType");
+  const role = watch("role");
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setSelectedFiles(files);
-    setValue("files", files);
-  };
-
-  const removeFile = (index: number) => {
-    const newFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(newFiles);
-    setValue("files", newFiles);
-  };
+  useEffect(() => {
+    if (role === "STUDENT") {
+      setCurrentStep(1);
+    }
+  }, [role]);
 
   const onSubmit = async (data: RegistrationFormData) => {
     setIsSubmitting(true);
 
-    // Simulate API call with random success/failure
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const commonSuccess = () => {
+      setModalType("success");
+      setModalMessage(
+        "Your account has been created successfully. You will be redirected to the login page."
+      );
+      setShowModal(true);
+      setTimeout(() => {
+        router.replace("/login");
+      }, 500);
+    };
 
-    // Mock 80% success rate
-    const isSuccess = Math.random() > 0.2;
+    const commonFailure = (error: any) => {
+      setModalType("failure");
+      if (error?.data?.message) {
+        setModalMessage(error.data.message);
+      } else if (error?.status === 409) {
+        setModalMessage("An account with this email already exists.");
+      } else if (error?.status === 400) {
+        setModalMessage("Please check your information and try again.");
+      } else {
+        setModalMessage("There was an error creating your account. Please try again later.");
+      }
+      setShowModal(true);
+    };
 
-    setModalType(isSuccess ? "success" : "failure");
-    setShowModal(true);
-    setIsSubmitting(false);
+    try {
+      if (data.role === "STUDENT") {
+        await registerUser({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+        }).unwrap();
+      } else {
+        if (!certificateFile || !cvFile) {
+          throw new Error("Certificate and CV files are required for instructor registration.");
+        }
+        await registerInstructor({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          portfolioUrl: data.portfolioUrl ?? "",
+          certificateFile: certificateFile,
+          cvFile: cvFile,
+          supportingFile: supportingFile ?? undefined,
+        }).unwrap();
+      }
+
+      commonSuccess();
+    } catch (error: any) {
+      commonFailure(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleModalClose = () => {
     setShowModal(false);
-    if (modalType === "success") {
-      router.push("/login");
-    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -129,190 +195,539 @@ export default function RegisterPage() {
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
+  const validateFile = (file: File, maxSizeMB = 15) => {
+    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (file.size > maxSizeBytes) {
+      const error = `File size must be less than ${maxSizeMB}MB`;
+      alert(error);
+      return error;
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      const error = "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
+      alert(error);
+      return error;
+    }
+
+    return null;
+  };
+
+  const simulateUpload = (fileId: string) => {
+    setUploadProgress((prev) => ({ ...prev, [fileId]: 0 }));
+
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        const currentProgress = prev[fileId] || 0;
+        if (currentProgress >= 100) {
+          clearInterval(interval);
+          return prev;
+        }
+        return { ...prev, [fileId]: currentProgress + 10 };
+      });
+    }, 200);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center text-lg">
+      <Card className="w-full max-w-2xl shadow-xl mx-auto">
+        <CardHeader className="space-y-1 px-4 sm:px-6">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-center">
+            Create Account
+          </CardTitle>
+          <CardDescription className="text-center text-base sm:text-lg">
             Join our learning platform today
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Name Field */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
-              <Input
-                id="name"
-                {...register("name")}
-                placeholder="Enter your full name"
-                className={errors.name ? "border-red-500" : " border-gray-900"}
-              />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-            </div>
-
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                {...register("email")}
-                placeholder="Enter your email address"
-                className={errors.email ? "border-red-500" : "border-gray-900"}
-              />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-            </div>
-
-            {/* Password Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register("password")}
-                  placeholder="Create a password"
-                  className={errors.password ? "border-red-500" : "border-gray-900"}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  {...register("confirmPassword")}
-                  placeholder="Confirm your password"
-                  className={errors.confirmPassword ? "border-red-500" : "border-gray-900"}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
-                )}
-              </div>
-            </div>
-
-            {/* User Type Radio Group */}
-            <div className="space-y-3">
-              <Label>I am a *</Label>
-              <RadioGroup
-                value={userType}
-                onValueChange={(value) => setValue("userType", value as "student" | "instructor")}
-                className="flex flex-col space-y-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="student" id="student" className="border-gray-900" />
-                  <Label htmlFor="student" className="cursor-pointer">
-                    Student
-                  </Label>
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+            {/* Step Indicator - Always reserve space to prevent layout shift */}
+            <div className="mb-8">
+              {/* Mobile Step Indicator */}
+              <div className="block sm:hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <span
+                    className={`text-sm font-medium ${
+                      role === "INSTRUCTOR" ? "text-gray-600" : "text-transparent"
+                    }`}
+                  >
+                    Step {currentStep} of {maxSteps}
+                  </span>
+                  <span
+                    className={`text-sm ${
+                      role === "INSTRUCTOR" ? "text-gray-500" : "text-transparent"
+                    }`}
+                  >
+                    {currentStep === 1 ? "Basic Info" : "Instructor Info"}
+                  </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="instructor" id="instructor" className="border-gray-900" />
-                  <Label htmlFor="instructor" className="cursor-pointer">
-                    Instructor
-                  </Label>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      role === "INSTRUCTOR" ? "bg-blue-600" : "bg-transparent"
+                    }`}
+                    style={{
+                      width: role === "INSTRUCTOR" ? `${(currentStep / maxSteps) * 100}%` : "0%",
+                    }}
+                  ></div>
                 </div>
-              </RadioGroup>
-              {errors.userType && <p className="text-sm text-red-500">{errors.userType.message}</p>}
+              </div>
+
+              {/* Desktop Step Indicator */}
+              <div className="hidden sm:flex items-center justify-center space-x-4">
+                <div className="flex items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                      role === "INSTRUCTOR" && currentStep >= 1
+                        ? "bg-blue-600 text-white shadow-lg"
+                        : role === "INSTRUCTOR"
+                        ? "bg-gray-200 text-gray-600"
+                        : "bg-transparent text-transparent"
+                    }`}
+                  >
+                    {role === "INSTRUCTOR" ? (currentStep > 1 ? "✓" : "1") : "1"}
+                  </div>
+                  <span
+                    className={`ml-3 text-sm font-medium ${
+                      role === "INSTRUCTOR" ? "text-gray-700" : "text-transparent"
+                    }`}
+                  >
+                    Basic Information
+                  </span>
+                </div>
+                <div
+                  className={`w-20 h-1 rounded-full transition-all duration-300 ${
+                    role === "INSTRUCTOR" && currentStep >= 2 ? "bg-blue-600" : "bg-gray-200"
+                  }`}
+                  style={{ opacity: role === "INSTRUCTOR" ? 1 : 0 }}
+                ></div>
+                <div className="flex items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                      role === "INSTRUCTOR" && currentStep >= 2
+                        ? "bg-blue-600 text-white shadow-lg"
+                        : role === "INSTRUCTOR"
+                        ? "bg-gray-200 text-gray-600"
+                        : "bg-transparent text-transparent"
+                    }`}
+                  >
+                    {role === "INSTRUCTOR" ? "2" : "2"}
+                  </div>
+                  <span
+                    className={`ml-3 text-sm font-medium ${
+                      role === "INSTRUCTOR" ? "text-gray-700" : "text-transparent"
+                    }`}
+                  >
+                    Instructor Info
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Conditional Fields for Instructor */}
-            {userType === "instructor" && (
-              <div className="space-y-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="text-lg font-semibold text-blue-900">Instructor Information</h3>
-
-                {/* Brief Introduction */}
+            {(role === "STUDENT" || (role === "INSTRUCTOR" && currentStep === 1)) && (
+              <>
+                {/* Name Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="briefIntroduction">Brief Introduction *</Label>
-                  <Textarea
-                    id="briefIntroduction"
-                    {...register("briefIntroduction")}
-                    placeholder="Tell us about your teaching experience, expertise, and what you'd like to teach..."
-                    className={`min-h-[120px] ${errors.briefIntroduction ? "border-red-500" : ""}`}
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    {...register("name")}
+                    placeholder="Enter your full name"
+                    className={errors.name ? "border-red-500" : ""}
                   />
-                  {errors.briefIntroduction && (
-                    <p className="text-sm text-red-500">{errors.briefIntroduction.message}</p>
+                  {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                </div>
+
+                {/* Email Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...register("email")}
+                    placeholder="Enter your email address"
+                    className={errors.email ? "border-red-500" : ""}
+                  />
+                  {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                </div>
+
+                {/* Password Fields */}
+                <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      {...register("password")}
+                      placeholder="Create a password"
+                      className={errors.password ? "border-red-500" : ""}
+                    />
+                    {errors.password && (
+                      <p className="text-sm text-red-500">{errors.password.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      {...register("confirmPassword")}
+                      placeholder="Confirm your password"
+                      className={errors.confirmPassword ? "border-red-500" : ""}
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* User Type Radio Group */}
+                <div className="space-y-3">
+                  <Label>I am a *</Label>
+                  <RadioGroup
+                    value={role}
+                    onValueChange={(value) => setValue("role", value as "STUDENT" | "INSTRUCTOR")}
+                    className="flex flex-col space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="STUDENT" id="student" />
+                      <Label htmlFor="student" className="cursor-pointer">
+                        Student
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="INSTRUCTOR" id="instructor" />
+                      <Label htmlFor="instructor" className="cursor-pointer">
+                        Instructor
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
+                </div>
+              </>
+            )}
+
+            {role === "INSTRUCTOR" && currentStep === 2 && (
+              <div className="space-y-6 p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg sm:text-xl font-semibold text-blue-900 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                    Instructor Information
+                  </h3>
+                  <span className="text-xs sm:text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                    Step 2 of 2
+                  </span>
+                </div>
+
+                {/* Portfolio URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="portfolioUrl">Portfolio URL (Github/LinkedIn) *</Label>
+                  <Input
+                    id="portfolioUrl"
+                    {...register("portfolioUrl")}
+                    placeholder="Github or LinkedIn"
+                    className={errors.portfolioUrl ? "border-red-500" : ""}
+                  />
+                  {errors.portfolioUrl && (
+                    <p className="text-sm text-red-500">{errors.portfolioUrl.message}</p>
+                  )}
+                  <p className="text-xs text-gray-500">GitHub, LinkedIn, or personal portfolio</p>
+                </div>
+
+                {/* Certificate Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Certificate *</Label>
+                    {certificateFile && (
+                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                        Uploaded
+                      </span>
+                    )}
+                  </div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const error = validateFile(file);
+                          if (!error) {
+                            setCertificateFile(file);
+                            setValue("certificateFile", file);
+                            simulateUpload(`cert-${file.name}`);
+                          }
+                        }
+                      }}
+                      className="hidden"
+                      id="certificate-upload"
+                    />
+                    <label
+                      htmlFor="certificate-upload"
+                      className="cursor-pointer block text-center"
+                    >
+                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-600 font-medium">Upload Certificate</p>
+                      <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG (Max 15MB)</p>
+                    </label>
+                  </div>
+
+                  {certificateFile && (
+                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{certificateFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatFileSize(certificateFile.size)}
+                        </p>
+                        {uploadProgress[`cert-${certificateFile.name}`] !== undefined &&
+                          uploadProgress[`cert-${certificateFile.name}`] < 100 && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                              <div
+                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${uploadProgress[`cert-${certificateFile.name}`]}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCertificateFile(null);
+                          setValue("certificateFile", undefined);
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
 
-                {/* File Upload */}
-                <div className="space-y-2">
-                  <Label htmlFor="files">Upload CV/Portfolio/Degree/Certificate (if any)</Label>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-center w-full">
-                      <label
-                        htmlFor="files"
-                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-8 h-8 mb-4 text-gray-500" />
-                          <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold">Click to upload</span> or drag and drop
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            PDF, DOC, DOCX, JPG, PNG (MAX. 10MB each)
-                          </p>
-                        </div>
-                        <input
-                          id="files"
-                          type="file"
-                          multiple
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Selected Files Display */}
-                    {selectedFiles.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Selected files:</p>
-                        {selectedFiles.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-2 bg-white border rounded-lg"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{file.name}</p>
-                              <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFile(index)}
-                              className="ml-2 text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                {/* CV/Resume Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>CV/Resume *</Label>
+                    {cvFile && (
+                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                        Uploaded
+                      </span>
                     )}
                   </div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const error = validateFile(file);
+                          if (!error) {
+                            setCvFile(file);
+                            setValue("cvFile", file);
+                            simulateUpload(`cv-${file.name}`);
+                          }
+                        }
+                      }}
+                      className="hidden"
+                      id="cv-upload"
+                    />
+                    <label htmlFor="cv-upload" className="cursor-pointer block text-center">
+                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-600 font-medium">Upload CV/Resume</p>
+                      <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG (Max 15MB)</p>
+                    </label>
+                  </div>
+
+                  {cvFile && (
+                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{cvFile.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(cvFile.size)}</p>
+                        {uploadProgress[`cv-${cvFile.name}`] !== undefined &&
+                          uploadProgress[`cv-${cvFile.name}`] < 100 && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                              <div
+                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress[`cv-${cvFile.name}`]}%` }}
+                              ></div>
+                            </div>
+                          )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCvFile(null);
+                          setValue("cvFile", undefined);
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Supporting Documents Upload (Optional) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>
+                      Supporting Document <span className="text-gray-500 text-sm">(Optional)</span>
+                    </Label>
+                    {supportingFile && (
+                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                        Uploaded
+                      </span>
+                    )}
+                  </div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const error = validateFile(file);
+                          if (!error) {
+                            setSupportingFile(file);
+                            setValue("supportingFile", file);
+                            simulateUpload(`support-${file.name}`);
+                          }
+                        }
+                      }}
+                      className="hidden"
+                      id="supporting-upload"
+                    />
+                    <label htmlFor="supporting-upload" className="cursor-pointer block text-center">
+                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-600 font-medium">
+                        Upload Supporting Document
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Degrees, certifications, portfolio (Max 15MB)
+                      </p>
+                    </label>
+                  </div>
+
+                  {supportingFile && (
+                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{supportingFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatFileSize(supportingFile.size)}
+                        </p>
+                        {uploadProgress[`support-${supportingFile.name}`] !== undefined &&
+                          uploadProgress[`support-${supportingFile.name}`] < 100 && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                              <div
+                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${uploadProgress[`support-${supportingFile.name}`]}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSupportingFile(null);
+                          setValue("supportingFile", undefined);
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-12 text-lg font-semibold"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Creating Account...
-                </>
-              ) : (
-                "Create Account"
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+              {/* Back Button */}
+              {role === "INSTRUCTOR" && currentStep === 2 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep(1)}
+                  className="w-full sm:flex-1 h-12 text-base sm:text-lg font-semibold order-2 sm:order-1"
+                >
+                  ← Back to Basic Info
+                </Button>
               )}
-            </Button>
+
+              {/* Next/Submit Button */}
+              {role === "STUDENT" || (role === "INSTRUCTOR" && currentStep === 2) ? (
+                <Button
+                  type="submit"
+                  className="w-full sm:flex-1 h-12 text-base sm:text-lg font-semibold order-1 sm:order-2"
+                  disabled={
+                    isSubmitting ||
+                    (role === "INSTRUCTOR" &&
+                      currentStep === 2 &&
+                      (!watch("portfolioUrl") || !certificateFile || !cvFile))
+                  }
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      Create Account
+                      {role === "INSTRUCTOR" && currentStep === 2 && " ✓"}
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    const step1Fields = [
+                      "name",
+                      "email",
+                      "password",
+                      "confirmPassword",
+                      "role",
+                    ] as const;
+
+                    const isValid = await trigger(step1Fields);
+
+                    if (isValid) {
+                      setCurrentStep(2);
+                    }
+                  }}
+                  className="w-full sm:flex-1 h-12 text-base sm:text-lg font-semibold"
+                  disabled={
+                    !watch("name")?.trim() ||
+                    !watch("email")?.trim() ||
+                    !watch("password") ||
+                    !watch("confirmPassword") ||
+                    !watch("role")
+                  }
+                >
+                  Next: Instructor Info →
+                </Button>
+              )}
+            </div>
 
             {/* Login Link */}
             <div className="text-center">
@@ -348,17 +763,15 @@ export default function RegisterPage() {
                 </>
               )}
             </DialogTitle>
-            <DialogDescription>
-              {modalType === "success"
-                ? "Your account has been created successfully. You will be redirected to the login page."
-                : "There was an error creating your account. Please try again later."}
-            </DialogDescription>
+            <DialogDescription>{modalMessage}</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button onClick={handleModalClose} className="w-full">
-              {modalType === "success" ? "Continue to Login" : "Try Again"}
-            </Button>
-          </DialogFooter>
+          {modalType !== "success" && (
+            <DialogFooter>
+              <Button onClick={handleModalClose} className="w-full">
+                Try Again
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

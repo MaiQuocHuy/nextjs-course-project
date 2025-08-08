@@ -1,20 +1,29 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
 import { CourseFilter } from "./CourseFilter";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { BookOpen, RefreshCw } from "lucide-react";
-import type { Course } from "@/types/student";
+import { BookOpen } from "lucide-react";
+import { CoursesLoadingSkeleton, EnrolledCoursesError } from "../ui";
+import { Card } from "@/components/ui/card";
+import Link from "next/link";
+import { useAppSelector, useAppDispatch } from "@/store/hook";
+import {
+  resetFilters,
+  CourseFilterStatus,
+  CourseSortBy,
+} from "@/store/slices/student/courseFilterSlice";
 
 export function CourseList() {
   const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("recent");
+  const dispatch = useAppDispatch();
+  const {
+    searchQuery,
+    filter: filterStatus,
+    sort: sortBy,
+  } = useAppSelector((state) => state.courseFilter);
 
   const courses = data?.content || [];
 
@@ -33,15 +42,15 @@ export function CourseList() {
     }
 
     // Apply status filter
-    if (filterStatus !== "all") {
+    if (filterStatus !== CourseFilterStatus.ALL) {
       filtered = filtered.filter((course) => {
         const status = course.completionStatus?.toUpperCase();
         switch (filterStatus) {
-          case "completed":
+          case CourseFilterStatus.COMPLETED:
             return status === "COMPLETED";
-          case "in_progress":
+          case CourseFilterStatus.IN_PROGRESS:
             return status === "IN_PROGRESS";
-          case "not_started":
+          case CourseFilterStatus.NOT_STARTED:
             return status === "NOT_STARTED" || !status;
           default:
             return true;
@@ -52,13 +61,13 @@ export function CourseList() {
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "title":
+        case CourseSortBy.TITLE:
           return a.title.localeCompare(b.title);
-        case "instructor":
+        case CourseSortBy.INSTRUCTOR:
           return a.instructor.name.localeCompare(b.instructor.name);
-        case "progress":
+        case CourseSortBy.PROGRESS:
           return (b.progress || 0) - (a.progress || 0);
-        case "recent":
+        case CourseSortBy.RECENT:
         default:
           // For recent, we can sort by courseId as a proxy since we don't have enrolledAt
           return b.courseId.localeCompare(a.courseId);
@@ -72,7 +81,7 @@ export function CourseList() {
     return (
       <div className="space-y-6">
         <CourseFilter />
-        <CourseListSkeleton />
+        <CoursesLoadingSkeleton />
       </div>
     );
   }
@@ -81,39 +90,36 @@ export function CourseList() {
     return (
       <div className="space-y-6">
         <CourseFilter />
-        <Alert variant="destructive">
-          <AlertDescription className="flex items-center justify-between">
-            <span>Failed to load courses. Please try again.</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="ml-4"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <EnrolledCoursesError onRetry={refetch} />
       </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <Card className="p-6 text-center">
+        <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No courses enrolled</h3>
+        <p className="text-muted-foreground mb-4">
+          Start your learning journey by browsing and enrolling in courses.
+        </p>
+        <Button asChild>
+          <Link href="/courses">Browse Courses</Link>
+        </Button>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <CourseFilter
-        onSearch={setSearchQuery}
-        onFilter={setFilterStatus}
-        onSort={setSortBy}
-      />
+      <CourseFilter />
 
       {filteredAndSortedCourses.length === 0 ? (
         <EmptyState
-          hasFilter={searchQuery.trim() !== "" || filterStatus !== "all"}
-          onClearFilter={() => {
-            setSearchQuery("");
-            setFilterStatus("all");
-          }}
+          hasFilter={
+            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+          }
+          onClearFilter={() => dispatch(resetFilters())}
         />
       ) : (
         <>
@@ -131,26 +137,6 @@ export function CourseList() {
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function CourseListSkeleton() {
-  return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="border rounded-lg overflow-hidden">
-          <Skeleton className="aspect-video w-full" />
-          <div className="p-4 space-y-3">
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <Skeleton className="h-2 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

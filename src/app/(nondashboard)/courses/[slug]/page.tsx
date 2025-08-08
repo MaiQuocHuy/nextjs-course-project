@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
-import { useGetCourseByIdQuery } from "@/services/coursesApi";
+import { useGetCourseBySlugQuery } from "@/services/coursesApi";
 import { CourseDetailSkeleton } from "@/components/course-detail/CourseDetailSkeleton";
 import { CourseHeader } from "@/components/course-detail/CourseHeader";
 import { CourseContent } from "@/components/course-detail/CourseContent";
@@ -13,15 +13,20 @@ import { useRouter } from "next/navigation";
 export default function CourseDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
   const router = useRouter();
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
 
-  const { id } = use(params);
+  const { slug } = use(params);
 
-  const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id);
+  const {
+    data: course,
+    isLoading,
+    error,
+    refetch,
+  } = useGetCourseBySlugQuery(slug);
 
   const handleEnroll = async () => {
     setIsEnrolling(true);
@@ -30,7 +35,7 @@ export default function CourseDetailPage({
       await new Promise((resolve) => setTimeout(resolve, 2000));
       setIsEnrolled(true);
       // TODO: Make an API call to enroll the user
-      console.log("Enrolling in course:", id);
+      console.log("Enrolling in course:", slug);
     } catch (error) {
       console.error("Enrollment failed:", error);
     } finally {

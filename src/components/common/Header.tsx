@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Menu,
   X,
@@ -27,13 +27,7 @@ import { SearchBar } from "@/components/common/SearchBar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { set } from "zod";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { sign } from "crypto";
-import { signOut } from "next-auth/react";
-import { setAuthState } from "@/store/slices/auth/authSlice";
-import { useLogoutMutation } from "@/services/authApi";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -43,48 +37,16 @@ const navigation = [
 ];
 
 export function Header() {
-  const isLoggedIn = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const { isAuthenticated: isLoggedIn, logout: authLogout, user } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  const userName = "John Doe";
-
-  const dispatch = useDispatch();
-  const [logout] = useLogoutMutation();
+  const userName = user?.name || "User";
 
   const handleLogout = async () => {
-    try {
-      // !logout
-      try {
-        await logout().unwrap();
-      } catch (apiError) {}
-
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      // Update Redux state
-      dispatch(setAuthState(false));
-
-      // Navigate to home page last
-      router.replace("/");
-    } catch (error) {
-      // Fallback: ensure local state is cleared even if everything fails
-
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      dispatch(setAuthState(false));
-
-      try {
-        await signOut({ redirect: false });
-      } catch (signOutError) {
-        // Silent fallback
-      }
-
-      // Still navigate to home even if logout API failed
-      router.replace("/");
-    }
+    await authLogout();
   };
 
   const isActiveLink = (href: string) => {

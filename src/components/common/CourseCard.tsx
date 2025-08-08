@@ -46,6 +46,8 @@ export function CourseCard({
 
   const isListView = variant === "list";
 
+  // console.log("All category: ", course.categories);
+
   if (isListView) {
     // List variant - horizontal layout
     return (
@@ -69,7 +71,9 @@ export function CourseCard({
                 variant="secondary"
                 className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium text-xs px-2 py-1"
               >
-                {course.category?.name || "Course"}
+                {course.categories
+                  .map((category) => category.name)
+                  .join(", ") || "Course"}
               </Badge>
             </div>
 
@@ -85,7 +89,7 @@ export function CourseCard({
             <div className="flex flex-col justify-between h-full min-h-[160px]">
               <div>
                 {/* Title - Reduced margin */}
-                <Link href={`/courses/${course.id}`}>
+                <Link href={`/courses/${course.slug}`}>
                   <h3 className="text-lg font-bold line-clamp-2 hover:text-blue-600 transition-colors duration-300 mb-2 cursor-pointer">
                     {course.title}
                   </h3>
@@ -135,12 +139,22 @@ export function CourseCard({
                         />
                       ))}
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {course.averageRating?.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ({formatStudentsCount(course.enrollCount || 0)})
-                    </span>
+                    {course.averageRating && course.averageRating > 0 ? (
+                      <>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {course.averageRating.toFixed(1)}
+                        </span>
+                        {course.enrollCount && course.enrollCount > 0 && (
+                          <span className="text-xs text-gray-500">
+                            ({formatStudentsCount(course.enrollCount)})
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        No ratings yet
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
@@ -155,7 +169,9 @@ export function CourseCard({
                     <div className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
                       <span>
-                        {formatStudentsCount(course.enrollCount || 0)}
+                        {course.enrollCount && course.enrollCount > 0
+                          ? formatStudentsCount(course.enrollCount)
+                          : "New"}
                       </span>
                     </div>
                   </div>
@@ -168,7 +184,7 @@ export function CourseCard({
                   asChild
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 font-semibold px-6 py-2 rounded-lg group"
                 >
-                  <Link href={`/courses/${course.id}`}>
+                  <Link href={`/courses/${course.slug}`}>
                     <span className="group-hover:translate-x-0.5 transition-transform duration-300">
                       Enroll Now
                     </span>
@@ -183,7 +199,7 @@ export function CourseCard({
     );
   }
 
-  // Grid variant - vertical layout (existing code)
+  // Grid variant - vertical layout
   return (
     <Card
       className={`group relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2 transform ${className}`}
@@ -194,7 +210,7 @@ export function CourseCard({
       {/* Image Section with Overlay */}
       <div className="relative overflow-hidden">
         <Image
-          src={course.thumbnailUrl || "/placeholder-course.jpg"}
+          src={course.thumbnailUrl}
           alt={course.title}
           width={400}
           height={225}
@@ -217,7 +233,8 @@ export function CourseCard({
             variant="secondary"
             className="bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white border-0 shadow-sm font-medium text-xs px-2 py-1"
           >
-            {course.category?.name || "Course"}
+            {course.categories.map((category) => category.name).join(", ") ||
+              "Course"}
           </Badge>
         </div>
 
@@ -228,7 +245,7 @@ export function CourseCard({
         </div>
 
         {/* Best Seller Badge */}
-        {course.averageRating && course.averageRating >= 4.5 && (
+        {course.averageRating > 0 && course.averageRating >= 4.5 && (
           <div className="absolute top-10 right-3">
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-md text-xs px-2 py-1">
               <Award className="w-3 h-3 mr-1" />
@@ -238,11 +255,11 @@ export function CourseCard({
         )}
       </div>
 
-      <CardContent className="p-5 relative z-10">
+      <CardContent className="px-5 relative z-10">
         <div className="space-y-3">
           {/* Title - Fixed height for consistency */}
           <div className="h-12 flex items-start">
-            <Link href={`/courses/${course.id}`}>
+            <Link href={`/courses/${course.slug}`}>
               <h3 className="text-lg font-bold line-clamp-2 hover:text-blue-600 transition-colors duration-300 leading-tight cursor-pointer">
                 {course.title}
               </h3>
@@ -258,7 +275,10 @@ export function CourseCard({
           <div className="flex items-center gap-3">
             <div className="relative">
               <Image
-                src={course.instructor?.avatar || "/placeholder-avatar.jpg"}
+                src={
+                  course.instructor?.avatar ||
+                  "public/images/avatar-instructor.png"
+                }
                 alt={course.instructor?.name || "Instructor"}
                 width={32}
                 height={32}
@@ -291,12 +311,23 @@ export function CourseCard({
                   />
                 ))}
               </div>
-              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {course.averageRating?.toFixed(1)}
-              </span>
-              <span className="text-xs text-gray-500">
-                ({formatStudentsCount(course.enrollCount || 0)})
-              </span>
+              {/* Only show rating if it exists and > 0 */}
+              {course.averageRating && course.averageRating > 0 ? (
+                <>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {course.averageRating.toFixed(1)}
+                  </span>
+                  {course.enrollCount && course.enrollCount > 0 && (
+                    <span className="text-xs text-gray-500">
+                      ({formatStudentsCount(course.enrollCount)})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  No ratings yet
+                </span>
+              )}
             </div>
           </div>
 
@@ -325,7 +356,9 @@ export function CourseCard({
                 <Users className="w-4 h-4" />
               </div>
               <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                {formatStudentsCount(course.enrollCount || 0)}
+                {course.enrollCount && course.enrollCount > 0
+                  ? formatStudentsCount(course.enrollCount)
+                  : "New"}
               </p>
             </div>
           </div>
@@ -337,7 +370,7 @@ export function CourseCard({
           asChild
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 font-semibold py-3 rounded-lg group"
         >
-          <Link href={`/courses/${course.id}`}>
+          <Link href={`/courses/${course.slug}`}>
             <span className="group-hover:translate-x-0.5 transition-transform duration-300">
               Enroll Now
             </span>
