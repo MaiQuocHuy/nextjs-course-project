@@ -12,9 +12,6 @@ interface UserType {
   thumbnailUrl?: string;
   bio?: string;
   isActive?: boolean;
-  thumbnailUrl?: string;
-  bio?: string;
-  isActive?: boolean;
   accessToken: string;
   refreshToken: string;
   accessTokenExpires?: number;
