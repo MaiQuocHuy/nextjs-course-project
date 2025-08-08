@@ -18,14 +18,19 @@ export const useQuizResultDetails = (
 };
 
 export const useQuizResultsStats = () => {
-  const { data: quizResults, isLoading, error } = useGetQuizResultsQuery();
+  const {
+    data: quizResults,
+    isLoading,
+    error,
+    refetch,
+  } = useGetQuizResultsQuery();
 
   const stats = useMemo(() => {
     if (!quizResults?.content) {
       return {
         totalQuizzes: 0,
-        passedQuizzes: 0,
-        failedQuizzes: 0,
+        highScoringQuizzes: 0,
+        lowScoringQuizzes: 0,
         averageScore: 0,
         highestScore: 0,
       };
@@ -35,8 +40,12 @@ export const useQuizResultsStats = () => {
     const totalQuizzes = results.length;
 
     // Calculate pass/fail based on score (>=80% = pass)
-    const passedQuizzes = results.filter((result) => result.score >= 80).length;
-    const failedQuizzes = totalQuizzes - passedQuizzes;
+    const highScoringQuizzes = results.filter(
+      (result) => result.score >= 80
+    ).length;
+    const lowScoringQuizzes = results.filter(
+      (result) => result.score <= 40
+    ).length;
 
     // Calculate average score using API score
     const totalScore = results.reduce((sum, result) => sum + result.score, 0);
@@ -50,8 +59,8 @@ export const useQuizResultsStats = () => {
 
     return {
       totalQuizzes,
-      passedQuizzes,
-      failedQuizzes,
+      highScoringQuizzes,
+      lowScoringQuizzes,
       averageScore: Math.round(averageScore * 10) / 10, // Round to 1 decimal place
       highestScore: Math.round(highestScore * 10) / 10,
     };
@@ -61,5 +70,6 @@ export const useQuizResultsStats = () => {
     stats,
     isLoading,
     error,
+    refetch,
   };
 };

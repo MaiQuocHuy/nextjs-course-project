@@ -1,37 +1,20 @@
 "use client";
 
 import { QuizResultCard } from "./QuizResultCard";
-import { useQuizResults } from "@/hooks/useQuizResults";
+import { useQuizResults } from "@/hooks/student/useQuizResults";
 import { Loader2, BookOpen, Target } from "lucide-react";
+import { QuizResultsLoadingSkeleton } from "../ui/Loading";
+import { QuizResultError } from "../ui/LoadingError";
 
 export function QuizResultList() {
-  const { data: quizResults, isLoading, error } = useQuizResults();
+  const { data: quizResults, isLoading, error, refetch } = useQuizResults();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Loading quiz results...</p>
-        </div>
-      </div>
-    );
+    return <QuizResultsLoadingSkeleton />;
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Target className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 font-medium">
-            Failed to load quiz results
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Please try refreshing the page
-          </p>
-        </div>
-      </div>
-    );
+    return <QuizResultError onRetry={() => refetch()} />;
   }
 
   if (!quizResults?.content || quizResults.content.length === 0) {

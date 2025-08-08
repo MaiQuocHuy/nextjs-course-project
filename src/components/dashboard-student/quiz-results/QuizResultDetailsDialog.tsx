@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuizResultDetails } from "@/hooks/useQuizResults";
+import { useQuizResultDetails } from "@/hooks/student/useQuizResults";
 import type { QuizResults } from "@/types/student";
 import { CheckCircle, XCircle, Clock, Book, Target } from "lucide-react";
 

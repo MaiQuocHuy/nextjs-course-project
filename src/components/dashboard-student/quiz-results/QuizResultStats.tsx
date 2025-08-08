@@ -1,44 +1,19 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuizResultsStats } from "@/hooks/useQuizResults";
+import { useQuizResultsStats } from "@/hooks/student/useQuizResults";
 import { Trophy, Target, TrendingUp, Award } from "lucide-react";
+import { StatsError, StatsLoadingSkeleton } from "../ui";
 
 export function QuizResultStats() {
-  const { stats, isLoading, error } = useQuizResultsStats();
+  const { stats, isLoading, error, refetch } = useQuizResultsStats();
 
   if (isLoading) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 bg-gray-200 rounded animate-pulse mb-2" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <StatsLoadingSkeleton />;
   }
 
   if (error) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-red-600">
-              Failed to load quiz statistics
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <StatsError onRetry={refetch} />;
   }
 
   return (
@@ -55,33 +30,39 @@ export function QuizResultStats() {
         </CardContent>
       </Card>
 
-      {/* Quizzes Passed */}
+      {/* High Scoring Quizzes */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Quizzes Passed</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            High Scoring Quizzes
+          </CardTitle>
           <Trophy className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
-            {stats.passedQuizzes}
+            {stats.highScoringQuizzes}
           </div>
           <p className="text-xs text-muted-foreground">
-            ≥80% score (successful attempts)
+            ≥ 80 score (Excellent!)
           </p>
         </CardContent>
       </Card>
 
-      {/* Quizzes Failed */}
+      {/* Low Scoring Quizzes */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Quizzes Failed</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Low Scoring Quizzes
+          </CardTitle>
           <TrendingUp className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-red-600">
-            {stats.failedQuizzes}
+            {stats.lowScoringQuizzes}
           </div>
-          <p className="text-xs text-muted-foreground">Need improvement</p>
+          <p className="text-xs text-muted-foreground">
+            ≤ 40 score (Need improvement)
+          </p>
         </CardContent>
       </Card>
 
@@ -93,7 +74,7 @@ export function QuizResultStats() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-blue-600">
-            {stats.averageScore}%
+            {stats.averageScore}
           </div>
           <p className="text-xs text-muted-foreground">Overall performance</p>
         </CardContent>
