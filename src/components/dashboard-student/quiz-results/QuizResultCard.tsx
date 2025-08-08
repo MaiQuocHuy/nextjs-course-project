@@ -6,18 +6,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuizResultDetailsDialog } from "./QuizResultDetailsDialog";
 import type { QuizResults } from "@/types/student";
 import { Eye, Clock, Book, GraduationCap } from "lucide-react";
+import { formatDate } from "@/utils/student";
 
 interface QuizResultCardProps {
   quizResult: QuizResults;
-}
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "2-digit",
-  });
 }
 
 function getScoreColor(score: number) {
