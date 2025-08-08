@@ -11,6 +11,7 @@ import type {
   PaginatedReviews,
   UpdateReviewRequest,
   UpdateReviewResponse,
+  Activity,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
@@ -115,7 +116,7 @@ export const studentApi = createApi({
           });
 
           const courseDetails = await Promise.all(detailsPromises);
-          const activities: any[] = [];
+          const activities: Activity[] = [];
 
           // Add course enrollment activities
           courses.forEach((course: Course) => {
@@ -125,10 +126,7 @@ export const studentApi = createApi({
               type: "COURSE_ENROLLED",
               title: `Enrolled in Course: ${course.title}`,
               description: `Started learning ${course.title}`,
-              // completed_at: new Date(
-              //   Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-              // ).toISOString(),
-              completed_at: course.enrolledAt,
+              completedAt: course.enrolledAt,
               courseId: course.courseId,
             });
           });
@@ -154,9 +152,7 @@ export const studentApi = createApi({
                         type: "LESSON_COMPLETED",
                         title: `Completed Lesson: ${lesson.title}`,
                         description: `Successfully completed ${lesson.title} in ${course.title}`,
-                        completed_at: new Date(
-                          Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000
-                        ).toISOString(), // Random date within last 2 weeks
+                        completedAt: lesson.completedAt, // Random date within last 2 weeks
                         courseId: course.courseId,
                         lessonId: lesson.id,
                       });
@@ -169,10 +165,7 @@ export const studentApi = createApi({
                           type: "QUIZ_SUBMITTED",
                           title: `Submitted Quiz: ${lesson.title}`,
                           description: `Quiz completed with good performance`,
-                          completed_at: new Date(
-                            Date.now() -
-                              Math.random() * 14 * 24 * 60 * 60 * 1000
-                          ).toISOString(),
+                          completedAt: lesson.completedAt, // Use the same completedAt date
                           score: Math.floor(Math.random() * 25) + 75, // Random score between 75-100
                           courseId: course.courseId,
                           lessonId: lesson.id,
@@ -188,8 +181,8 @@ export const studentApi = createApi({
           // Sort activities by completed_at (most recent first)
           activities.sort(
             (a, b) =>
-              new Date(b.completed_at).getTime() -
-              new Date(a.completed_at).getTime()
+              new Date(b.completedAt).getTime() -
+              new Date(a.completedAt).getTime()
           );
 
           // Implement pagination for activities

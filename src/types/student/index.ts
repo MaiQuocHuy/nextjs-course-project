@@ -57,6 +57,7 @@ export interface Lesson {
   video: Video | null;
   quiz: Quiz | null;
   isCompleted: boolean;
+  completedAt: string | null; // ISO date string
 }
 
 export interface Section {
@@ -88,7 +89,7 @@ export interface Activity {
   type: ActivityType;
   title: string;
   description: string;
-  completed_at: string;
+  completedAt: string;
   score?: number;
   courseId?: string;
   lessonId?: string;

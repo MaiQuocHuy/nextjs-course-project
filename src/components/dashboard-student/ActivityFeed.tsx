@@ -134,7 +134,7 @@ export function ActivityFeed() {
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
                         {getActivityBadge(activity.type, activity.score)}
                         <time className="text-xs text-muted-foreground">
-                          {formatTimeAgo(activity.completed_at)}
+                          {formatTimeAgo(activity.completedAt)}
                         </time>
                       </div>
                     </div>
