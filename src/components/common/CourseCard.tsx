@@ -250,7 +250,7 @@ export function CourseCard({
         )}
       </div>
 
-      <CardContent className="p-5 relative z-10">
+      <CardContent className="px-5 relative z-10">
         <div className="space-y-3">
           {/* Title - Fixed height for consistency */}
           <div className="h-12 flex items-start">
