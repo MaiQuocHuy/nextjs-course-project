@@ -23,10 +23,7 @@ export interface Course {
   averageRating: number;
   sectionCount: number;
   sections?: Section[];
-  category: {
-    id: string;
-    name: string;
-  };
+  categories: Category[];
   instructor: {
     id: string;
     name: string;
