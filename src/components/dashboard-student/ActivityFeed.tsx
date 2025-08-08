@@ -12,17 +12,17 @@ import type { ActivityType } from "@/types/student";
 function getActivityIcon(type: ActivityType) {
   switch (type) {
     case "LESSON_COMPLETED":
-      return <CheckCircle className="h-4 w-4 text-green-600" />;
+      return <CheckCircle className="h-4 w-4 text-green-600 mt-1" />;
     case "QUIZ_SUBMITTED":
-      return <FileText className="h-4 w-4 text-blue-600" />;
+      return <FileText className="h-4 w-4 text-blue-600 mt-1" />;
     case "COURSE_ENROLLED":
-      return <BookOpen className="h-4 w-4 text-purple-600" />;
+      return <BookOpen className="h-4 w-4 text-purple-600 mt-1" />;
     default:
-      return <Clock className="h-4 w-4 text-gray-600" />;
+      return <Clock className="h-4 w-4 text-gray-600 mt-1" />;
   }
 }
 
-function getActivityBadge(type: ActivityType, score?: number) {
+function getActivityBadge(type: ActivityType) {
   switch (type) {
     case "LESSON_COMPLETED":
       return (
@@ -33,7 +33,7 @@ function getActivityBadge(type: ActivityType, score?: number) {
     case "QUIZ_SUBMITTED":
       return (
         <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          {score ? `${score}%` : "Quiz"}
+          Quiz
         </Badge>
       );
     case "COURSE_ENROLLED":
@@ -98,7 +98,7 @@ export function ActivityFeed() {
   };
 
   return (
-    <Card className="h-fit">
+    <Card className="h-fit gap-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
@@ -132,7 +132,7 @@ export function ActivityFeed() {
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {getActivityBadge(activity.type, activity.score)}
+                        {getActivityBadge(activity.type)}{" "}
                         <time className="text-xs text-muted-foreground">
                           {formatTimeAgo(activity.completedAt)}
                         </time>

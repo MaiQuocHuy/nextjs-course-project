@@ -1,3 +1,4 @@
+import { use } from "react";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
   CourseSections,
@@ -12,13 +13,15 @@ import type {
   UpdateReviewRequest,
   UpdateReviewResponse,
   Activity,
+  PaginatedQuizResults,
+  QuizResultDetails,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Course", "Lesson", "Payment", "Review"],
+  tagTypes: ["Course", "Lesson", "Payment", "Review", "Quiz"],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
@@ -164,9 +167,8 @@ export const studentApi = createApi({
                           user_id: "current-user",
                           type: "QUIZ_SUBMITTED",
                           title: `Submitted Quiz: ${lesson.title}`,
-                          description: `Quiz completed with good performance`,
+                          description: `Quiz for ${lesson.title} in ${course.title}`,
                           completedAt: lesson.completedAt, // Use the same completedAt date
-                          score: Math.floor(Math.random() * 25) + 75, // Random score between 75-100
                           courseId: course.courseId,
                           lessonId: lesson.id,
                         });
@@ -369,6 +371,27 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
+    //Quiz results
+    getQuizResults: builder.query<PaginatedQuizResults, void>({
+      query: () => ({
+        url: "/student/quiz-score",
+        method: "GET",
+      }),
+      providesTags: ["Quiz"],
+      transformResponse: (response: { data: PaginatedQuizResults }) => {
+        return response.data;
+      },
+    }),
+    getQuizResultDetails: builder.query<QuizResultDetails, string>({
+      query: (quizId) => ({
+        url: `/student/quiz-score/${quizId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, quizId) => [{ type: "Quiz", id: quizId }],
+      transformResponse: (response: { data: QuizResultDetails }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -382,4 +405,6 @@ export const {
   useGetPaymentDetailQuery,
   useGetStudentReviewsQuery,
   useUpdateReviewMutation,
+  useGetQuizResultsQuery,
+  useGetQuizResultDetailsQuery,
 } = studentApi;
