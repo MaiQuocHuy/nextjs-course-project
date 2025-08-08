@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { CourseList } from "@/components/common/CourseList";
-import { getFeaturedCourses } from "@/app/data/courses";
+import { CourseListSkeleton } from "@/components/common/CourseListSkeleton";
+import { useFeaturedCourses } from "@/hooks/useCourses";
 
 export function TopCoursesSection() {
-  const featuredCourses = getFeaturedCourses();
+  const { courses: featuredCourses, loading, error } = useFeaturedCourses(6);
 
   return (
     <section
@@ -31,11 +32,20 @@ export function TopCoursesSection() {
           </p>
         </div>
 
-        <CourseList
-          courses={featuredCourses}
-          variant="grid"
-          className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
-        />
+        {loading ? (
+          <CourseListSkeleton />
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        ) : (
+          <CourseList
+            courses={featuredCourses}
+            variant="grid"
+            className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+          />
+        )}
 
         <div className="text-center">
           <Button

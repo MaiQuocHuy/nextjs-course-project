@@ -27,14 +27,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
+import { getSession, useSession } from "next-auth/react";
+import { useRouter } from "next/dist/client/components/navigation";
+import { signIn } from "next-auth/react";
+import { useDispatch } from "react-redux";
+import { setAuthState } from "@/store/slices/auth/authSlice";
 
 // Zod validation schema
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    // .min(8, "Password must be at least 8 characters")
+    // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   rememberMe: z.boolean().default(false),
 });
@@ -45,22 +50,6 @@ type LoginFormValues = {
   rememberMe?: boolean;
 };
 
-// Mock login function
-const mockLogin = async (
-  email: string,
-  password: string
-): Promise<{ success: boolean; message: string }> => {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // Mock logic: success if email is "user@example.com" and password is "Password123"
-  if (email === "user@example.com" && password === "Password123") {
-    return { success: true, message: "Login successful! Welcome back." };
-  } else {
-    return { success: false, message: "Invalid email or password. Please try again." };
-  }
-};
-
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,11 +57,15 @@ export default function LoginPage() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
+  const router = useRouter();
+  // const { status } = useSession();
+  const dispatch = useDispatch();
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "user@example.com",
-      password: "Password123",
+      email: "bob@example.com",
+      password: "bob123",
       rememberMe: false,
     },
   });
@@ -81,15 +74,34 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const result = await mockLogin(values.email, values.password);
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
 
-      if (result.success) {
-        setModalMessage(result.message);
+      if (result && result.ok) {
+        setModalMessage("Login successful!");
         setShowSuccessModal(true);
-        console.log("Login successful, remember me:", values.rememberMe);
-      } else {
-        setModalMessage(result.message);
-        setShowErrorModal(true);
+
+        setTimeout(() => {
+          router.replace("/");
+        }, 500);
+        dispatch(setAuthState(true));
+        const session = await getSession();
+        const accessToken = session?.user?.accessToken;
+        const refreshToken = session?.user?.refreshToken;
+
+        if (accessToken && refreshToken) {
+          localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("refreshToken", refreshToken);
+        } else {
+          setModalMessage(result?.error || "Login failed. Please check your credentials.");
+          setShowErrorModal(true);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          dispatch(setAuthState(false));
+        }
       }
     } catch (error) {
       setModalMessage("Something went wrong. Please try again.");
@@ -241,13 +253,13 @@ export default function LoginPage() {
                 {modalMessage}
               </DialogDescription>
             </DialogHeader>
-            <div className="flex justify-center mt-6">
+            {/* <div className="flex justify-center mt-6">
               <Button onClick={() => setShowSuccessModal(false)} className="px-8">
                 <Link href="/dashboard" className="font-medium ">
                   Continue
                 </Link>
               </Button>
-            </div>
+            </div> */}
           </DialogContent>
         </Dialog>
 

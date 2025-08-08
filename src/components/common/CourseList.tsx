@@ -1,7 +1,7 @@
 "use client";
 
 import { CourseCard } from "./CourseCard";
-import { Course } from "@/app/data/courses";
+import { Course } from "@/services/coursesApi";
 
 interface CourseListProps {
   courses: Course[];

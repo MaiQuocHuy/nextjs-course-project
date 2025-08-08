@@ -1,15 +1,18 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getSession } from "next-auth/react";
+
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  // prepareHeaders: (headers, { getState }) => {
-  //   headers.set(
-  //     "Authorization",
-  //     `Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJzdWIiOiJhbGljZUBleGFtcGxlLmNvbSIsImlhdCI6MTc1MzcxMDcxMSwiZXhwIjoxNzUzNzE0MzExfQ.E8KcwjV07UuQh0tXa-y10DUclqX3gzaE94qUZN0kpM-8XKFAQ-CGVMwgrZtBr6_K`
-  //   );
-
-  //   return headers;
-  // },
+  prepareHeaders: async (headers) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    }
+    return headers;
+  },
 });
 
 interface User {
@@ -23,12 +26,18 @@ export const authApi = createApi({
   baseQuery: baseQuery,
   endpoints: (builder) => ({
     // Define your endpoints here
-    login: builder.mutation({
-      query: ({ email, password }: { email: string; password: string }) => ({
-        url: "/auth/login",
-        method: "POST",
-        body: { email, password },
-      }),
+    logout: builder.mutation<void, void>({
+      query: () => {
+        const refreshToken = typeof window !== 'undefined' 
+          ? localStorage.getItem("refreshToken") 
+          : null;
+        
+        return {
+          url: "/auth/logout",
+          method: "POST",
+          body: refreshToken ? { refreshToken } : {},
+        };
+      },
     }),
     getUsers: builder.query<User[], void>({
       query: () => ({
@@ -44,4 +53,4 @@ export const authApi = createApi({
   }),
 });
 
-export const { useLoginMutation, useGetUsersQuery } = authApi;
+export const { useLogoutMutation, useGetUsersQuery } = authApi;

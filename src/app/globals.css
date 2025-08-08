@@ -33,6 +33,8 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-success: var(--success);
+  --color-instructor-accent: var(--instructor-accent);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -55,6 +57,7 @@
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
+  --success: oklch(0.552 0.1234 157.01);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
@@ -100,6 +103,28 @@
 
   /* Smooth transitions */
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Enhanced Price Range Slider Colors */
+  --slider-track: 210 40% 96.1%;
+  --slider-range: 222.2 47.4% 11.2%;
+  --slider-thumb: 222.2 47.4% 11.2%;
+  --slider-thumb-hover: 222.2 47.4% 21.2%;
+
+  /* Enhanced gradients */
+  --gradient-primary: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    hsl(var(--primary) / 0.8)
+  );
+  --gradient-card: linear-gradient(
+    145deg,
+    hsl(var(--card) / 0.8),
+    hsl(var(--card) / 0.4)
+  );
+
+  /* Elegant shadows */
+  --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.1);
+  --shadow-card: 0 4px 20px -4px hsl(var(--primary) / 0.08);
 }
 
 .dark {
@@ -153,6 +178,28 @@
 
   --shadow-elegant: 0 10px 30px -10px oklch(0.922 0 0 / 0.2);
   --shadow-card: 0 4px 20px -4px oklch(0.922 0 0 / 0.15);
+
+  /* Enhanced Price Range Slider Colors - Dark Mode */
+  --slider-track: 217.2 32.6% 17.5%;
+  --slider-range: 210 40% 98%;
+  --slider-thumb: 210 40% 98%;
+  --slider-thumb-hover: 210 40% 88%;
+
+  /* Dark mode gradients */
+  --gradient-primary: linear-gradient(
+    135deg,
+    hsl(var(--primary)),
+    hsl(var(--primary) / 0.8)
+  );
+  --gradient-card: linear-gradient(
+    145deg,
+    hsl(var(--card) / 0.8),
+    hsl(var(--card) / 0.4)
+  );
+
+  /* Dark mode shadows */
+  --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.2);
+  --shadow-card: 0 4px 20px -4px hsl(var(--primary) / 0.15);
 }
 
 @layer base {
@@ -161,6 +208,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  button,
+  [role='button'] {
+    cursor: pointer;
   }
 }
 
@@ -188,5 +239,20 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
