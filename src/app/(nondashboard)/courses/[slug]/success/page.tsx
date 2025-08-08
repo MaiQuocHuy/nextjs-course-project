@@ -3,7 +3,10 @@
 import { use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGetPaymentStatusQuery } from "@/services/paymentApi";
-import { useGetCourseByIdQuery } from "@/services/coursesApi";
+import {
+  useGetCourseByIdQuery,
+  useGetCourseBySlugQuery,
+} from "@/services/coursesApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +29,14 @@ import Link from "next/link";
 import Image from "next/image";
 
 interface PaymentSuccessPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 export default function PaymentSuccessPage({
   params,
 }: PaymentSuccessPageProps) {
-  const { id: courseId } = use(params);
+  const { slug: courseSlug } = use(params);
+  // const { id: courseId } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams?.get("session_id");
@@ -59,7 +63,7 @@ export default function PaymentSuccessPage({
     data: course,
     isLoading: isCourseLoading,
     error: courseError,
-  } = useGetCourseByIdQuery(courseId, {
+  } = useGetCourseBySlugQuery(courseSlug, {
     refetchOnMountOrArgChange: true,
   });
 
@@ -69,9 +73,9 @@ export default function PaymentSuccessPage({
   useEffect(() => {
     if (mounted && !sessionId) {
       toast.error("Invalid payment session");
-      router.push(`/courses/${courseId}`);
+      router.push(`/courses/${courseSlug}`);
     }
-  }, [mounted, sessionId, courseId, router]);
+  }, [mounted, sessionId, courseSlug, router]);
 
   // Handle payment errors
   useEffect(() => {
@@ -146,7 +150,7 @@ export default function PaymentSuccessPage({
                   Check Again
                 </Button>
                 <Button
-                  onClick={() => router.push(`/courses/${courseId}`)}
+                  onClick={() => router.push(`/courses/${courseSlug}`)}
                   className="flex-1"
                 >
                   <ArrowRight className="w-4 h-4 mr-2" />
@@ -365,7 +369,7 @@ export default function PaymentSuccessPage({
                     </div>
                   </div>
 
-                  <Link href={`/courses/${courseId}`}>
+                  <Link href={`/dashboard/learning/${course?.id}`}>
                     <Button
                       variant="outline"
                       className="w-full md:w-auto hover:scale-105 transition-transform duration-200"
@@ -388,7 +392,7 @@ export default function PaymentSuccessPage({
                 </h3>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href={`/courses/${courseId}/learn`}>
+                  <Link href={`/dashboard/learning/${course?.id}`}>
                     <Button
                       size="lg"
                       className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-3 hover:scale-105 transition-all duration-200 shadow-lg"

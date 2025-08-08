@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,11 +27,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
-import { getSession, useSession } from "next-auth/react";
-import { useRouter } from "next/dist/client/components/navigation";
-import { signIn } from "next-auth/react";
-import { useDispatch } from "react-redux";
-import { setAuthState } from "@/store/slices/auth/authSlice";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -52,14 +49,12 @@ type LoginFormValues = {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
   const router = useRouter();
-  // const { status } = useSession();
-  const dispatch = useDispatch();
+  const { login, isLoading, error, isAuthenticated, isHydrated } = useAuth();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -70,45 +65,54 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
-    setIsLoading(true);
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, router]);
 
+  // Show authentication errors
+  useEffect(() => {
+    if (error) {
+      setModalMessage(error);
+      setShowErrorModal(true);
+    }
+  }, [error]);
+
+  // Show loading while checking auth state
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#e5ecff]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const onSubmit = async (values: LoginFormValues) => {
     try {
-      const result = await signIn("credentials", {
+      const result = await login({
         email: values.email,
         password: values.password,
-        redirect: false,
       });
 
-      if (result && result.ok) {
+      if (result.success) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
-        localStorage.setItem("isAuthenticated", "true");
 
         setTimeout(() => {
           router.replace("/");
         }, 500);
-        dispatch(setAuthState(true));
-        const session = await getSession();
-        const accessToken = session?.user?.accessToken;
-        const refreshToken = session?.user?.refreshToken;
-
-        if (accessToken && refreshToken) {
-          localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("refreshToken", refreshToken);
-        } else {
-          setModalMessage(result?.error || "Login failed. Please check your credentials.");
-          setShowErrorModal(true);
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          dispatch(setAuthState(false));
-        }
+      } else {
+        setModalMessage(result.error || "Login failed. Please check your credentials.");
+        setShowErrorModal(true);
       }
     } catch (error) {
       setModalMessage("Something went wrong. Please try again.");
       setShowErrorModal(true);
-    } finally {
-      setIsLoading(false);
     }
   };
 

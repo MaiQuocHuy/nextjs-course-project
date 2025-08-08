@@ -4,7 +4,22 @@ import { authApi } from "@/services/authApi";
 import { coursesApi } from "@/services/coursesApi";
 import { paymentApi } from "@/services/paymentApi";
 import { studentApi } from "@/services/student/studentApi";
-import { authSlice } from "./slices/auth/authSlice";
+import { authSlice, logoutState } from "./slices/auth/authSlice";
+import { profileApi } from "@/services/common/profileApi";
+
+// Middleware to clear all caches on logout
+const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
+  const result = next(action);
+
+  // If logout action is dispatched, clear all API caches
+  if (action.type === logoutState.type || action.type === "auth/logout") {
+    store.dispatch(profileApi.util.resetApiState());
+    store.dispatch(studentApi.util.resetApiState());
+    store.dispatch(paymentApi.util.resetApiState());
+  }
+
+  return result;
+};
 import courseFilterReducer from "./slices/student/courseFilterSlice";
 
 export const makeStore = () => {
@@ -19,13 +34,16 @@ export const makeStore = () => {
       [studentApi.reducerPath]: studentApi.reducer,
       [coursesApi.reducerPath]: coursesApi.reducer,
       [paymentApi.reducerPath]: paymentApi.reducer,
+      [profileApi.reducerPath]: profileApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
         authApi.middleware,
         coursesApi.middleware,
         studentApi.middleware,
-        paymentApi.middleware
+        paymentApi.middleware,
+        profileApi.middleware,
+        clearCacheOnLogout
       ),
   });
 

@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { UserInfoCard } from "./userinfocard/page";
-import { EnrolledCoursesList } from "./enrolledcourse/page";
+import { UserInfoCard } from "./user-info-card/page";
+import { EnrolledCoursesList } from "./enrolled-course/page";
 import { enrolledCourses, userData } from "./data";
 
 export default function ProfilePage() {
@@ -26,7 +26,7 @@ export default function ProfilePage() {
 
         <div className="space-y-8">
           {/* Section A: User Information */}
-          <UserInfoCard userData={userData} />
+          <UserInfoCard />
 
           {/* Section B: Enrolled Courses */}
           <EnrolledCoursesList courses={enrolledCourses} />
