@@ -240,7 +240,7 @@ export function CourseCard({
         </div>
 
         {/* Best Seller Badge */}
-        {course.averageRating && course.averageRating >= 4.5 && (
+        {course.averageRating > 0 && course.averageRating >= 4.5 && (
           <div className="absolute top-10 right-3">
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-md text-xs px-2 py-1">
               <Award className="w-3 h-3 mr-1" />
@@ -270,7 +270,10 @@ export function CourseCard({
           <div className="flex items-center gap-3">
             <div className="relative">
               <Image
-                src={course.instructor?.avatar || "/placeholder-avatar.jpg"}
+                src={
+                  course.instructor?.avatar ||
+                  "public/images/avatar-instructor.png"
+                }
                 alt={course.instructor?.name || "Instructor"}
                 width={32}
                 height={32}
