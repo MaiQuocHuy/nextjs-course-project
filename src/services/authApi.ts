@@ -6,6 +6,9 @@ interface User {
   name: string;
   email: string;
   role?: string;
+  thumbnailUrl?: string;
+  bio?: string;
+  isActive?: boolean;
 }
 
 interface AuthResponse {
@@ -55,6 +58,8 @@ interface RefreshTokenResponse {
   data: {
     accessToken: string;
     refreshToken?: string;
+    refreshTokenExpires?: number;
+    user?: User; // Optional updated user info
   };
 }
 

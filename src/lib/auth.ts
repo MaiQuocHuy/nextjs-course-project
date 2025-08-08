@@ -9,6 +9,9 @@ interface UserType {
   email?: string;
   name?: string;
   role?: string;
+  thumbnailUrl?: string;
+  bio?: string;
+  isActive?: boolean;
   accessToken: string;
   refreshToken: string;
   accessTokenExpires?: number;
@@ -99,19 +102,22 @@ export const authOptions: NextAuthOptions = {
           const response = await res.json();
           
           if (response && response.data) {
-            // Decode tokens to get expiration times
+            // Decode access token to get expiration time
             const accessTokenDecoded = decodeJWT(response.data.accessToken);
             
+            // Refresh token expiry comes from backend response (not JWT decode)
             return {
               id: response.data.user.id,
               email: response.data.user.email || credentials.email,
               name: response.data.user.name,
               role: response.data.user.role,
+              thumbnailUrl: response.data.user.thumbnailUrl,
+              bio: response.data.user.bio,
+              isActive: response.data.user.isActive,
               accessToken: response.data.accessToken,
               refreshToken: response.data.refreshToken,
               accessTokenExpires: accessTokenDecoded?.exp,
-              refreshTokenExpires: response.data.refreshTokenExpires,
-
+              refreshTokenExpires: response.data.refreshTokenExpires, // From backend response
             } as UserType;
           }
         } catch (error) {
@@ -134,6 +140,9 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          thumbnailUrl: user.thumbnailUrl,
+          bio: user.bio,
+          isActive: user.isActive,
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           accessTokenExpires: user.accessTokenExpires,
@@ -164,6 +173,9 @@ export const authOptions: NextAuthOptions = {
         email: token.email as string,
         name: token.name as string,
         role: token.role as string,
+        thumbnailUrl: token.thumbnailUrl as string,
+        bio: token.bio as string,
+        isActive: token.isActive as boolean,
         accessToken: token.accessToken as string,
         refreshToken: token.refreshToken as string,
         accessTokenExpires: token.accessTokenExpires as number,
@@ -237,7 +249,8 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
     // Decode new access token to get expiration time
     const newAccessTokenDecoded = decodeJWT(response.data.accessToken);
 
-    return {
+    // Update token with new values and optionally updated user info
+    const updatedToken = {
       ...token,
       accessToken: response.data.accessToken,
       refreshToken: response.data.refreshToken ?? token.refreshToken,
@@ -245,6 +258,18 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
       refreshTokenExpires: response.data.refreshTokenExpires ?? token.refreshTokenExpires,
       error: undefined, // Clear any previous errors
     };
+
+    // If backend sends updated user info during refresh, update it
+    if (response.data.user) {
+      updatedToken.email = response.data.user.email ?? token.email;
+      updatedToken.name = response.data.user.name ?? token.name;
+      updatedToken.role = response.data.user.role ?? token.role;
+      updatedToken.thumbnailUrl = response.data.user.thumbnailUrl ?? token.thumbnailUrl;
+      updatedToken.bio = response.data.user.bio ?? token.bio;
+      updatedToken.isActive = response.data.user.isActive ?? token.isActive;
+    }
+
+    return updatedToken;
   } catch (error) {
     console.error("Refresh token error:", error);
     return {
@@ -271,6 +296,9 @@ export async function forceTokenRefresh(): Promise<boolean> {
       email: session.user.email,
       name: session.user.name,
       role: session.user.role,
+      thumbnailUrl: session.user.thumbnailUrl,
+      bio: session.user.bio,
+      isActive: session.user.isActive,
       accessToken: session.user.accessToken,
       refreshToken: session.user.refreshToken,
       accessTokenExpires: session.user.accessTokenExpires,

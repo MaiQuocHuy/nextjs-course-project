@@ -5,6 +5,9 @@ interface UserInfo {
   email?: string;
   name?: string;
   role?: string;
+  thumbnailUrl?: string;
+  bio?: string;
+  isActive?: boolean;
   accessToken?: string;
   refreshToken?: string;
   accessTokenExpires?: number;
