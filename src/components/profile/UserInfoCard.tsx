@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useGetProfileQuery } from "@/services/common/profileApi";
 
 export function UserInfoCard() {
-  const { data: profileResponse, error, isLoading } = useGetProfileQuery();
+  const { data: profileResponse } = useGetProfileQuery();
 
   // Use the user data directly from the API response
   const userProfileData = profileResponse?.data;
