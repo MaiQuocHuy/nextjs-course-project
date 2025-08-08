@@ -12,7 +12,7 @@ export function SystemProvider({ children }: { children: ReactNode }) {
     <StoreProvider>
       <NextAuthProvider>
         <TooltipProvider>
-          <Toaster />
+          <Toaster position="top-right" richColors />
           {children}
         </TooltipProvider>
       </NextAuthProvider>
