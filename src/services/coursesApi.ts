@@ -13,6 +13,7 @@ export interface Course {
   rating: any;
   updatedAt: string;
   id: string;
+  slug: string;
   title: string;
   description: string;
   price: number;
@@ -168,12 +169,29 @@ export const coursesApi = createApi({
       },
       providesTags: (result, error, id) => [{ type: 'Course', id }],
     }),
+
+    // Lấy thông tin courses theo slug
+    getCourseBySlug: builder.query<Course, string>({
+      query: (slug) => ({
+        url: `/courses/slug/${slug}`,
+        method: "GET",
+      }),
+      transformResponse: (response: ApiResponse<Course>) => {
+        console.log("Course by Slug API Response:", response);
+        if (response.statusCode !== 200) {
+          throw new Error(response.message || 'Failed to fetch course by slug');
+        }
+        return response.data;
+      },
+      providesTags: (result, error, slug) => [{ type: 'Course', id: slug }],
+    }),
   }),
 });
 
 export const { 
   useGetCoursesQuery, 
   useGetCourseByIdQuery,
+  useGetCourseBySlugQuery,
   useLazyGetCoursesQuery,
   useGetCategoriesQuery
 } = coursesApi;
