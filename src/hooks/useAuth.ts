@@ -1,9 +1,15 @@
-import { useSession, signIn, signOut, getSession } from 'next-auth/react';
-import { useAppSelector, useAppDispatch } from '@/store/hook';
-import { logoutState, setLoading, setError } from '@/store/slices/auth/authSlice';
-import { clearAuthAndSignOut, getCurrentAccessToken } from '@/lib/baseQueryWithReauth';
-import { useCallback, useEffect, useState } from 'react';
-
+import { useSession, signIn, signOut, getSession } from "next-auth/react";
+import { useAppSelector, useAppDispatch } from "@/store/hook";
+import {
+  logoutState,
+  setLoading,
+  setError,
+} from "@/store/slices/auth/authSlice";
+import {
+  clearAuthAndSignOut,
+  getCurrentAccessToken,
+} from "@/lib/baseQueryWithReauth";
+import { useCallback, useEffect, useState } from "react";
 
 export const useAuth = () => {
   const { data: session, status, update } = useSession();
@@ -11,106 +17,111 @@ export const useAuth = () => {
   const dispatch = useAppDispatch();
 
   // Login function
-  const login = useCallback(async (credentials: { email: string; password: string }) => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(setError(null));
+  const login = useCallback(
+    async (credentials: { email: string; password: string }) => {
+      try {
+        dispatch(setLoading(true));
+        dispatch(setError(null));
 
-      const result = await signIn('credentials', {
-        email: credentials.email,
-        password: credentials.password,
-        redirect: false,
-      });
+        const result = await signIn("credentials", {
+          email: credentials.email,
+          password: credentials.password,
+          redirect: false,
+        });
 
-      if (result?.error) {
-        dispatch(setError(result.error));
-        return { success: false, error: result.error };
+        if (result?.error) {
+          dispatch(setError(result.error));
+          return { success: false, error: result.error };
+        }
+
+        return { success: true, error: null };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Login failed";
+        dispatch(setError(errorMessage));
+        return { success: false, error: errorMessage };
+      } finally {
+        dispatch(setLoading(false));
       }
-
-      return { success: true, error: null };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      dispatch(setError(errorMessage));
-      return { success: false, error: errorMessage };
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }, [dispatch]);
+    },
+    [dispatch]
+  );
 
   // Logout function
-  const logout = useCallback(async (redirectUrl: string = '/login') => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(logoutState());
-      
-      // Use the enhanced logout function
-      await clearAuthAndSignOut(redirectUrl);
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Force redirect if normal logout fails
-      window.location.href = redirectUrl;
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }, [dispatch]);
+  const logout = useCallback(
+    async (redirectUrl: string = "/login") => {
+      try {
+        dispatch(setLoading(true));
+        dispatch(logoutState());
+
+        // Use the enhanced logout function
+        await clearAuthAndSignOut(redirectUrl);
+      } catch (error) {
+        console.error("Logout error:", error);
+        // Force redirect if normal logout fails
+        window.location.href = redirectUrl;
+      } finally {
+        dispatch(setLoading(false));
+      }
+    },
+    [dispatch]
+  );
 
   //* Force session refresh
-//   const refreshSession = useCallback(async () => {
-//     try {
-//       await update();
-//       return true;
-//     } catch (error) {
-//       console.error('Session refresh failed:', error);
-//       return false;
-//     }
-//   }, [update]);
+  //   const refreshSession = useCallback(async () => {
+  //     try {
+  //       await update();
+  //       return true;
+  //     } catch (error) {
+  //       console.error('Session refresh failed:', error);
+  //       return false;
+  //     }
+  //   }, [update]);
 
- // * Get current access token
+  // * Get current access token
   const getAccessToken = useCallback(async () => {
     return getCurrentAccessToken();
   }, []);
 
-  
   const isTokenValid = useCallback(() => {
     if (!session?.user?.accessToken) return false;
-    
-    
+
     const tokenExpires = session.user.accessTokenExpires;
-    if (!tokenExpires) return true; 
-    
+    if (!tokenExpires) return true;
+
     const currentTime = Math.floor(Date.now() / 1000);
     const bufferTime = 1 * 60; // 1 minute
 
-    return tokenExpires > (currentTime + bufferTime);
+    return tokenExpires > currentTime + bufferTime;
   }, [session]);
 
   return {
     // Session data
     session,
     user: session?.user || authState.user,
-    isAuthenticated: status === 'authenticated' && authState.isAuthenticated,
-    isLoading: status === 'loading' || authState.loading,
+    isAuthenticated: status === "authenticated" && authState.isAuthenticated,
+    isLoading: status === "loading" || authState.loading,
     isHydrated: authState.isHydrated,
     error: authState.error,
-    
+
     // Auth actions
     login,
     logout,
     // refreshSession,
     getAccessToken,
     isTokenValid,
-    
+
     // Status checks
-    isLoggedIn: status === 'authenticated',
-    isLoggedOut: status === 'unauthenticated',
-    isSessionLoading: status === 'loading',
+    isLoggedIn: status === "authenticated",
+    isLoggedOut: status === "unauthenticated",
+    isSessionLoading: status === "loading",
   };
 };
 
 // Hook for checking authentication status
 export const useAuthStatus = () => {
   const { isAuthenticated, isLoading, isHydrated } = useAuth();
-  
+
   return {
     isAuthenticated,
     isLoading,
@@ -120,7 +131,7 @@ export const useAuthStatus = () => {
 };
 
 // Hook for protected routes
-export const useRequireAuth = (redirectUrl: string = '/login') => {
+export const useRequireAuth = (redirectUrl: string = "/login") => {
   const { isAuthenticated, isLoading, isHydrated } = useAuth();
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
@@ -153,26 +164,29 @@ export const useTokenManager = () => {
       const newSession = await update();
       return !!newSession?.user?.accessToken;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error("Token refresh failed:", error);
       return false;
     }
   }, [update]);
 
   const isTokenExpired = useCallback(() => {
     if (!session?.user?.accessTokenExpires) return false;
-    
+
     const currentTime = Math.floor(Date.now() / 1000);
     return session.user.accessTokenExpires < currentTime;
   }, [session]);
 
-  const isTokenExpiringSoon = useCallback((bufferMinutes: number = 5) => {
-    if (!session?.user?.accessTokenExpires) return false;
-    
-    const currentTime = Math.floor(Date.now() / 1000);
-    const bufferTime = bufferMinutes * 60;
-    
-    return session.user.accessTokenExpires < (currentTime + bufferTime);
-  }, [session]);
+  const isTokenExpiringSoon = useCallback(
+    (bufferMinutes: number = 5) => {
+      if (!session?.user?.accessTokenExpires) return false;
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      const bufferTime = bufferMinutes * 60;
+
+      return session.user.accessTokenExpires < currentTime + bufferTime;
+    },
+    [session]
+  );
 
   return {
     accessToken: session?.user?.accessToken,
@@ -199,7 +213,7 @@ export const useAutoRefresh = (enabled: boolean = true) => {
         try {
           await refreshTokens();
         } catch (error) {
-          console.error('Auto refresh failed:', error);
+          console.error("Auto refresh failed:", error);
         } finally {
           setIsRefreshing(false);
         }

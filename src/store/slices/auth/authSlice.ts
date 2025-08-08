@@ -5,6 +5,9 @@ interface UserInfo {
   email?: string;
   name?: string;
   role?: string;
+  thumbnailUrl?: string;
+  bio?: string;
+  isActive?: boolean;
   accessToken?: string;
   refreshToken?: string;
   accessTokenExpires?: number;
@@ -73,18 +76,18 @@ export const authSlice = createSlice({
       state.loading = false;
       state.user = null;
       state.error = null;
-    }
-  }
+    },
+  },
 });
 
-export const { 
-  setAuthState, 
-  setUser, 
-  setLoading, 
-  setError, 
-  setHydrated, 
-  // updateTokens, 
-  logoutState 
+export const {
+  setAuthState,
+  setUser,
+  setLoading,
+  setError,
+  setHydrated,
+  // updateTokens,
+  logoutState,
 } = authSlice.actions;
 
 export default authSlice.reducer;

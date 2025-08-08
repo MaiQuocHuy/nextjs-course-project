@@ -164,9 +164,8 @@ export const studentApi = createApi({
                           user_id: "current-user",
                           type: "QUIZ_SUBMITTED",
                           title: `Submitted Quiz: ${lesson.title}`,
-                          description: `Quiz completed with good performance`,
+                          description: `Quiz for ${lesson.title} in ${course.title}`,
                           completedAt: lesson.completedAt, // Use the same completedAt date
-                          score: Math.floor(Math.random() * 25) + 75, // Random score between 75-100
                           courseId: course.courseId,
                           lessonId: lesson.id,
                         });
