@@ -66,10 +66,6 @@ export function DashboardStats() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {statCards.map((stat) => {
         const Icon = stat.icon;
-        const completionRate =
-          totalLessons > 0
-            ? Math.round((completedLessons / totalLessons) * 100)
-            : 0;
 
         return (
           <Card key={stat.title}>
@@ -84,12 +80,6 @@ export function DashboardStats() {
               <p className="text-xs text-muted-foreground">
                 {stat.description}
               </p>
-              {stat.title === "Lessons Completed" && completionRate > 0 && (
-                <div className="flex items-center mt-2 text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  {completionRate}% overall progress
-                </div>
-              )}
             </CardContent>
           </Card>
         );

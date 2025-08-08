@@ -15,6 +15,8 @@ import type {
   Activity,
   PaginatedQuizResults,
   QuizResultDetails,
+  QuizSubmissionRequest,
+  QuizSubmissionResponse,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
@@ -392,6 +394,31 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
+
+    // Submit quiz
+    submitQuiz: builder.mutation<
+      QuizSubmissionResponse,
+      {
+        sectionId: string;
+        lessonId: string;
+        answers: Record<string, string>;
+      }
+    >({
+      query: ({ sectionId, lessonId, answers }) => ({
+        url: `/student/sections/${sectionId}/lessons/${lessonId}/submit`,
+        method: "PUT",
+        body: { answers },
+      }),
+      invalidatesTags: (result, error, { sectionId, lessonId }) => [
+        "Lesson",
+        "Quiz",
+        "Course", // Invalidate courses to update progress
+        { type: "Lesson", id: lessonId },
+      ],
+      transformResponse: (response: { data: QuizSubmissionResponse }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -407,4 +434,5 @@ export const {
   useUpdateReviewMutation,
   useGetQuizResultsQuery,
   useGetQuizResultDetailsQuery,
+  useSubmitQuizMutation,
 } = studentApi;
