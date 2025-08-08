@@ -4,32 +4,9 @@ import { getSession } from "next-auth/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  // prepareHeaders: (headers, { getState }) => {
-  //   // Có thể thêm Authorization header nếu cần
-  //   // const token = (getState() as RootState).auth.token;
-  //   // if (token) {
-  //   //   headers.set('Authorization', `Bearer ${token}`);
-  //   // }
-  //   return headers;
-  // },
 });
 
-// const baseQueryWithSession = async (args:any, api:any, extraOptions:any) => {
-//   const session = await getSession();
-//   const token = session?.user?.accessToken; // lấy token từ session nè
 
-//   const baseQuery = fetchBaseQuery({
-//     baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-//     prepareHeaders: (headers) => {
-//       if (token) {
-//         headers.set("Authorization", `Bearer ${token}`); // gắn token vào
-//       }
-//       return headers;
-//     },
-//   });
-
-//   return baseQuery(args, api, extraOptions); // gọi tiếp API
-// };
 
 // Interfaces cho Course API
 export interface Course {
@@ -91,7 +68,7 @@ export interface Lesson {
 
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
-  baseQuery: baseQuery,
+  baseQuery,
   tagTypes: ['Course', 'Category'],
   endpoints: (builder) => ({
     // Lấy danh sách courses với filter và pagination
