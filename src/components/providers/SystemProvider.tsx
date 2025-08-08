@@ -9,13 +9,13 @@ import { NextAuthProvider } from "@/components/providers/AuthProvider";
 
 export function SystemProvider({ children }: { children: ReactNode }) {
   return (
-    <NextAuthProvider>
-      <StoreProvider>
+    <StoreProvider>
+      <NextAuthProvider>
         <TooltipProvider>
           <Toaster />
           {children}
         </TooltipProvider>
-      </StoreProvider>
-    </NextAuthProvider>
+      </NextAuthProvider>
+    </StoreProvider>
   );
 }

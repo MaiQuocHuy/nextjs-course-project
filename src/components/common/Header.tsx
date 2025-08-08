@@ -27,13 +27,7 @@ import { SearchBar } from "@/components/common/SearchBar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { set } from "zod";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { sign } from "crypto";
-import { signOut } from "next-auth/react";
-import { setAuthState } from "@/store/slices/auth/authSlice";
-import { useLogoutMutation } from "@/services/authApi";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -43,54 +37,16 @@ const navigation = [
 ];
 
 export function Header() {
-  const isLoggedIn = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const { isAuthenticated: isLoggedIn, logout: authLogout, user } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  const userName = "John Doe";
-
-  const dispatch = useDispatch();
-  const [logout] = useLogoutMutation();
-
-  // Initialize auth state from localStorage on component mount
-  useEffect(() => {
-    const isAuth = localStorage.getItem("isAuthenticated") === "true";
-    const token = localStorage.getItem("accessToken");
-
-    if (isAuth && token) {
-      dispatch(setAuthState(true));
-    }
-  }, [dispatch]);
+  const userName = user?.name || "User";
 
   const handleLogout = async () => {
-    try {
-      // Try the logout API call FIRST while tokens still exist
-      try {
-        await logout().unwrap();
-      } catch (apiError) {}
-
-      localStorage.removeItem("isAuthenticated");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      dispatch(setAuthState(false));
-
-      router.replace("/");
-    } catch (error) {
-      localStorage.removeItem("isAuthenticated");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      dispatch(setAuthState(false));
-
-      try {
-        await signOut({ redirect: false });
-      } catch (signOutError) {
-        // Silent fallback
-      }
-      router.replace("/");
-    }
+    await authLogout();
   };
 
   const isActiveLink = (href: string) => {
