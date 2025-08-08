@@ -6,13 +6,19 @@ import type {
   ActivityFeedResponse,
   DashboardData,
   Course,
+  Payment,
+  PaymentDetail,
+  PaginatedReviews,
+  UpdateReviewRequest,
+  UpdateReviewResponse,
+  Activity,
 } from "@/types/student";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Course", "Lesson"],
+  tagTypes: ["Course", "Lesson", "Payment", "Review"],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
       query: () => ({
@@ -110,19 +116,17 @@ export const studentApi = createApi({
           });
 
           const courseDetails = await Promise.all(detailsPromises);
-          const activities: any[] = [];
+          const activities: Activity[] = [];
 
           // Add course enrollment activities
-          courses.forEach((course: any) => {
+          courses.forEach((course: Course) => {
             activities.push({
               id: `course-${course.courseId}`,
               user_id: "current-user",
               type: "COURSE_ENROLLED",
               title: `Enrolled in Course: ${course.title}`,
               description: `Started learning ${course.title}`,
-              completed_at: new Date(
-                Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-              ).toISOString(), // Random date within last week
+              completedAt: course.enrolledAt,
               courseId: course.courseId,
             });
           });
@@ -148,9 +152,7 @@ export const studentApi = createApi({
                         type: "LESSON_COMPLETED",
                         title: `Completed Lesson: ${lesson.title}`,
                         description: `Successfully completed ${lesson.title} in ${course.title}`,
-                        completed_at: new Date(
-                          Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000
-                        ).toISOString(), // Random date within last 2 weeks
+                        completedAt: lesson.completedAt, // Random date within last 2 weeks
                         courseId: course.courseId,
                         lessonId: lesson.id,
                       });
@@ -163,10 +165,7 @@ export const studentApi = createApi({
                           type: "QUIZ_SUBMITTED",
                           title: `Submitted Quiz: ${lesson.title}`,
                           description: `Quiz completed with good performance`,
-                          completed_at: new Date(
-                            Date.now() -
-                              Math.random() * 14 * 24 * 60 * 60 * 1000
-                          ).toISOString(),
+                          completedAt: lesson.completedAt, // Use the same completedAt date
                           score: Math.floor(Math.random() * 25) + 75, // Random score between 75-100
                           courseId: course.courseId,
                           lessonId: lesson.id,
@@ -182,8 +181,8 @@ export const studentApi = createApi({
           // Sort activities by completed_at (most recent first)
           activities.sort(
             (a, b) =>
-              new Date(b.completed_at).getTime() -
-              new Date(a.completed_at).getTime()
+              new Date(b.completedAt).getTime() -
+              new Date(a.completedAt).getTime()
           );
 
           // Implement pagination for activities
@@ -316,6 +315,60 @@ export const studentApi = createApi({
         return response;
       },
     }),
+
+    // Get all payments
+    getPayments: builder.query<Payment[], void>({
+      query: () => ({
+        url: "/student/payments",
+        method: "GET",
+      }),
+      providesTags: ["Payment"],
+      transformResponse: (response: { data: Payment[] }) => {
+        return response.data;
+      },
+    }),
+
+    // Get payment detail
+    getPaymentDetail: builder.query<PaymentDetail, string>({
+      query: (paymentId) => ({
+        url: `/student/payments/${paymentId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, paymentId) => [
+        { type: "Payment", id: paymentId },
+      ],
+      transformResponse: (response: { data: PaymentDetail }) => {
+        return response.data;
+      },
+    }),
+
+    // Get student reviews
+    getStudentReviews: builder.query<PaginatedReviews, void>({
+      query: () => ({
+        url: "/student/reviews",
+        method: "GET",
+      }),
+      providesTags: ["Review"],
+      transformResponse: (response: { data: PaginatedReviews }) => {
+        return response.data;
+      },
+    }),
+
+    // Update review
+    updateReview: builder.mutation<
+      UpdateReviewResponse,
+      { reviewId: string; data: UpdateReviewRequest }
+    >({
+      query: ({ reviewId, data }) => ({
+        url: `/student/reviews/${reviewId}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Review"],
+      transformResponse: (response: { data: UpdateReviewResponse }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -325,4 +378,8 @@ export const {
   useGetCourseDetailsQuery,
   useGetCourseWithSectionsQuery,
   useCompleteLessonMutation,
+  useGetPaymentsQuery,
+  useGetPaymentDetailQuery,
+  useGetStudentReviewsQuery,
+  useUpdateReviewMutation,
 } = studentApi;
