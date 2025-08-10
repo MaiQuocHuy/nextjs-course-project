@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGetDashboardDataQuery } from "@/services/student/studentApi";
+import { useDashboardData } from "@/hooks/student/useDashboard";
 import { BookOpen, Award, Clock, Target, TrendingUp } from "lucide-react";
 import { StatsLoadingSkeleton } from "./ui/Loading";
 import { StatsError } from "./ui/LoadingError";
@@ -12,7 +12,7 @@ export function DashboardStats() {
     error,
     isLoading,
     refetch,
-  } = useGetDashboardDataQuery({ page: 0, size: 20 });
+  } = useDashboardData({ page: 0, size: 20 });
 
   if (isLoading) {
     return <StatsLoadingSkeleton />;

@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MobileSidebar } from "./Sidebar";
-import { useGetDashboardDataQuery } from "@/services/student/studentApi";
+import { useDashboardData } from "@/hooks/student/useDashboard";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
 import {
   StatsError,
@@ -26,7 +26,7 @@ export function DashboardHeader() {
     error,
     isLoading,
     refetch,
-  } = useGetDashboardDataQuery({
+  } = useDashboardData({
     page: 0,
     size: 20,
   });
