@@ -46,6 +46,8 @@ export function CourseCard({
 
   const isListView = variant === "list";
 
+  // console.log("All category: ", course.categories);
+
   if (isListView) {
     // List variant - horizontal layout
     return (
@@ -69,7 +71,9 @@ export function CourseCard({
                 variant="secondary"
                 className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium text-xs px-2 py-1"
               >
-                {course.category?.name || "Course"}
+                {course.categories
+                  .map((category) => category.name)
+                  .join(", ") || "Course"}
               </Badge>
             </div>
 
@@ -229,7 +233,8 @@ export function CourseCard({
             variant="secondary"
             className="bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white border-0 shadow-sm font-medium text-xs px-2 py-1"
           >
-            {course.category?.name || "Course"}
+            {course.categories.map((category) => category.name).join(", ") ||
+              "Course"}
           </Badge>
         </div>
 
