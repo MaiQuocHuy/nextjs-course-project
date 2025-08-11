@@ -1,6 +1,15 @@
 "use client";
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./Sidebar";
 import { useDashboardData } from "@/hooks/student/useDashboard";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
@@ -10,6 +19,15 @@ import {
   DashboardHeaderError,
 } from "./ui/LoadingError";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  Mail,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
 
 // // Mock user data
 // const mockUser = {
@@ -30,7 +48,7 @@ export function DashboardHeader() {
     page: 0,
     size: 20,
   });
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   if (isLoading) {
     return <DashboardHeaderLoadingSkeleton />;
   }
@@ -45,6 +63,10 @@ export function DashboardHeader() {
     totalLessons = 0,
   } = dashboardData?.stats || {};
 
+  const handleLogout = async () => {
+    await logout();
+  };
+
   const userInitials = user?.name
     ? user.name
         .split(" ")
@@ -54,31 +76,33 @@ export function DashboardHeader() {
     : "U";
 
   return (
-    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="border-b bg-white sticky top-0 z-10">
       <div className="flex h-16 items-center px-4 lg:px-6">
         <MobileSidebar />
 
         <div className="flex-1 lg:ml-0">
           <div className="flex items-center justify-between">
-            <Avatar className="h-8 w-8 mr-3 size-10">
-              <AvatarImage
-                src={user?.thumbnailUrl}
-                alt={user?.name || "User"}
-              />
-              <AvatarFallback>{userInitials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold text-foreground">
-                Welcome, {user?.name || "Student"}!
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                You've completed {dashboardData?.stats?.completedLessons || 0}{" "}
-                of {dashboardData?.stats?.totalLessons || 0} lessons
-              </p>
+            <div className="flex items-center">
+              <Avatar className="h-8 w-8 mr-3 size-10">
+                <AvatarImage
+                  src={user?.thumbnailUrl}
+                  alt={user?.name || "User"}
+                />
+                <AvatarFallback>{userInitials}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h1 className="text-xl font-semibold text-foreground">
+                  Welcome, {user?.name || "Student"}!
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Completed {dashboardData?.stats?.completedLessons || 0} of{" "}
+                  {dashboardData?.stats?.totalLessons || 0} lessons
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4 mr-5">
-              <div className="hidden sm:flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-4 text-sm mr-4">
                 <div className="text-center">
                   <div className="font-medium">
                     {dashboardData?.stats?.totalCourses || 0}
@@ -92,6 +116,60 @@ export function DashboardHeader() {
                   <div className="text-muted-foreground">Completed</div>
                 </div>
               </div>
+
+              {/* User Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center lg:border"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {user?.name || "Student"}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email || "No email"}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/" className="flex items-center">
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      <span>Back to Home</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </button>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
