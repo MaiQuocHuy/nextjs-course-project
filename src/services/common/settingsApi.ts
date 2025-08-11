@@ -18,6 +18,7 @@ interface UpdateProfileRequest {
 
 interface UpdateThumbnailRequest {
   thumbnail: File;
+  bio?: string;
   currentName: string; // Required
 }
 
@@ -62,10 +63,10 @@ export const settingsApi = createApi({
     }),  
 
     updateThumbnail: builder.mutation<void, UpdateThumbnailRequest>({
-      query: ({ thumbnail, currentName }) => {
+      query: ({ thumbnail,bio, currentName }) => {
         const formData = new FormData();
-        formData.append('name', currentName); 
-        formData.append('bio', '');
+        formData.append('name', currentName);
+        if (bio) {formData.append('bio', bio);}
         formData.append('thumbnail', thumbnail);
         return {
           url: '/users/profile',
