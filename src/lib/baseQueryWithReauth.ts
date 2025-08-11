@@ -15,7 +15,7 @@ let pendingRequests: Array<{
 
 export const baseQuery = fetchBaseQuery({
   baseUrl,
-  prepareHeaders: async (headers) => {
+  prepareHeaders: async (headers, { arg }) => {
     try {
       
       const session = await getSession();
@@ -23,8 +23,14 @@ export const baseQuery = fetchBaseQuery({
       if (session?.user?.accessToken) {
         headers.set("Authorization", `Bearer ${session.user.accessToken}`);
       }
-      headers.set("Content-Type", "application/json");
       
+      //* check header
+      const isFormData = (arg as any)?.body instanceof FormData;
+      
+      if (!isFormData) {
+        headers.set("Content-Type", "application/json");
+      }
+  
       return headers;
     } catch (error) {
       console.error("Error preparing headers:", error);
