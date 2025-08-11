@@ -57,20 +57,7 @@ export const authSlice = createSlice({
     setHydrated: (state) => {
       state.isHydrated = true;
     },
-    // updateTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken?: string; accessTokenExpires?: number; refreshTokenExpires?: number }>) => {
-    //   if (state.user) {
-    //     state.user.accessToken = action.payload.accessToken;
-    //     if (action.payload.refreshToken) {
-    //       state.user.refreshToken = action.payload.refreshToken;
-    //     }
-    //     if (action.payload.accessTokenExpires) {
-    //       state.user.accessTokenExpires = action.payload.accessTokenExpires;
-    //     }
-    //     if (action.payload.refreshTokenExpires) {
-    //       state.user.refreshTokenExpires = action.payload.refreshTokenExpires;
-    //     }
-    //   }
-    // },
+    
     logoutState: (state) => {
       state.isAuthenticated = false;
       state.loading = false;

@@ -1,38 +1,12 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { publicBaseQuery } from "@/lib/baseQueryWithReauth";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role?: string;
-  thumbnailUrl?: string;
-  bio?: string;
-  isActive?: boolean;
-}
+import type { User, RegisterStudentRequest, RegisterInstructorRequest } from "@/types";
 
 interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
   refreshTokenExpires?: number; //* for test
-}
-
-interface RegisterStudentRequest {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}
-interface RegisterInstructorRequest {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-  portfolioUrl: string;
-  certificateFile: File;
-  cvFile: File;
-  supportingFile?: File;
 }
 
 interface RegisterUserResponse {
