@@ -1,20 +1,6 @@
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
 import { createApi } from '@reduxjs/toolkit/query/react';
-
-type User = {
-    thumbnailUrl: string;
-    name: string;
-    role: string;
-    email: string;
-    bio: string; 
-}
-
-type UserResponse = {
-    statusCode: number;
-    message: string;
-    data: User;
-    timestamp: string;
-}
+import { UserResponse } from '@/types'; 
 
 export const profileApi = createApi({
   reducerPath: 'profileApi',
