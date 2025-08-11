@@ -24,7 +24,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import type { DocumentType } from '@/lib/instructor/create-course-validations/lessons-validations';
+import type { DocumentType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
 interface CombinedFileUploadProps {
   documents?: DocumentType[];
@@ -108,7 +108,7 @@ export function CombinedFileUpload({
         return;
       }
 
-      if (acceptedFiles.length > 0) {       
+      if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         onVideoSelect(file);
 
@@ -254,46 +254,50 @@ export function CombinedFileUpload({
       </Dialog>
     );
   };
-
+  
   return (
     <div className="space-y-3">
       {/* Multi Document Upload */}
-      {documents && onDocumentsChange && (
+      {documents && (
         <div className="space-y-2">
-          <Label className="text-sm font-medium">
-            Related Documents (optional)
-          </Label>
-          <Card
-            className={`border-2 border-dashed transition-all duration-200 ${
-              isDocDragActive
-                ? 'border-primary bg-primary/5 scale-105'
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-            }`}
-          >
-            <CardContent className="p-6">
-              <div
-                {...getDocRootProps()}
-                className="cursor-pointer text-center"
+          {onDocumentsChange && (
+            <>
+              <Label className="text-sm font-medium">
+                Related Documents (optional)
+              </Label>
+              <Card
+                className={`border-2 border-dashed transition-all duration-200 ${
+                  isDocDragActive
+                    ? 'border-primary bg-primary/5 scale-105'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                }`}
               >
-                <input {...getDocInputProps()} />
-                <div
-                  className={`transition-transform duration-200 ${
-                    isDocDragActive ? 'scale-110' : ''
-                  }`}
-                >
-                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground">
-                    {isDocDragActive
-                      ? 'Drop the files here...'
-                      : 'Drag & drop files or click to select'}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Supports PDF, DOCX, Excel files. Maximum size: 10MB each
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <CardContent className="p-6">
+                  <div
+                    {...getDocRootProps()}
+                    className="cursor-pointer text-center"
+                  >
+                    <input {...getDocInputProps()} />
+                    <div
+                      className={`transition-transform duration-200 ${
+                        isDocDragActive ? 'scale-110' : ''
+                      }`}
+                    >
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-sm text-muted-foreground">
+                        {isDocDragActive
+                          ? 'Drop the files here...'
+                          : 'Drag & drop files or click to select'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Supports PDF, DOCX, Excel files. Maximum size: 10MB each
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
           {documents.length > 0 && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
@@ -321,14 +325,16 @@ export function CombinedFileUpload({
                       </div>
                       <div className="flex items-center gap-2">
                         {renderDocumentPreview(document.file)}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeDocument(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        {onDocumentsChange && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeDocument(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -340,7 +346,7 @@ export function CombinedFileUpload({
       )}
 
       {/* Video Upload */}
-      {onVideoSelect && (
+      {onVideoSelect && onVideoRemove && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">
             Upload Lesson Video <strong className="text-red-500">*</strong>
@@ -406,6 +412,28 @@ export function CombinedFileUpload({
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* Display uploaded video */}
+      {videoFile && !onVideoSelect && !onVideoRemove && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Uploaded Video</Label>
+          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+            <CardContent className="px-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Play className="h-4 w-4" />
+                  <span className="text-sm font-medium">{videoFile.name}</span>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </div>
+                {renderVideoPreview()}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

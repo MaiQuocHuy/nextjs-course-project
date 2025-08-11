@@ -1,51 +1,7 @@
-<<<<<<< HEAD
-// "use client"
-
-// import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
-
-// function Collapsible({
-//   ...props
-// }: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
-//   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
-// }
-
-// function CollapsibleTrigger({
-//   ...props
-// }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
-//   return (
-//     <CollapsiblePrimitive.CollapsibleTrigger
-//       data-slot="collapsible-trigger"
-//       {...props}
-//     />
-//   )
-// }
-
-// function CollapsibleContent({
-//   ...props
-// }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
-//   return (
-//     <CollapsiblePrimitive.CollapsibleContent
-//       data-slot="collapsible-content"
-//       {...props}
-//     />
-//   )
-// }
-
-// export { Collapsible, CollapsibleTrigger, CollapsibleContent }
-
 'use client';
-import * as CollapsiblePrimitive from '@radix-ui/react-collapsible';
 
-const Collapsible = CollapsiblePrimitive.Root;
-
-const CollapsibleTrigger = CollapsiblePrimitive.CollapsibleTrigger;
-
-const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent;
-=======
-"use client";
-
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 interface CollapsibleProps {
   open?: boolean;
@@ -74,7 +30,7 @@ const Collapsible = React.forwardRef<HTMLDivElement, CollapsibleProps>(
     );
   }
 );
-Collapsible.displayName = "Collapsible";
+Collapsible.displayName = 'Collapsible';
 
 const CollapsibleTrigger = React.forwardRef<
   HTMLButtonElement,
@@ -100,7 +56,7 @@ const CollapsibleTrigger = React.forwardRef<
     </button>
   );
 });
-CollapsibleTrigger.displayName = "CollapsibleTrigger";
+CollapsibleTrigger.displayName = 'CollapsibleTrigger';
 
 const CollapsibleContent = React.forwardRef<
   HTMLDivElement,
@@ -112,7 +68,6 @@ const CollapsibleContent = React.forwardRef<
     </div>
   );
 });
-CollapsibleContent.displayName = "CollapsibleContent";
->>>>>>> bec99807c15d241ec355835e9b6f0398396fba24
+CollapsibleContent.displayName = 'CollapsibleContent';
 
 export { Collapsible, CollapsibleTrigger, CollapsibleContent };

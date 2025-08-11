@@ -1,7 +1,7 @@
 'use client';
 
-import { Dashboard } from '@/pages/instructor/dashboard-page';
+import { InsDashboard } from '@/components/instructor/dashboard/InsDashboardPage';
 
 export default function InstructorDashboard() {
-  return <Dashboard />;
+  return <InsDashboard />;
 }

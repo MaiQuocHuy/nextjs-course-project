@@ -38,7 +38,7 @@ import {
 import Link from 'next/link';
 import { Course, getAllCourses } from '@/app/data/courses';
 
-export const Students = () => {
+export const StudentsPage = () => {
   const [courses, setCourses] = useState<Course[]>();
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(

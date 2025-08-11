@@ -1,26 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Save, Send, CheckCircle } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
-import type {
-  courseBasicInfoType,
-  CourseFormData,
-} from '@/lib/instructor/create-course-validations/course-basic-info-validation';
-import { CreateCourseBasicInfo } from '@/components/instructor/course/create-course/create-course-basic-info';
+import type { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+import { CreateCourseBasicInforPage } from '@/components/instructor/course/create-course/create-basic-infor/CreateCourseBasicInforPage';
 import { useRouter } from 'next/navigation';
 import CreateLessonsPage2 from '@/components/instructor/course/create-course/create-lessons/create-lessons2';
-import { CourseCreationType } from '@/lib/instructor/create-course-validations/lessons-validations';
 import { useCreateCourseMutation } from '@/services/instructor/courses-api';
 import {
   startLoading,
@@ -32,7 +22,7 @@ import { AppDispatch } from '@/store/store';
 export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseBasicInfo, setCourseBasicInfo] =
-    useState<courseBasicInfoType | null>();
+    useState<CourseBasicInfoType | null>();
   const [progress, setProgress] = useState(0);
   const [
     createCourse,
@@ -64,65 +54,32 @@ export default function CreateCoursePage() {
   };
 
   // Get basic course info
-  const handleCourseFormSubmit = async (data: CourseFormData) => {
+  const handleCourseFormSubmit = async (data: CourseBasicInfoType) => {
     // console.log(data);
-    const courseData: courseBasicInfoType = {
-      ...data,
-      id: '',
-      thumbnail: data.file.preview,
-    };
-    delete (courseData as any).file;
 
     // Create new course into database
     try {
-      const res = await createCourse(courseData);
-      if (res && 'data' in res) {
-        // console.log(res);
-        courseData.id = res.data.id;
+      const res = await createCourse(data);
+      // console.log(res);
+      if ('data' in res && res.data.statusCode === 201) {
+        const courseData: CourseBasicInfoType = {
+          ...data,
+          id: res.data.data.id,
+        };
+        // console.log(courseData);
+
         // Save course basic info and proceed to next step
         setCourseBasicInfo(courseData);
         setProgress(50); // Update progress to 50% after course info is saved
         setCurrentStep(2);
       }
     } catch (error) {
-      if (creatingCourseError) {
-        let errorMessage = 'Failed to create course';
-        if (
-          'data' in creatingCourseError &&
-          creatingCourseError.data &&
-          typeof creatingCourseError.data === 'object' &&
-          'message' in creatingCourseError.data &&
-          typeof (creatingCourseError.data as any).message === 'string'
-        ) {
-          errorMessage = (creatingCourseError.data as any).message;
-        } else if (
-          'message' in creatingCourseError &&
-          typeof (creatingCourseError as any).message === 'string'
-        ) {
-          errorMessage = (creatingCourseError as any).message;
-        }
-        toast.error(errorMessage);
-      }
+      toast.error('Create course failed!');
     }
   };
 
-  // const getOverallProgress = () => {
-  //   let progress = 0;
-
-  //   // Step 1: Course form (50%)
-  //   if (courseBasicInfo) progress += 50;
-
-  //   // Step 2: Media uploads (50%)
-  //   if (finalCourseData) {
-  //     progress += 50;
-  //   }
-
-  //   return progress;
-  // };
-
   return (
     <div className="min-h-screen bg-background p-6">
-      {/* <LoadingOverlay show={isCreatingCourse} text="Creating course..." /> */}
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4">
@@ -179,12 +136,18 @@ export default function CreateCoursePage() {
 
         {/* Step 1: Create course's basic information */}
         {currentStep === 1 && (
-          <CreateCourseBasicInfo onSubmit={handleCourseFormSubmit} />
+          <CreateCourseBasicInforPage
+            mode="create"
+            onSubmit={handleCourseFormSubmit}
+          />
         )}
 
         {/* Step 2: Create Lessons */}
         {currentStep === 2 && courseBasicInfo && (
-          <CreateLessonsPage2 courseBasicInfo={courseBasicInfo} setProgress={setProgress} />
+          <CreateLessonsPage2
+            courseBasicInfo={courseBasicInfo}
+            setProgress={setProgress}
+          />
         )}
       </div>
     </div>

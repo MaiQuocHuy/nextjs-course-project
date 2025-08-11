@@ -1,7 +1,7 @@
 'use client';
 
-import { ChangeEvent, useEffect, useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '@/components/instructor/course/course-detail/Collapsible';
 import {
   Plus,
   Trash2,
@@ -40,7 +40,6 @@ import {
 import { CourseSummary } from '@/components/instructor/course/create-course/create-lessons/course-summary';
 import EnhancedFileUpload from '@/components/instructor/course/create-course/create-lessons/file-upload/enhanced-file-upload';
 import { EnhancedQuizEditor } from '@/components/instructor/course/create-course/create-lessons/quiz/enhanced-quiz-editor';
-// import { MultiDocumentUpload } from '@/components/instructor/course/create-course/create-lessons/file-upload/multi-document-upload';
 import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';
 import {
   courseCreationSchema,
@@ -48,17 +47,17 @@ import {
   type QuizQuestionType,
   type LessonType,
   type SectionType,
-} from '@/lib/instructor/create-course-validations/lessons-validations';
+} from '@/utils/instructor/create-course-validations/lessons-validations';
 import {
   parseExcelFile,
   validateExcelFormat,
-} from '@/lib/instructor/create-course-validations/excel-parser';
+} from '@/utils/instructor/create-course-validations/excel-parser';
 import { CombinedFileUpload } from './file-upload/combined-file-upload';
 import {
-  courseBasicInfoType,
+  CourseBasicInfoType,
   getCharacterCount,
   getWordCount,
-} from '@/lib/instructor/create-course-validations/course-basic-info-validation';
+} from '@/utils/instructor/create-course-validations/course-basic-info-validation';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -77,7 +76,7 @@ const tempDes =
   'Learn HTML, CSS, JavaScript, React, Node.js and more in this comprehensive web development course. Perfect for beginners who want to become full-stack developers.';
 
 interface CreateLessonsPageProps {
-  courseBasicInfo: courseBasicInfoType;
+  courseBasicInfo: CourseBasicInfoType;
   setProgress: (progress: number) => void;
 }
 
@@ -93,13 +92,13 @@ export default function CreateLessonsPage({
           id: `section-${crypto.randomUUID()}`,
           title: tempTitle,
           description: tempDes,
-          order: 0,
+          orderIndex: 0,
           isCollapsed: false,
           lessons: [
             {
               id: `lesson-${crypto.randomUUID()}`,
               title: 'Set up React Environment',
-              order: 0,
+              orderIndex: 0,
               type: 'VIDEO',
               video: {},
               documents: [], // Multiple documents
@@ -112,13 +111,13 @@ export default function CreateLessonsPage({
           id: `section-${crypto.randomUUID()}`,
           title: tempTitle + '2',
           description: tempDes + '2',
-          order: 1,
+          orderIndex: 1,
           isCollapsed: false,
           lessons: [
             {
               id: `lesson-${crypto.randomUUID()}`,
               title: 'Set up React Environment 2',
-              order: 0,
+              orderIndex: 0,
               type: 'VIDEO',
               documents: [], // Multiple documents
               questions: [],
@@ -168,7 +167,7 @@ export default function CreateLessonsPage({
     );
     // Reorder
     updatedSections.forEach((section, idx) => {
-      section.order = idx + 1;
+      section.orderIndex = idx;
     });
     form.setValue('sections', updatedSections);
   };
@@ -178,14 +177,14 @@ export default function CreateLessonsPage({
       id: `section-${crypto.randomUUID()}`,
       description: '',
       title: '',
-      order: form.watch('sections').length + 1,
+      orderIndex: form.watch('sections').length,
       isCollapsed: false,
       lessons: [
         {
           id: `lesson-${crypto.randomUUID()}`,
           title: '',
-          order: 1,
-          type: 'video',
+          orderIndex: 1,
+          type: 'VIDEO',
           documents: [],
           questions: [],
           isCollapsed: false,
@@ -201,8 +200,8 @@ export default function CreateLessonsPage({
     const newLesson: LessonType = {
       id: `lesson-${crypto.randomUUID()}`,
       title: '',
-      order: currentLessons.length + 1,
-      type: 'video',
+      orderIndex: currentLessons.length,
+      type: 'VIDEO',
       documents: [],
       questions: [],
       isCollapsed: false,
@@ -222,7 +221,7 @@ export default function CreateLessonsPage({
       );
       // Reorder remaining lessons
       updatedLessons.forEach((lesson, idx) => {
-        lesson.order = idx + 1;
+        lesson.orderIndex = idx;
       });
       form.setValue(`sections.${sectionIndex}.lessons`, updatedLessons);
     }
@@ -321,7 +320,7 @@ export default function CreateLessonsPage({
   const handleFinalSubmit = async () => {
     if (lessonsData) {
       let isCreatedSuccessfully = true;
-      const courseId = 'db73892c-7932-48ce-8bd6-e340e87cb531';
+      const courseId = courseBasicInfo ? courseBasicInfo.id : '';
       try {
         for (const section of lessonsData.sections) {
           // Create each section
@@ -412,7 +411,7 @@ export default function CreateLessonsPage({
             {formData.sections.map((section, sectionIndex) => (
               <div key={section.id} className="space-y-4">
                 <h3 className="text-lg font-semibold">
-                  Section {section.order + 1}: {section.title}
+                  Section {section.orderIndex + 1}: {section.title}
                 </h3>
 
                 {section.lessons.map((lesson, lessonIndex) => (
@@ -425,7 +424,7 @@ export default function CreateLessonsPage({
                           <Brain className="h-4 w-4" />
                         )}
                         <span className="font-medium">
-                          Lesson {lesson.order + 1}: {lesson.title}
+                          Lesson {lesson.orderIndex + 1}: {lesson.title}
                         </span>
                         <Badge
                           variant={
@@ -488,7 +487,7 @@ export default function CreateLessonsPage({
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-5 w-5 transition-transform data-[state=open]:rotate-90" />
                 <BookOpen className="h-5 w-5" />
-                <span>Section {section.order + 1}</span>
+                <span>Section {section.orderIndex + 1}</span>
 
                 {section.title && (
                   <span className="text-base font-normal text-muted-foreground">
@@ -619,7 +618,7 @@ export default function CreateLessonsPage({
                   const updatedLessons = reorderedLessons.map(
                     (lesson, index) => ({
                       ...lesson,
-                      order: index + 1,
+                      order: index,
                     })
                   );
                   form.setValue(
@@ -664,17 +663,17 @@ export default function CreateLessonsPage({
               <CardTitle className="text-base flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-                  <span>Lesson {lesson.order + 1}</span>
+                  <span>Lesson {lesson.orderIndex + 1}</span>
                   {lesson.title && (
                     <span className="text-sm font-normal text-muted-foreground">
                       - {lesson.title}
                     </span>
                   )}
                   <Badge
-                    variant={lesson.type === 'video' ? 'default' : 'secondary'}
+                    variant={lesson.type === 'VIDEO' ? 'default' : 'secondary'}
                     className="ml-2"
                   >
-                    {lesson.type === 'video' ? 'Video' : 'Quiz'}
+                    {lesson.type === 'VIDEO' ? 'Video' : 'QUIZ'}
                   </Badge>
                 </div>
                 <div
@@ -953,6 +952,7 @@ export default function CreateLessonsPage({
                     `sections.${sectionIndex}.lessons.${lessonIndex}.questions`
                   ).length > 0 && (
                     <EnhancedQuizEditor
+                      canEdit={true}
                       questions={form.watch(
                         `sections.${sectionIndex}.lessons.${lessonIndex}.questions`
                       )}
@@ -968,7 +968,7 @@ export default function CreateLessonsPage({
                   {/* Warning alert */}
                   {form.watch(
                     `sections.${sectionIndex}.lessons.${lessonIndex}.type`
-                  ) === 'quiz' &&
+                  ) === 'QUIZ' &&
                     form.watch(
                       `sections.${sectionIndex}.lessons.${lessonIndex}.questions`
                     ).length === 0 && (

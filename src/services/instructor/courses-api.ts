@@ -1,9 +1,9 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQuery } from './base-query';
+import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
 
 export const coursesInstSlice = createApi({
   reducerPath: 'coursesInstSlice',
-  baseQuery: baseQuery,
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     // Fetch courses for instructor
     getCourses: builder.query({
@@ -21,9 +21,9 @@ export const coursesInstSlice = createApi({
     }),
 
     // Fetch course details
-    getCourseDetails: builder.query({
+    getCourseById: builder.query({
       query: (courseId) => ({
-        url: `/instructor/courses/${courseId}`,
+        url: `/courses/${courseId}`,
         method: 'GET',
         credentials: 'include', // Include credentials if needed
       }),
@@ -46,8 +46,8 @@ export const coursesInstSlice = createApi({
           });
         }
         formData.append('level', BasicInfoData.level);
-        if (BasicInfoData.thumbnail) {
-          formData.append('thumbnail', BasicInfoData.thumbnail);
+        if (BasicInfoData.file) {
+          formData.append('thumbnail', BasicInfoData.file);
         }
         return {
           url: '/instructor/courses',
@@ -55,16 +55,13 @@ export const coursesInstSlice = createApi({
           body: formData,
         };
       },
-      transformResponse: (response) => {
-        // console.log('Created course response:', response);
-        return response.data;
-      },
     }),
 
     // Update an existing course
     updateCourse: builder.mutation({
       query: (courseData) => {
         const formData = new FormData();
+        formData.append('id', courseData.id);
         formData.append('title', courseData.title);
         formData.append('description', courseData.description);
         formData.append('price', courseData.price.toString());
@@ -74,18 +71,14 @@ export const coursesInstSlice = createApi({
           });
         }
         formData.append('level', courseData.level);
-        if (courseData.thumbnail) {
-          formData.append('thumbnail', courseData.thumbnail);
+        if (courseData.file) {
+          formData.append('thumbnail', courseData.file);
         }
         return {
           url: `/instructor/courses/${courseData.id}`,
-          method: 'PUT',
+          method: 'PATCH',
           body: formData,
         };
-      },
-      transformResponse: (response) => {
-        console.log('Updated course response:', response);
-        return response.data;
       },
     }),
 
@@ -95,10 +88,6 @@ export const coursesInstSlice = createApi({
         url: `/instructor/courses/${courseId}`,
         method: 'DELETE',
       }),
-      transformResponse: (response) => {
-        console.log('Deleted course response:', response);
-        return response.data;
-      },
     }),
 
     getSections: builder.query({
@@ -116,19 +105,20 @@ export const coursesInstSlice = createApi({
         body: sectionData,
       }),
       transformResponse: (response) => {
-        console.log(response);
-
+        // console.log(response);
         return response;
       },
     }),
 
     updateSection: builder.mutation({
-      query: ({ courseId, sectionId, sectionData }) => ({
-        url: `/instructor/courses/${courseId}/sections/${sectionId}`,
-        method: 'PUT',
-        body: sectionData,
-      }),
-      transformResponse: (response) => response.data,
+      query: ({ courseId, sectionId, sectionData }) => {
+        return {
+          url: `/instructor/courses/${courseId}/sections/${sectionId}`,
+          method: 'PATCH',
+          body: sectionData,
+        };
+      },
+      // transformResponse: (response) => response.data,
     }),
 
     deleteSection: builder.mutation({
@@ -136,7 +126,17 @@ export const coursesInstSlice = createApi({
         url: `/instructor/courses/${courseId}/sections/${sectionId}`,
         method: 'DELETE',
       }),
-      transformResponse: (response) => response.data,
+      // transformResponse: (response) => response.data,
+    }),
+
+    reorderSections: builder.mutation({
+      query: ({ courseId, sectionOrder }) => {
+        return {
+          url: `/instructor/courses/${courseId}/sections/reorder`,
+          method: 'PATCH',
+          body: { sectionOrder },
+        };
+      },
     }),
 
     // Fetch lessons for a specific section
@@ -168,19 +168,37 @@ export const coursesInstSlice = createApi({
         };
       },
       transformResponse: (response) => {
-        console.log(response);
+        // console.log(response);
         return response;
       },
     }),
 
     // Update an existing lesson
     updateLesson: builder.mutation({
-      query: ({ sectionId, lessonId, lessonData }) => ({
-        url: `/instructor/sections/${sectionId}/lessons/${lessonId}`,
-        method: 'PUT',
-        body: lessonData,
-      }),
-      transformResponse: (response) => response.data,
+      query: ({ sectionId, lessonId, title, type, videoFile }) => {
+        const formData = new FormData();
+
+        // Add title if provided
+        if (title) {
+          formData.append('title', title);
+        }
+
+        // Add type if provided
+        if (type) {
+          formData.append('type', type);
+        }
+
+        // Add video file if provided
+        if (videoFile) {
+          formData.append('videoFile', videoFile);
+        }
+
+        return {
+          url: `/instructor/sections/${sectionId}/lessons/${lessonId}`,
+          method: 'PATCH',
+          body: formData,
+        };
+      },
     }),
 
     // Delete a lesson from a specific section
@@ -189,14 +207,24 @@ export const coursesInstSlice = createApi({
         url: `/instructor/sections/${sectionId}/lessons/${lessonId}`,
         method: 'DELETE',
       }),
-      transformResponse: (response) => response.data,
+      // transformResponse: (response) => response.data,
+    }),
+
+    reorderLessons: builder.mutation({
+      query: ({ sectionId, lessonOrder }) => {
+        return {
+          url: `/instructor/sections/${sectionId}/lessons/reorder`,
+          method: 'PATCH',
+          body: { lessonOrder },
+        };
+      },
     }),
   }),
 });
 
 export const {
   useGetCoursesQuery,
-  useGetCourseDetailsQuery,
+  useGetCourseByIdQuery,
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
@@ -204,8 +232,10 @@ export const {
   useCreateSectionMutation,
   useUpdateSectionMutation,
   useDeleteSectionMutation,
+  useReorderSectionsMutation,
   useGetLessonsQuery,
   useCreateLessonMutation,
   useUpdateLessonMutation,
   useDeleteLessonMutation,
+  useReorderLessonsMutation,
 } = coursesInstSlice;

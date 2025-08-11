@@ -39,7 +39,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-export const Earnings = () => {
+export const EarningsPage = () => {
   // const { stats, withdrawals } = useSelector(
   //   (state: RootState) => state.earnings
   // );

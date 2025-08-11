@@ -14,14 +14,16 @@ import {
 } from '@/components/ui/collapsible';
 import { Trash2, Plus, Edit3, ChevronRight } from 'lucide-react';
 import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';
-import type { QuizQuestionType } from '@/lib/instructor/create-course-validations/lessons-validations';
+import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
 interface EnhancedQuizEditorProps {
+  canEdit: boolean;
   questions: QuizQuestionType[];
   onQuestionsChange: (questions: QuizQuestionType[]) => void;
 }
 
 export function EnhancedQuizEditor({
+  canEdit,
   questions,
   onQuestionsChange,
 }: EnhancedQuizEditorProps) {
@@ -106,33 +108,40 @@ export function EnhancedQuizEditor({
             <CardTitle className="text-base flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-                <span>Question {question.order}</span>
+                <span>Question {question.order + 1}</span>
                 {question.question && (
                   <span className="text-sm font-normal text-muted-foreground truncate max-w-md">
                     - {question.question}
                   </span>
                 )}
               </div>
-              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setEditingId(editingId === question.id ? null : question.id)
-                  }
+              {canEdit && (
+                <div
+                  className="flex gap-2"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Edit3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteQuestion(question.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setEditingId(
+                        editingId === question.id ? null : question.id
+                      )
+                    }
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteQuestion(question.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
         </CollapsibleTrigger>
@@ -272,25 +281,31 @@ export function EnhancedQuizEditor({
         <h3 className="text-lg font-semibold">
           Quiz Questions ({questions.length})
         </h3>
-        <Button type="button" onClick={addNewQuestion}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Question
-        </Button>
+        {canEdit && (
+          <Button type="button" onClick={addNewQuestion}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Question
+          </Button>
+        )}
       </div>
 
       {questions.length > 0 ? (
         <DragDropReorder
           items={questions} // Pass full question objects
-          onReorder={(reorderedQuestions) => {
-            // Update the order property and reorder
-            const updatedQuestions = reorderedQuestions.map(
-              (question, index) => ({
-                ...question,
-                order: index + 1,
-              })
-            );
-            onQuestionsChange(updatedQuestions);
-          }}
+          onReorder={
+            canEdit
+              ? (reorderedQuestions) => {
+                  // Update the order property and reorder
+                  const updatedQuestions = reorderedQuestions.map(
+                    (question, index) => ({
+                      ...question,
+                      order: index + 1,
+                    })
+                  );
+                  onQuestionsChange(updatedQuestions);
+                }
+              : null
+          }
           renderItem={renderQuestion}
           className="space-y-4"
         />

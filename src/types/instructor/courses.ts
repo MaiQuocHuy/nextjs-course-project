@@ -36,7 +36,7 @@ export interface Category {
   name: string;
 }
 
-export interface CourseSection {
+export interface Section {
   id: string;
   title: string;
   orderIndex: number;
@@ -71,9 +71,11 @@ export interface Course {
   description: string;
   level: string;
   thumbnailUrl: string;
-  category: Category | Category[];
+  // category: Category | Category[];
+  category: Category;
   status: string;
   createdAt: string;
+  updateAt: string;
   totalStudents: number;
   sectionCount: number;
   averageRating: number;

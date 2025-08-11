@@ -30,7 +30,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import type { DocumentType } from '@/lib/instructor/create-course-validations/lessons-validations';
+import type { DocumentType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
 interface MultiDocumentUploadProps {
   documents: DocumentType[];

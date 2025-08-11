@@ -1,7 +1,7 @@
 'use client';
 
-import NotFound from '@/pages/not-found-page';
+import NotFoundPage from '@/components/instructor/NotFoundPage';
 
-export default function NotFoundPage() {
-  return <NotFound />;
+export default function Index() {
+  return <NotFoundPage />;
 }

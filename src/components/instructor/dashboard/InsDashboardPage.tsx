@@ -28,6 +28,9 @@ import {
 } from '@/app/data/courses';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { useRouter } from 'next/navigation';
 
 const initStats = {
   totalCourses: {
@@ -62,7 +65,9 @@ const initStats = {
   },
 };
 
-export const Dashboard = () => {
+export const InsDashboard = () => {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>();
   const [publishedCourses, setPublishedCourses] = useState<Course[]>();
   const [totalStudents, setTotalStudents] = useState(0);
@@ -74,8 +79,12 @@ export const Dashboard = () => {
 
   // Get all courses
   useEffect(() => {
-    const courses = getAllCourses();
-    setCourses(courses);
+    if (!isAuthenticated) {
+      router.push('/login');
+    } else {
+      const courses = getAllCourses();
+      setCourses(courses);
+    }
   }, []);
 
   // Get published courses

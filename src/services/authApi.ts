@@ -1,9 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-<<<<<<< HEAD
-// import { getSession } from "next-auth/react";
-=======
-
->>>>>>> bec99807c15d241ec355835e9b6f0398396fba24
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,

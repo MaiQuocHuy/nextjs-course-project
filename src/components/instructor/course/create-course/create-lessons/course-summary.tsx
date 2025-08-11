@@ -1,13 +1,29 @@
+import Image from 'next/image';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
-import { courseBasicInfoType } from '@/lib/instructor/create-course-validations/course-basic-info-validation';
+import { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+import { useEffect, useState } from 'react';
+import { createFilePreview } from '@/utils/instructor/create-file-preview';
 
 interface CourseSummaryProps {
-  course: courseBasicInfoType;
+  course: CourseBasicInfoType;
 }
 
 export function CourseSummary({ course }: CourseSummaryProps) {
+  const [courseImage, setCourseImage] = useState('');
+
+  useEffect(() => {
+    if (course) {
+      const createCourseImage = async () => {
+        const courseImage = await createFilePreview(course.file);
+        setCourseImage(courseImage);
+      };
+
+      createCourseImage();
+    }
+  }, [course]);
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -39,7 +55,7 @@ export function CourseSummary({ course }: CourseSummaryProps) {
           <div className="flex justify-center">
             <div className="relative w-[80%] overflow-hidden">
               <Image
-                src={course.thumbnail || '/placeholder.svg'}
+                src={courseImage || ''}
                 alt={course.title}
                 fill
                 className="object-cover rounded-lg"

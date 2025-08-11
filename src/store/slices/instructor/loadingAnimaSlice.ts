@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface LoadingAnimaState {
   isLoading: boolean;
-  content: string;
+  content?: string;
 }
 
 const initialState: LoadingAnimaState = {
@@ -15,7 +15,7 @@ export const loadingAnimaSlice = createSlice({
   name: 'loadingAnimation',
   initialState,
   reducers: {
-    startLoading: (state, action: PayloadAction<string>) => {      
+    startLoading: (state, action: PayloadAction<string | undefined>) => {      
       state.isLoading = true;
       state.content = action.payload;
     },

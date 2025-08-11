@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 // Course form validation schema
-const courseFormSchema = z.object({
+const courseSchema = z.object({
+  id: z.string().optional(),
   title: z
     .string()
     .min(5, 'Course title must be at least 5 characters')
@@ -30,7 +31,6 @@ const courseFormSchema = z.object({
 
 export const imageFileSchema = z.object({
   file:
-    // .instanceof(FileList).transform(list => list[0])
     typeof window === 'undefined'
       ? z.any()
       : z
@@ -80,22 +80,12 @@ export const videoFileSchema = z.object({
     .optional(),
 });
 
-export const fullCourseFormSchema = z.object({
-  ...courseFormSchema.shape,
+export const fullCourseSchema = z.object({
+  ...courseSchema.shape,
   ...imageFileSchema.shape,
 });
 
-export type courseBasicInfoType = {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  categoryIds: string[];
-  level: string;
-  thumbnail: string;
-}
-
-export type CourseFormData = z.infer<typeof fullCourseFormSchema>;
+export type CourseBasicInfoType = z.infer<typeof fullCourseSchema>;
 
 // Helper function to get word count
 export const getWordCount = (text: string): number => {
