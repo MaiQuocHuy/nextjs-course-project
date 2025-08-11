@@ -1,7 +1,8 @@
 import { fetchBaseQuery, FetchArgs, BaseQueryFn, FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { getSession, signOut } from "next-auth/react";
+import { isAccessTokenValid } from "./auth";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL ;
+const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
 
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
@@ -17,14 +18,13 @@ export const baseQuery = fetchBaseQuery({
   baseUrl,
   prepareHeaders: async (headers, { arg }) => {
     try {
-      
       const session = await getSession();
       
       if (session?.user?.accessToken) {
         headers.set("Authorization", `Bearer ${session.user.accessToken}`);
       }
       
-      //* check header
+      // Check if the request body is FormData
       const isFormData = (arg as any)?.body instanceof FormData;
       
       if (!isFormData) {
@@ -157,22 +157,7 @@ export const publicBaseQuery = fetchBaseQuery({
   },
 });
 
-// Helper function
-export async function clearAuthAndSignOut(redirectUrl: string = '/login') {
-  try {
-    // Clear any pending requests
-    pendingRequests.length = 0;
-    isRefreshing = false;
-    refreshPromise = null;
-    
-    // Sign out via NextAuth
-    await signOut({ callbackUrl: redirectUrl });
-  } catch (error) {
-    console.error('Error during sign out:', error);
-    // Force redirect if signOut fails
-    window.location.href = redirectUrl;
-  }
-}
+
 
 // chekc logged in
 export async function isAuthenticated(): Promise<boolean> {

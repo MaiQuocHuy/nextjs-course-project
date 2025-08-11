@@ -35,6 +35,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useGetProfileQuery } from "@/services/common/profileApi";
+import { useAuth } from "@/hooks/useAuth";
 
 // Avatar constraints
 const MAX_AVATAR_SIZE = 10 * 1024 * 1024; // 10MB
@@ -152,6 +153,7 @@ EditableField.displayName = "EditableField";
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("personal");
   const { data: profileResponse } = useGetProfileQuery();
+  const { refreshSession } = useAuth();
 
   // API Mutations
   const [updateProfile, { isLoading: isUpdatingProfile }] = useUpdateProfileMutation();
@@ -227,6 +229,10 @@ export default function SettingsPage() {
         await updateProfile(payload).unwrap();
         setPersonalInfo(payload);
         setEditingFields({});
+
+        // Force session refresh to update header
+        await refreshSession();
+
         setSuccess("Profile updated successfully");
       } catch (error: any) {
         console.error("Profile update failed", error);
@@ -239,7 +245,7 @@ export default function SettingsPage() {
         setSuccess(message);
       }
     },
-    [hasPersonalChanges, updateProfile, setSuccess]
+    [hasPersonalChanges, updateProfile, refreshSession, setSuccess]
   );
 
   const handlePasswordUpdate = useCallback(
@@ -299,12 +305,16 @@ export default function SettingsPage() {
       setAvatarPreview(null);
       setAvatarFile(null);
       setIsAvatarDialogOpen(false);
+
+      // Force session refresh to update header avatar
+      await refreshSession();
+
       setSuccess("Avatar updated successfully");
     } catch (error) {
       console.error("Avatar update failed", error);
       setSuccess("Failed to update avatar. Please try again.");
     }
-  }, [avatarPreview, avatarFile, updateThumbnail, personalInfo.name, setSuccess]);
+  }, [avatarPreview, avatarFile, updateThumbnail, personalInfo.name, refreshSession, setSuccess]);
 
   const toggleEditField = (field: keyof PersonalInfoForm) => {
     setEditingFields((prev) => ({ ...prev, [field]: !prev[field] }));

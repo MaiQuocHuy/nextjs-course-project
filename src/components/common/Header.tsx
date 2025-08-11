@@ -27,7 +27,7 @@ import { SearchBar } from "@/components/common/SearchBar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useAuthStatus } from "@/hooks/useAuth";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
 
@@ -39,18 +39,45 @@ const navigation = [
 ];
 
 export function Header() {
-  const { isAuthenticated: isLoggedIn, logout: authLogout, user } = useAuth();
+  const { logout: authLogout, user } = useAuth();
+  const { isAuthenticated: isLoggedIn, isReady } = useAuthStatus();
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Show loading skeleton while auth state is being determined
+  if (!isReady) {
+    return (
+      <header className="flex justify-center sticky top-0 z-50 w-full border-b backdrop-blur-xl bg-white/80 dark:bg-black/80 shadow-lg shadow-black/5 dark:shadow-white/5">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <GraduationCap className="h-8 w-8 text-primary" />
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              SybauEducation
+            </span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   const userName = user?.name || "";
   const userEmail = user?.email || "";
   const userThumbnail = user?.thumbnailUrl || "";
 
   const handleLogout = async () => {
-    await authLogout();
+    try {
+      await authLogout("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Force redirect if logout fails
+      router.push("/login");
+    }
   };
 
   const isActiveLink = (href: string) => {

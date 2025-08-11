@@ -44,14 +44,21 @@ function decodeJWT(token: string): DecodedToken | null {
   }
 }
 
-// Check if token is expired or will expire in the next 5 minutes
-function isTokenExpired(token: string): boolean {
+// Check if token is expired or will expire soon
+function isTokenExpired(token: string, bufferMinutes: number = 5): boolean {
   const decoded = decodeJWT(token);
   if (!decoded?.exp) return true;
   
   const currentTime = Math.floor(Date.now() / 1000);
-  const bufferTime = 5 * 60; // 5 minutes buffer
+  const bufferTime = bufferMinutes * 60; // Convert minutes to seconds
   return decoded.exp < (currentTime + bufferTime);
+}
+
+// Check if refresh token is expired
+function isRefreshTokenExpired(refreshTokenExpires: number): boolean {
+  if (!refreshTokenExpires) return false;
+  const currentTime = Math.floor(Date.now() / 1000);
+  return refreshTokenExpires < currentTime;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -61,10 +68,11 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days (matches refresh token)
+    maxAge: 60 * 60, // 1 hour (matches access token)
+    updateAge: 60 * 10, // Update session every 10 minutes
   },
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days (matches refresh token)
   },
   providers: [
     CredentialsProvider({
@@ -132,8 +140,9 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }): Promise<JWT> {
-      // Initial sign in
-      if (user) {
+      // Initial sign in - store fresh tokens
+      if (user) { 
+       
         return {
           ...token,
           userId: user.id,
@@ -147,23 +156,69 @@ export const authOptions: NextAuthOptions = {
           refreshToken: user.refreshToken,
           accessTokenExpires: user.accessTokenExpires,
           refreshTokenExpires: user.refreshTokenExpires,
+          error: undefined, // Clear any previous errors
         };
       }
 
-      // Return previous token if the access token has not expired yet
-      if (token.accessToken && !isTokenExpired(token.accessToken as string)) {
+      // If this is a manual session update, fetch fresh user data
+      if (trigger === 'update') {
+        console.log('Manual session update - fetching fresh user data');
+        try {
+          const response = await fetch(`${baseUrl}/users/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            if (userData.data) {
+              console.log('Successfully fetched fresh user data');
+              return {
+                ...token,
+                name: userData.data.name || token.name,
+                bio: userData.data.bio || token.bio,
+                thumbnailUrl: userData.data.thumbnailUrl || token.thumbnailUrl,
+                email: userData.data.email || token.email,
+              };
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch fresh user data:', error);
+        }
+      }
+
+      // Check if refresh token is expired first
+      if (token.refreshTokenExpires && isRefreshTokenExpired(token.refreshTokenExpires as number)) {
+        console.log('Refresh token expired - forcing logout');
+        return {
+          ...token,
+          error: "RefreshAccessTokenError",
+        };
+      }
+
+      // Return previous token if the access token is still valid (with 5-minute buffer)
+      if (token.accessToken && !isTokenExpired(token.accessToken as string, 5)) {
         return token;
       }
 
-      // Access token has expired, try to update it using refresh token
-      console.log('Access token expired, attempting refresh...');
+      // Access token has expired or will expire soon, try to refresh it
+      console.log('Access token expired or expiring soon - attempting refresh...');
       return await refreshAccessToken(token);
     },
 
     async session({ session, token }): Promise<Session> {
-      // If there's an error, force logout
+      // If there's a refresh error, return empty session to force logout
       if (token.error === "RefreshAccessTokenError") {
-        // Session will be invalid, user will be logged out
+        console.log('Session callback: Refresh token error detected - invalidating session');
+        return {} as Session;
+      }
+
+      // Only return session if we have valid tokens
+      if (!token.accessToken || !token.refreshToken) {
+        console.log('Session callback: Missing tokens - invalidating session');
         return {} as Session;
       }
 
@@ -189,10 +244,10 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signOut({ token }) {
-      // Perform server-side logout if needed
-      try {
+     
+      try {        
         if (token?.refreshToken) {
-          await fetch(`${baseUrl}/auth/logout`, {
+          const response = await fetch(`${baseUrl}/auth/logout`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -200,10 +255,19 @@ export const authOptions: NextAuthOptions = {
             },
             body: JSON.stringify({ refreshToken: token.refreshToken }),
           });
+
+          if (response.ok) {
+            console.log('Server-side logout successful');
+          } else {
+            console.warn('Server-side logout failed:', response.status);
+          }
         }
       } catch (error) {
         console.error('Error during server logout:', error);
       }
+    },
+    async signIn({ user }) {
+      console.log('Sign in event triggered for user:', user?.email);
     },
   },
 };
@@ -213,19 +277,17 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
     console.log('Attempting to refresh access token...');
     
-    // Check if refresh token exists and is not expired
+    // Check if refresh token exists
     if (!token.refreshToken) {
       throw new Error('No refresh token available');
     }
 
-    // Check if refresh token is expired (using backend-provided expiry)
-    if (token.refreshTokenExpires) {
-      const currentTime = Math.floor(Date.now() / 1000);
-      if (token.refreshTokenExpires < currentTime) {
-        throw new Error('Refresh token expired');
-      }
+    // Check if refresh token is expired
+    if (token.refreshTokenExpires && isRefreshTokenExpired(token.refreshTokenExpires as number)) {
+      throw new Error('Refresh token expired');
     }
 
+   
     const res = await fetch(`${baseUrl}/auth/refresh`, {
       method: "POST",
       headers: {
@@ -235,26 +297,33 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
     });
 
     if (!res.ok) {
+      const errorText = await res.text();
+      console.error(` Refresh request failed: ${res.status} - ${errorText}`);
       throw new Error(`Failed to refresh access token: ${res.status}`);
     }
 
     const response = await res.json();
     
     if (!response.data?.accessToken) {
+      console.error(' Invalid refresh response - missing access token');
       throw new Error('Invalid refresh response');
     }
 
-    console.log("Successfully refreshed access token"); 
+    console.log(" Successfully refreshed access token"); 
 
     // Decode new access token to get expiration time
     const newAccessTokenDecoded = decodeJWT(response.data.accessToken);
 
+    if (!newAccessTokenDecoded?.exp) {
+      console.warn('New access token missing expiration - using 1 hour default');
+    }
+
     // Update token with new values and optionally updated user info
-    const updatedToken = {
+    const updatedToken: JWT = {
       ...token,
       accessToken: response.data.accessToken,
-      refreshToken: response.data.refreshToken ?? token.refreshToken,
-      accessTokenExpires: newAccessTokenDecoded?.exp,
+      refreshToken: response.data.refreshToken ?? token.refreshToken, // Use new if provided, otherwise keep existing
+      accessTokenExpires: newAccessTokenDecoded?.exp ?? (Math.floor(Date.now() / 1000) + 3600), // Default to 1 hour if not provided
       refreshTokenExpires: response.data.refreshTokenExpires ?? token.refreshTokenExpires,
       error: undefined, // Clear any previous errors
     };
@@ -313,6 +382,44 @@ export async function forceTokenRefresh(): Promise<boolean> {
     return false;
   }
 }
+
+// RTK Query integration helpers
+// export const getAuthHeaders = async (): Promise<{ [key: string]: string }> => {
+//   try {
+//     const { getSession } = await import('next-auth/react');
+//     const session = await getSession();
+    
+//     if (!session?.user?.accessToken) {
+//       throw new Error('No access token available');
+//     }
+
+//     return {
+//       'Authorization': `Bearer ${session.user.accessToken}`,
+//       'Content-Type': 'application/json',
+//     };
+//   } catch (error) {
+//     console.error('Failed to get auth headers:', error);
+//     throw error;
+//   }
+// };
+
+// Token validation utility for RTK Query
+export const isAccessTokenValid = async (): Promise<boolean> => {
+  try {
+    const { getSession } = await import('next-auth/react');
+    const session = await getSession();
+    
+    if (!session?.user?.accessToken) {
+      return false;
+    }
+
+    // Check if token is expired (with 1-minute buffer)
+    return !isTokenExpired(session.user.accessToken, 1);
+  } catch (error) {
+    console.error('Token validation failed:', error);
+    return false;
+  }
+};
 
 // Enhanced type declarations
 declare module "next-auth" {
