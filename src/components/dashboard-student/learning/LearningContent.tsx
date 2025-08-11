@@ -39,11 +39,19 @@ const VideoContent = ({
   lesson: Lesson;
   onAutoComplete?: () => void;
 }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
   if (!lesson.video) return null;
 
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = e.currentTarget;
     const { currentTime, duration } = video;
+
+    setCurrentTime(currentTime);
+    setDuration(duration);
 
     // Auto complete when user watches >= 90% of video
     if (
@@ -56,28 +64,126 @@ const VideoContent = ({
     }
   };
 
+  const handlePlay = () => setIsPlaying(true);
+  const handlePause = () => setIsPlaying(false);
+  const handleLoadedData = () => setIsLoaded(true);
+
+  const formatTime = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="aspect-video bg-black rounded-lg overflow-hidden">
-        <video
-          controls
-          className="w-full h-full"
-          poster="/placeholder-video.jpg"
-          onTimeUpdate={handleTimeUpdate}
-        >
-          <source src={lesson.video.url} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
-      <div className="text-xs sm:text-sm text-gray-600">
-        Duration: {Math.floor(lesson.video.duration / 60)} minutes
-      </div>
-      {lesson.isCompleted && (
-        <div className="flex items-center gap-2 text-green-600 text-xs sm:text-sm">
-          <CheckCircle className="h-4 w-4" />
-          <span>Video completed!</span>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Video Container with Enhanced Design */}
+      <div className="relative group">
+        {/* Video Player with Shadow and Border */}
+        <div className="aspect-video bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden shadow-2xl border border-gray-700/50 relative">
+          {/* Loading State */}
+          {!isLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 text-blue-500 animate-spin " />
+                <span className="text-gray-300 text-sm">Loading video...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Video Element */}
+          <video
+            key={lesson.id}
+            controls={true}
+            className="w-full h-full object-cover"
+            poster=""
+            onTimeUpdate={handleTimeUpdate}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onLoadedData={handleLoadedData}
+            style={{
+              filter: "contrast(1.05) brightness(1.02)",
+            }}
+          >
+            <source src={lesson.video.url} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Play/Pause Overlay Indicator */}
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300",
+              isPlaying ? "opacity-0" : "opacity-100"
+            )}
+          >
+            <div className="bg-black/30 backdrop-blur-sm rounded-full p-3 mb-5">
+              <Play className="h-10 w-10 text-white fill-white" />
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Completion Badge Overlay */}
+        {lesson.isCompleted && (
+          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            <span>Completed</span>
+          </div>
+        )}
+      </div>
+
+      {/* Video Information Panel */}
+      <Card className="border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Play className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
+                  Video Lesson
+                </h3>
+                <p className="text-gray-600 text-xs sm:text-sm">
+                  Duration: {Math.floor(lesson.video.duration / 60)} minutes
+                </p>
+              </div>
+            </div>
+
+            {lesson.isCompleted ? (
+              <Badge className="bg-green-100 text-green-800 border-green-200">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Watched
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="border-blue-200 text-blue-700"
+              >
+                {progressPercentage > 0
+                  ? `${Math.round(progressPercentage)}% watched`
+                  : "Not started"}
+              </Badge>
+            )}
+          </div>
+
+          {/* Progress Bar */}
+          {progressPercentage > 0 && !lesson.isCompleted && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-gray-600 mb-2">
+                <span>Progress</span>
+                <span>{Math.round(progressPercentage)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500 rounded-full"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -518,12 +624,14 @@ export function LearningContent({
         <div className="flex-1 p-3 sm:p-4 lg:p-6">
           {currentLesson.type === "VIDEO" && (
             <VideoContent
+              key={currentLesson.id}
               lesson={currentLesson}
               onAutoComplete={handleAutoComplete}
             />
           )}
           {currentLesson.type === "QUIZ" && (
             <QuizContent
+              key={currentLesson.id}
               lesson={currentLesson}
               section={section}
               courseId={courseId}
@@ -531,7 +639,7 @@ export function LearningContent({
             />
           )}
           {currentLesson.type === "TEXT" && (
-            <TextContent lesson={currentLesson} />
+            <TextContent key={currentLesson.id} lesson={currentLesson} />
           )}
         </div>
 
