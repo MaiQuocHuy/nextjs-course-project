@@ -29,17 +29,17 @@ interface DecodedToken {
 // Helper function to decode JWT token
 function decodeJWT(token: string): DecodedToken | null {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Error decoding JWT:', error);
+    console.error("Error decoding JWT:", error);
     return null;
   }
 }
@@ -48,7 +48,7 @@ function decodeJWT(token: string): DecodedToken | null {
 function isTokenExpired(token: string, bufferMinutes: number = 5): boolean {
   const decoded = decodeJWT(token);
   if (!decoded?.exp) return true;
-  
+
   const currentTime = Math.floor(Date.now() / 1000);
   const bufferTime = bufferMinutes * 60; // Convert minutes to seconds
   return decoded.exp < (currentTime + bufferTime);
@@ -62,9 +62,9 @@ function isRefreshTokenExpired(refreshTokenExpires: number): boolean {
 }
 
 export const authOptions: NextAuthOptions = {
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env.NODE_ENV === "development",
   pages: {
-    signIn: "/login", 
+    signIn: "/login",
   },
   session: {
     strategy: "jwt",
@@ -84,7 +84,7 @@ export const authOptions: NextAuthOptions = {
         },
         password: { label: "Password", type: "password" },
       },
-      authorize: async(credentials) => {
+      authorize: async (credentials) => {
         if (!credentials?.email || !credentials.password) {
           return null;
         }
@@ -92,28 +92,29 @@ export const authOptions: NextAuthOptions = {
         // Backend authentication - connecting to Spring Boot server
         try {
           const res = await fetch(`${baseUrl}/auth/login`, {
-            method: 'POST',
+            method: "POST",
             body: JSON.stringify({
               email: credentials.email,
               password: credentials.password,
             }),
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           });
-          
+
           if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.message || "Something went wrong, please try again");
-          }  
+            throw new Error(
+              errorData.message || "Something went wrong, please try again"
+            );
+          }
 
           const response = await res.json();
-          
+
           if (response && response.data) {
             // Decode access token to get expiration time
             const accessTokenDecoded = decodeJWT(response.data.accessToken);
-            
-            // Refresh token expiry comes from backend response (not JWT decode)
+
             return {
               id: response.data.user.id,
               email: response.data.user.email || credentials.email,
@@ -125,7 +126,7 @@ export const authOptions: NextAuthOptions = {
               accessToken: response.data.accessToken,
               refreshToken: response.data.refreshToken,
               accessTokenExpires: accessTokenDecoded?.exp,
-              refreshTokenExpires: response.data.refreshTokenExpires, // From backend response
+              refreshTokenExpires: response.data.refreshTokenExpires,
             } as UserType;
           }
         } catch (error) {
@@ -250,8 +251,8 @@ export const authOptions: NextAuthOptions = {
           const response = await fetch(`${baseUrl}/auth/logout`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token.accessToken}`,
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token.accessToken}`,
             },
             body: JSON.stringify({ refreshToken: token.refreshToken }),
           });
@@ -263,7 +264,7 @@ export const authOptions: NextAuthOptions = {
           }
         }
       } catch (error) {
-        console.error('Error during server logout:', error);
+        console.error("Error during server logout:", error);
       }
     },
     async signIn({ user }) {
@@ -279,7 +280,7 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
     
     // Check if refresh token exists
     if (!token.refreshToken) {
-      throw new Error('No refresh token available');
+      throw new Error("No refresh token available");
     }
 
     // Check if refresh token is expired
@@ -303,7 +304,7 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
     }
 
     const response = await res.json();
-    
+
     if (!response.data?.accessToken) {
       console.error(' Invalid refresh response - missing access token');
       throw new Error('Invalid refresh response');
@@ -333,7 +334,8 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
       updatedToken.email = response.data.user.email ?? token.email;
       updatedToken.name = response.data.user.name ?? token.name;
       updatedToken.role = response.data.user.role ?? token.role;
-      updatedToken.thumbnailUrl = response.data.user.thumbnailUrl ?? token.thumbnailUrl;
+      updatedToken.thumbnailUrl =
+        response.data.user.thumbnailUrl ?? token.thumbnailUrl;
       updatedToken.bio = response.data.user.bio ?? token.bio;
       updatedToken.isActive = response.data.user.isActive ?? token.isActive;
     }
@@ -351,9 +353,9 @@ export async function refreshAccessToken(token: JWT): Promise<JWT> {
 // Helper function to manually trigger token refresh (for use in components)
 export async function forceTokenRefresh(): Promise<boolean> {
   try {
-    const { getSession } = await import('next-auth/react');
+    const { getSession } = await import("next-auth/react");
     const session = await getSession();
-    
+
     if (!session?.user?.refreshToken) {
       return false;
     }
@@ -375,10 +377,10 @@ export async function forceTokenRefresh(): Promise<boolean> {
     };
 
     const refreshedToken = await refreshAccessToken(mockToken);
-    
+
     return !refreshedToken.error;
   } catch (error) {
-    console.error('Manual token refresh failed:', error);
+    console.error("Manual token refresh failed:", error);
     return false;
   }
 }

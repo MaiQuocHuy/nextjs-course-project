@@ -1,11 +1,12 @@
 import { LearningPageClient } from "@/components/dashboard-student/learning";
 
-interface PageProps {
-  params: {
-    courseId: string;
-  };
-}
-
-export default function LearningPage({ params }: PageProps) {
-  return <LearningPageClient courseId={params.courseId} />;
+// In Next.js 15 (App Router), route params are now async to enable streaming
+// optimization. You must await params before accessing its properties.
+export default async function LearningPage({
+  params,
+}: {
+  params: Promise<{ courseId: string }>;
+}) {
+  const { courseId } = await params;
+  return <LearningPageClient courseId={courseId} />;
 }

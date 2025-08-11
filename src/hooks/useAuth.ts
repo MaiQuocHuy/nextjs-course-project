@@ -21,11 +21,11 @@ export const useAuth = () => {
       setLoading(true);
       setError(null);
 
-      const result = await signIn('credentials', {
-        email: credentials.email,
-        password: credentials.password,
-        redirect: false,
-      });
+        const result = await signIn("credentials", {
+          email: credentials.email,
+          password: credentials.password,
+          redirect: false,
+        });
 
       if (result?.error) {
         setError(result.error);
@@ -60,15 +60,15 @@ export const useAuth = () => {
   }, []);
 
   //* Force session refresh
-//   const refreshSession = useCallback(async () => {
-//     try {
-//       await update();
-//       return true;
-//     } catch (error) {
-//       console.error('Session refresh failed:', error);
-//       return false;
-//     }
-//   }, [update]);
+  //   const refreshSession = useCallback(async () => {
+  //     try {
+  //       await update();
+  //       return true;
+  //     } catch (error) {
+  //       console.error('Session refresh failed:', error);
+  //       return false;
+  //     }
+  //   }, [update]);
 
  // * Get current access token
   
@@ -87,15 +87,14 @@ export const useAuth = () => {
   
   const isTokenValid = useCallback(() => {
     if (!session?.user?.accessToken) return false;
-    
-    
+
     const tokenExpires = session.user.accessTokenExpires;
-    if (!tokenExpires) return true; 
-    
+    if (!tokenExpires) return true;
+
     const currentTime = Math.floor(Date.now() / 1000);
     const bufferTime = 1 * 60; // 1 minute
 
-    return tokenExpires > (currentTime + bufferTime);
+    return tokenExpires > currentTime + bufferTime;
   }, [session]);
 
   return {
@@ -112,11 +111,11 @@ export const useAuth = () => {
     refreshSession,
     
     isTokenValid,
-    
+
     // Status checks
-    isLoggedIn: status === 'authenticated',
-    isLoggedOut: status === 'unauthenticated',
-    isSessionLoading: status === 'loading',
+    isLoggedIn: status === "authenticated",
+    isLoggedOut: status === "unauthenticated",
+    isSessionLoading: status === "loading",
   };
 };
 
@@ -165,26 +164,29 @@ export const useTokenManager = () => {
       const newSession = await update();
       return !!newSession?.user?.accessToken;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error("Token refresh failed:", error);
       return false;
     }
   }, [update]);
 
   const isTokenExpired = useCallback(() => {
     if (!session?.user?.accessTokenExpires) return false;
-    
+
     const currentTime = Math.floor(Date.now() / 1000);
     return session.user.accessTokenExpires < currentTime;
   }, [session]);
 
-  const isTokenExpiringSoon = useCallback((bufferMinutes: number = 5) => {
-    if (!session?.user?.accessTokenExpires) return false;
-    
-    const currentTime = Math.floor(Date.now() / 1000);
-    const bufferTime = bufferMinutes * 60;
-    
-    return session.user.accessTokenExpires < (currentTime + bufferTime);
-  }, [session]);
+  const isTokenExpiringSoon = useCallback(
+    (bufferMinutes: number = 5) => {
+      if (!session?.user?.accessTokenExpires) return false;
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      const bufferTime = bufferMinutes * 60;
+
+      return session.user.accessTokenExpires < currentTime + bufferTime;
+    },
+    [session]
+  );
 
   return {
     accessToken: session?.user?.accessToken,
@@ -211,7 +213,7 @@ export const useAutoRefresh = (enabled: boolean = true) => {
         try {
           await refreshTokens();
         } catch (error) {
-          console.error('Auto refresh failed:', error);
+          console.error("Auto refresh failed:", error);
         } finally {
           setIsRefreshing(false);
         }

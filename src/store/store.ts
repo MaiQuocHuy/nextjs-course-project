@@ -22,12 +22,14 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
 };
 import courseFilterReducer from "./slices/student/courseFilterSlice";
 import { settingsApi } from "@/services/common/settingsApi";
+import learningProgressReducer from "./slices/student/learningProgressSlice";
 
 export const makeStore = () => {
   const store = configureStore({
     reducer: {
       auth: authSlice.reducer,
       courseFilter: courseFilterReducer,
+      learningProgress: learningProgressReducer,
 
       // counter: counterReducer,
 

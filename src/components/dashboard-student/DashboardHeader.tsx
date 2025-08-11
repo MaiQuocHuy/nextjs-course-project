@@ -2,22 +2,23 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MobileSidebar } from "./Sidebar";
-import { useGetDashboardDataQuery } from "@/services/student/studentApi";
+import { useDashboardData } from "@/hooks/student/useDashboard";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
 import {
   StatsError,
   LoadingError,
   DashboardHeaderError,
 } from "./ui/LoadingError";
+import { useAuth } from "@/hooks/useAuth";
 
-// Mock user data
-const mockUser = {
-  id: "u-001",
-  name: "John Doe",
-  email: "john.doe@example.com",
-  avatar:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-};
+// // Mock user data
+// const mockUser = {
+//   id: "u-001",
+//   name: "John Doe",
+//   email: "john.doe@example.com",
+//   avatar:
+//     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+// };
 
 export function DashboardHeader() {
   const {
@@ -25,10 +26,11 @@ export function DashboardHeader() {
     error,
     isLoading,
     refetch,
-  } = useGetDashboardDataQuery({
+  } = useDashboardData({
     page: 0,
     size: 20,
   });
+  const { user } = useAuth();
   if (isLoading) {
     return <DashboardHeaderLoadingSkeleton />;
   }
@@ -42,8 +44,6 @@ export function DashboardHeader() {
     completedLessons = 0,
     totalLessons = 0,
   } = dashboardData?.stats || {};
-
-  const user = mockUser;
 
   const userInitials = user?.name
     ? user.name
@@ -61,7 +61,10 @@ export function DashboardHeader() {
         <div className="flex-1 lg:ml-0">
           <div className="flex items-center justify-between">
             <Avatar className="h-8 w-8 mr-3 size-10">
-              <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
+              <AvatarImage
+                src={user?.thumbnailUrl}
+                alt={user?.name || "User"}
+              />
               <AvatarFallback>{userInitials}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
