@@ -47,6 +47,7 @@ interface QuizState {
   answers: Record<string, string>;
   submitted: boolean;
   showResults: boolean;
+  submissionResult?: QuizSubmissionResponse;
 }
 
 const VideoContent = ({
@@ -739,12 +740,25 @@ const TextContent = ({ lesson }: { lesson: Lesson }) => {
   );
 };
 
-const QuizContent = ({ lesson }: { lesson: Lesson }) => {
+const QuizContent = ({
+  lesson,
+  section,
+  courseId,
+  onMarkComplete,
+}: {
+  lesson: Lesson;
+  section: Section;
+  courseId: string;
+  onMarkComplete?: () => void;
+}) => {
   const [quizState, setQuizState] = useState<QuizState>({
     answers: {},
     submitted: false,
     showResults: false,
   });
+
+  const [submitQuiz, { isLoading: isSubmitting }] = useSubmitQuizMutation();
+  const dispatch = useAppDispatch();
 
   if (!lesson.quiz) return null;
 
@@ -760,20 +774,73 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
     }));
   };
 
-  const handleSubmitQuiz = () => {
-    setQuizState((prev) => ({
-      ...prev,
-      submitted: true,
-      showResults: true,
-    }));
+  const handleSubmitQuiz = async () => {
+    if (!section?.id || isSubmitting) return;
+
+    try {
+      const result = await submitQuiz({
+        sectionId: section.id,
+        lessonId: lesson.id,
+        answers: quizState.answers,
+      }).unwrap();
+
+      setQuizState((prev) => ({
+        ...prev,
+        submitted: true,
+        showResults: true,
+        submissionResult: result,
+      }));
+
+      // Update Redux state with quiz completion and score
+      dispatch(
+        markLessonCompleted({
+          lessonId: lesson.id,
+          sectionId: section.id,
+          courseId,
+          isCompleted: true,
+          completedAt: result.submittedAt,
+        })
+      );
+
+      dispatch(
+        updateQuizScore({
+          lessonId: lesson.id,
+          score: result.score,
+        })
+      );
+
+      // Mark lesson as complete after successful quiz submission
+      if (onMarkComplete) {
+        onMarkComplete();
+      }
+    } catch (error) {
+      console.error("Failed to submit quiz:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const getScore = () => {
+    if (quizState.submissionResult) {
+      return quizState.submissionResult.score;
+    }
+
+    // Fallback to client-side calculation if no server result
     const totalQuestions = lesson.quiz!.questions.length;
     const correctAnswers = lesson.quiz!.questions.filter(
       (q) => quizState.answers[q.id] === q.correctAnswer
     ).length;
     return Math.round((correctAnswers / totalQuestions) * 100);
+  };
+
+  const getCorrectAnswersCount = () => {
+    if (quizState.submissionResult) {
+      return quizState.submissionResult.correctAnswers;
+    }
+
+    // Fallback to client-side calculation
+    return lesson.quiz!.questions.filter(
+      (q) => quizState.answers[q.id] === q.correctAnswer
+    ).length;
   };
 
   const allQuestionsAnswered = lesson.quiz.questions.every(
@@ -792,14 +859,14 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
               </span>
             </div>
             <p className="text-green-700 text-sm sm:text-base">
-              Your score: {getScore()}% (
-              {
-                lesson.quiz.questions.filter(
-                  (q) => quizState.answers[q.id] === q.correctAnswer
-                ).length
-              }
-              /{lesson.quiz.questions.length} correct)
+              Your score: {getScore()}% ({getCorrectAnswersCount()}/
+              {lesson.quiz.questions.length} correct)
             </p>
+            {quizState.submissionResult?.feedback && (
+              <p className="text-green-600 text-sm sm:text-base mt-2">
+                {quizState.submissionResult.feedback}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -890,10 +957,17 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
       {!quizState.submitted && (
         <Button
           onClick={handleSubmitQuiz}
-          disabled={!allQuestionsAnswered}
+          disabled={!allQuestionsAnswered || isSubmitting}
           className="w-full h-10 sm:h-11"
         >
-          <span className="text-sm sm:text-base">Submit Quiz</span>
+          {isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm sm:text-base">Submitting...</span>
+            </div>
+          ) : (
+            <span className="text-sm sm:text-base">Submit Quiz</span>
+          )}
         </Button>
       )}
     </div>
@@ -909,6 +983,7 @@ export function LearningContent({
 }: LearningContentProps) {
   const [completeLesson, { isLoading: isCompleting }] =
     useCompleteLessonMutation();
+  const dispatch = useAppDispatch();
 
   if (!currentLesson || !section) {
     return (
@@ -938,6 +1013,17 @@ export function LearningContent({
         courseId,
       }).unwrap();
 
+      // Update Redux state
+      dispatch(
+        markLessonCompleted({
+          lessonId: currentLesson.id,
+          sectionId: section.id,
+          courseId,
+          isCompleted: true,
+          completedAt: new Date().toISOString(),
+        })
+      );
+
       // Call parent callback if provided
       if (onMarkComplete) {
         onMarkComplete(currentLesson.id);
@@ -962,6 +1048,17 @@ export function LearningContent({
         lessonId: currentLesson.id,
         courseId,
       }).unwrap();
+
+      // Update Redux state
+      dispatch(
+        markLessonCompleted({
+          lessonId: currentLesson.id,
+          sectionId: section.id,
+          courseId,
+          isCompleted: true,
+          completedAt: new Date().toISOString(),
+        })
+      );
 
       if (onMarkComplete) {
         onMarkComplete(currentLesson.id);
@@ -1057,15 +1154,22 @@ export function LearningContent({
         <div className="flex-1 p-3 sm:p-4 lg:p-6">
           {currentLesson.type === "VIDEO" && (
             <VideoContent
+              key={currentLesson.id}
               lesson={currentLesson}
               onAutoComplete={handleAutoComplete}
             />
           )}
           {currentLesson.type === "QUIZ" && (
-            <QuizContent lesson={currentLesson} />
+            <QuizContent
+              key={currentLesson.id}
+              lesson={currentLesson}
+              section={section}
+              courseId={courseId}
+              onMarkComplete={handleAutoComplete}
+            />
           )}
           {currentLesson.type === "TEXT" && (
-            <TextContent lesson={currentLesson} />
+            <TextContent key={currentLesson.id} lesson={currentLesson} />
           )}
         </div>
 

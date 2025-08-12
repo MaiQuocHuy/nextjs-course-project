@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 interface CollapsibleProps {
   open?: boolean;
@@ -30,7 +30,7 @@ const Collapsible = React.forwardRef<HTMLDivElement, CollapsibleProps>(
     );
   }
 );
-Collapsible.displayName = 'Collapsible';
+Collapsible.displayName = "Collapsible";
 
 const CollapsibleTrigger = React.forwardRef<
   HTMLButtonElement,
@@ -56,7 +56,7 @@ const CollapsibleTrigger = React.forwardRef<
     </button>
   );
 });
-CollapsibleTrigger.displayName = 'CollapsibleTrigger';
+CollapsibleTrigger.displayName = "CollapsibleTrigger";
 
 const CollapsibleContent = React.forwardRef<
   HTMLDivElement,
@@ -68,6 +68,6 @@ const CollapsibleContent = React.forwardRef<
     </div>
   );
 });
-CollapsibleContent.displayName = 'CollapsibleContent';
+CollapsibleContent.displayName = "CollapsibleContent";
 
 export { Collapsible, CollapsibleTrigger, CollapsibleContent };

@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
+import type { QuizQuestionType } from '@/lib/instructor/create-course-validations/lessons-validations';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -1,5 +1,6 @@
-import { Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Loader2, Receipt } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface LoadingProps {
   message?: string;
@@ -88,64 +89,19 @@ export function Loading({
 // Skeleton loading components for specific use cases
 export function CoursesLoadingSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="h-8 w-32 bg-muted animate-pulse rounded-md"></div>
-        <div className="h-9 w-20 bg-muted animate-pulse rounded-md"></div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <div className="p-3">
-              <div className="aspect-video bg-muted animate-pulse rounded-md mb-3"></div>
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-5 bg-muted animate-pulse rounded"></div>
-                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded"></div>
-                  </div>
-                  <div className="h-6 w-20 bg-muted animate-pulse rounded-full"></div>
-                </div>
-                <div className="h-4 w-2/3 bg-muted animate-pulse rounded"></div>
-              </div>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="border rounded-lg overflow-hidden">
+          <Skeleton className="aspect-video w-full" />
+          <div className="p-4 space-y-3">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
             </div>
-            <div className="p-3 pt-0">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-                    <div className="h-4 w-12 bg-muted animate-pulse rounded"></div>
-                  </div>
-                  <div className="h-2 bg-muted animate-pulse rounded-full"></div>
-                </div>
-                <div className="h-10 bg-muted animate-pulse rounded-md"></div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function DashboardStatsLoadingSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <div className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
-              <div className="h-4 w-4 bg-muted animate-pulse rounded"></div>
-            </div>
-            <div className="space-y-3">
-              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
-              <div className="h-3 w-32 bg-muted animate-pulse rounded"></div>
-              <div className="h-3 w-20 bg-muted animate-pulse rounded"></div>
-            </div>
+            <Skeleton className="h-2 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   );
@@ -153,60 +109,208 @@ export function DashboardStatsLoadingSkeleton() {
 
 export function ActivityFeedLoadingSkeleton() {
   return (
-    <Card className="h-fit">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <div className="h-5 w-5 bg-muted animate-pulse rounded"></div>
-          <div className="h-6 w-32 bg-muted animate-pulse rounded"></div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="px-6 space-y-4 pb-6">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className={`flex items-start space-x-4 py-4 ${
-                i !== 4 ? "border-b border-border" : ""
-              }`}
-            >
-              <div className="flex-shrink-0">
-                <div className="h-4 w-4 bg-muted animate-pulse rounded-full"></div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded"></div>
-                    <div className="h-3 w-full bg-muted animate-pulse rounded"></div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <div className="h-5 w-16 bg-muted animate-pulse rounded-full"></div>
-                    <div className="h-3 w-12 bg-muted animate-pulse rounded"></div>
-                  </div>
-                </div>
-              </div>
+    <div className="space-y-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} className="p-4">
+          <CardHeader className="flex items-center space-x-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-3 w-5/6 mt-2" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
 
 //dashboardheader loading skeleton
 export function DashboardHeaderLoadingSkeleton() {
   return (
-    <div className="flex items-center justify-between p-4 bg-muted animate-pulse rounded-md">
-      <div className="flex items-center space-x-4">
-        <div className="h-10 w-10 bg-muted animate-pulse rounded-full"></div>
+    <div className="flex items-center justify-between space-x-4">
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+      <Skeleton className="h-10 w-10 rounded-full" />
+    </div>
+  );
+}
+
+// Stats loading skeleton
+export function StatsLoadingSkeleton({ statsCount }: { statsCount?: number }) {
+  return (
+    <div
+      className={`grid gap-3 grid-cols-1 sm:grid-cols-2 ${
+        statsCount ? `lg:grid-cols-${statsCount}` : "lg:grid-cols-4"
+      }`}
+    >
+      {Array.from({ length: statsCount || 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-6 md:h-8 w-16 mb-1" />
+            <Skeleton className="h-3 w-24" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Learning loading skeleton
+export function LearningLoadingSkeleton() {
+  return (
+    <div className="h-screen flex flex-col lg:flex-row">
+      {/* Sidebar Skeleton - Hidden on mobile when loading */}
+      <div className="hidden lg:block w-80 bg-white border-r border-gray-200 p-4 space-y-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-20 w-full" />
         <div className="space-y-2">
-          <div className="h-5 w-32 bg-muted animate-pulse rounded"></div>
-          <div className="h-3 w-48 bg-muted animate-pulse rounded"></div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
         </div>
       </div>
-      <div className="flex items-center space-x-6">
-        <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
-        <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
+
+      {/* Mobile Loading Header */}
+      <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <Skeleton className="h-6 w-6" />
+        <Skeleton className="h-6 w-32" />
+        <div className="w-6" />
       </div>
+
+      {/* Content Skeleton */}
+      <div className="flex-1 p-4 lg:p-6 space-y-4">
+        <Skeleton className="h-6 lg:h-8 w-48 lg:w-64" />
+        <Skeleton className="h-48 lg:h-96 w-full" />
+        <Skeleton className="h-10 lg:h-12 w-full" />
+      </div>
+    </div>
+  );
+}
+
+// Payments loading skeleton
+export function PaymentTableLoadingSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Receipt className="h-5 w-5" />
+          Payment History
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Mobile Loading */}
+        <div className="block md:hidden space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Skeleton className="h-10 w-10 rounded" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden md:block">
+          <div className="rounded-md border overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-24" />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-16" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Reviews loading skeletons
+export function ReviewListLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} className="p-4">
+          <CardHeader className="flex items-center space-x-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-3 w-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Quiz Results loading skeleton
+export function QuizResultsLoadingSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="p-4">
+          <CardHeader className="flex items-center space-x-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-3 w-full" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

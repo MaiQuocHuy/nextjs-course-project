@@ -1,6 +1,6 @@
 'use client';
 
-import CreateCoursePage from '@/components/instructor/course/create-course/CreateCoursePage';
+import CreateCoursePage from '@/pages/instructor/create-course-page';
 
 export default function Index() {
   return <CreateCoursePage />;

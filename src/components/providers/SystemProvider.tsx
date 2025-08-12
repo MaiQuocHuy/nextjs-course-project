@@ -2,19 +2,20 @@
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Provider } from "react-redux";
 import { ReactNode } from "react";
 import StoreProvider from "@/components/providers/StoreProvider";
 import { NextAuthProvider } from "@/components/providers/AuthProvider";
 
 export function SystemProvider({ children }: { children: ReactNode }) {
   return (
-    <NextAuthProvider>
-      <StoreProvider>
+    <StoreProvider>
+      <NextAuthProvider>
         <TooltipProvider>
-          <Toaster position="top-right"/>
+          <Toaster position="top-right" richColors />
           {children}
         </TooltipProvider>
-      </StoreProvider>
-    </NextAuthProvider>
+      </NextAuthProvider>
+    </StoreProvider>
   );
 }
