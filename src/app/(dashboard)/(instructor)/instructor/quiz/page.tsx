@@ -13,8 +13,8 @@ export default function QuizPage() {
   const [extractPreview, setExtractPreview] = useState("");
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [sectionId, setSectionId] = useState("001");
-  const [lessonId, setLessonId] = useState("001");
+  const [sectionId, setSectionId] = useState("section-001");
+  const [lessonId, setLessonId] = useState("lesson-002");
   const [error, setError] = useState<string | null>(null);
 
   const [generateQuestions, { isLoading: generating }] =
