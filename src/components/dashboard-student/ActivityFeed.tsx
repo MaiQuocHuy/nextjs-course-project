@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
-import { useGetDashboardDataQuery } from "@/services/student/studentApi";
+import { useDashboardData } from "@/hooks/student/useDashboard";
 import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
 import { ActivityFeedError } from "./ui/LoadingError";
-import type { ActivityType } from "@/types/student";
+import type { ActivityType } from "@/types/student/index";
 
 function getActivityIcon(type: ActivityType) {
   switch (type) {
@@ -53,7 +53,7 @@ export function ActivityFeed() {
     error,
     isLoading,
     refetch,
-  } = useGetDashboardDataQuery({ page: 0, size: 20 });
+  } = useDashboardData({ page: 0, size: 20 });
 
   if (isLoading) {
     return <ActivityFeedLoadingSkeleton />;

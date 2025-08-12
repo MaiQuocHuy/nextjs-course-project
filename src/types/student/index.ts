@@ -38,6 +38,8 @@ export interface Video {
   id: string; // ID video
   url: string; // Link video
   duration: number; // Thời lượng video (tính bằng giây)
+  title: string; // Tiêu đề video
+  thumbnail: string; // Ảnh thumbnail video
 }
 
 export interface QuizQuestion {
@@ -245,4 +247,19 @@ export interface QuizAnswer extends QuizQuestion {
 
 export interface QuizResultDetails extends QuizResults {
   questions: QuizAnswer[]; // Chi tiết câu hỏi + đáp án
+}
+
+// ==============================
+// Quiz submission types
+// ==============================
+export interface QuizSubmissionRequest {
+  answers: Record<string, string>; // Mapping question ID to answer letter
+}
+
+export interface QuizSubmissionResponse {
+  score: number; // Điểm số (0-100)
+  totalQuestions: number; // Tổng số câu hỏi
+  correctAnswers: number; // Số câu trả lời đúng
+  feedback: string; // Phản hồi từ hệ thống
+  submittedAt: string; // Thời gian submit (ISO string)
 }

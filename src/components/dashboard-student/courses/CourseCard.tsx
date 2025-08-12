@@ -30,9 +30,7 @@ export function CourseCard({ course }: CourseCardProps) {
               className="bg-white/90 hover:bg-white"
             >
               <Link href={`/dashboard/learning/${course.courseId}`}>
-                {course.completionStatus === "COMPLETED"
-                  ? "Review Course"
-                  : "Continue Learning"}
+                Continue Learning
               </Link>
             </Button>
           </div>
@@ -75,9 +73,7 @@ export function CourseCard({ course }: CourseCardProps) {
           <div className="pt-2">
             <Button asChild className="w-full">
               <Link href={`/dashboard/learning/${course.courseId}`}>
-                {course.completionStatus === "COMPLETED"
-                  ? "Review Course"
-                  : "Continue Learning"}
+                Continue Learning
               </Link>
             </Button>
           </div>
