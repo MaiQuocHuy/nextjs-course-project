@@ -15,6 +15,12 @@ const roleRouteMap = [
     { path: "/dashboard/payments", roles: ["STUDENT"] },
     { path: "/dashboard/quiz-results", roles: ["STUDENT"] },
     { path: "/dashboard/reviews", roles: ["STUDENT"] },
+    { 
+      path: /^\/dashboard\/learning\/[\w-]+$/, 
+      roles: ["STUDENT"],
+      isDynamic: true,
+      description: "Course learning page"
+    },
 ];
 
 const PUBLIC_PATHS = [
@@ -99,9 +105,16 @@ export async function middleware(req: NextRequest) {
     const userRole = token.role as string;
 
     // Find matching protected route
-    const protectedRoute = roleRouteMap.find(route => 
-      pathname.startsWith(route.path)
-    );
+    const protectedRoute = roleRouteMap.find(route => {
+      if (route.isDynamic && route.path instanceof RegExp) {
+        // Kiểm tra dynamic route với regex
+        const isMatch = route.path.test(pathname);
+        console.log(`🔍 Testing regex ${route.path} against ${pathname}: ${isMatch}`);
+        return isMatch;
+      } else {
+        return pathname.startsWith(route.path as string);
+      }
+    });
 
     if (protectedRoute) {
       if (!protectedRoute.roles.includes(userRole)) {
