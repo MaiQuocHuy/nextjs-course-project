@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useGetCourseWithSectionsQuery } from "@/services/student/studentApi";
+import { useCourseWithSections } from "@/hooks/student/useDashboard";
 import { LearningSidebar } from "./LearningSidebar";
 import { LearningContent } from "./LearningContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Menu, X } from "lucide-react";
-import type { Lesson, Section } from "@/types/student";
+import type { Lesson, Section } from "@/types/student/index";
 import { LearningLoadingSkeleton } from "../ui/Loading";
 import { LearningPageError } from "../ui";
 
@@ -28,7 +28,7 @@ export default function LearningPageClient({
     isLoading,
     error,
     refetch,
-  } = useGetCourseWithSectionsQuery(courseId);
+  } = useCourseWithSections(courseId);
 
   // Find current lesson and section
   const { currentLesson, currentSection } = useMemo(() => {

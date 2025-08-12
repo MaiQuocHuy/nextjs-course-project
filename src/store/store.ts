@@ -21,12 +21,15 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
   return result;
 };
 import courseFilterReducer from "./slices/student/courseFilterSlice";
+import { settingsApi } from "@/services/common/settingsApi";
+import learningProgressReducer from "./slices/student/learningProgressSlice";
 
 export const makeStore = () => {
   const store = configureStore({
     reducer: {
       auth: authSlice.reducer,
       courseFilter: courseFilterReducer,
+      learningProgress: learningProgressReducer,
 
       // counter: counterReducer,
 
@@ -35,6 +38,7 @@ export const makeStore = () => {
       [coursesApi.reducerPath]: coursesApi.reducer,
       [paymentApi.reducerPath]: paymentApi.reducer,
       [profileApi.reducerPath]: profileApi.reducer,
+      [settingsApi.reducerPath]: settingsApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -43,6 +47,7 @@ export const makeStore = () => {
         studentApi.middleware,
         paymentApi.middleware,
         profileApi.middleware,
+        settingsApi.middleware,
         clearCacheOnLogout
       ),
   });
