@@ -18,7 +18,6 @@ interface UserType {
 
 interface DecodedToken {
   exp: number; // expires at
-  iat: number; // issued at
   sub?: string; // subject (user id)
   email?: string;
   roles?: string[]; // user roles
