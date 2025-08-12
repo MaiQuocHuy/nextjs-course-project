@@ -8,7 +8,13 @@ import * as z from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -35,19 +41,20 @@ import { setAuthState } from "@/store/slices/auth/authSlice";
 
 // Zod validation schema
 const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
   password: z
     .string()
     // .min(8, "Password must be at least 8 characters")
     // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
-  rememberMe: z.boolean().default(false),
 });
 
 type LoginFormValues = {
   email: string;
   password: string;
-  rememberMe?: boolean;
 };
 
 export default function LoginPage() {
@@ -66,7 +73,6 @@ export default function LoginPage() {
     defaultValues: {
       email: "bob@example.com",
       password: "bob123",
-      rememberMe: false,
     },
   });
 
@@ -83,26 +89,15 @@ export default function LoginPage() {
       if (result && result.ok) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
-        localStorage.setItem("isAuthenticated", "true");
 
-        setTimeout(() => {
-          router.replace("/");
-        }, 500);
-        dispatch(setAuthState(true));
-        const session = await getSession();
-        const accessToken = session?.user?.accessToken;
-        const refreshToken = session?.user?.refreshToken;
-
-        if (accessToken && refreshToken) {
-          localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("refreshToken", refreshToken);
-        } else {
-          setModalMessage(result?.error || "Login failed. Please check your credentials.");
-          setShowErrorModal(true);
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          dispatch(setAuthState(false));
-        }
+        const returnUrl =
+          new URLSearchParams(window.location.search).get("returnUrl") || "/";
+        router.replace(returnUrl);
+      } else {
+        setModalMessage(
+          result.error || "Login failed. Please check your credentials."
+        );
+        setShowErrorModal(true);
       }
     } catch (error) {
       setModalMessage("Something went wrong. Please try again.");
@@ -117,14 +112,19 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Welcome back
+            </CardTitle>
             <CardDescription className="text-gray-600">
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 {/* Email Field */}
                 <FormField
                   control={form.control}
@@ -191,30 +191,12 @@ export default function LoginPage() {
                   )}
                 />
 
-                {/* Remember Me Checkbox */}
-                <FormField
-                  control={form.control}
-                  name="rememberMe"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-1 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          className="border-gray-600"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal cursor-pointer ">
-                          Remember me for 30 days
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
                 {/* Submit Button */}
-                <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full h-11"
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -279,7 +261,11 @@ export default function LoginPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-center mt-6">
-              <Button onClick={() => setShowErrorModal(false)} variant="outline" className="px-8">
+              <Button
+                onClick={() => setShowErrorModal(false)}
+                variant="outline"
+                className="px-8"
+              >
                 Try Again
               </Button>
             </div>

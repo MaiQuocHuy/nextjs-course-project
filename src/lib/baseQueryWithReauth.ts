@@ -99,8 +99,12 @@ export const baseQueryWithReauth: BaseQueryFn<
 
 export const localBaseQuery = fetchBaseQuery({
   baseUrl: "", // goi den front-end thay vi backend
-  prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
+  prepareHeaders: (headers, {arg}) => {
+    const isFormData = (arg as any)?.body instanceof FormData;
+      
+      if (!isFormData) {
+        headers.set("Content-Type", "application/json");
+      }
     return headers;
   },
 });

@@ -29,9 +29,11 @@ export interface PaginatedCourses {
 
 // Enrolled course details
 export interface Video {
-  id: string;
-  url: string;
-  duration: number; // seconds
+  id: string; // ID video
+  url: string; // Link video
+  duration: number; // Thời lượng video (tính bằng giây)
+  title: string; // Tiêu đề video
+  thumbnail: string; // Ảnh thumbnail video
 }
 
 export interface QuizQuestion {
