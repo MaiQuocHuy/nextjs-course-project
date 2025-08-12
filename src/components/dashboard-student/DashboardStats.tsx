@@ -1,10 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useDashboardData } from "@/hooks/student/useDashboard";
+import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { BookOpen, Award, Clock, Target, TrendingUp } from "lucide-react";
-import { StatsLoadingSkeleton } from "./ui/Loading";
-import { StatsError } from "./ui/LoadingError";
+import { LoadingError, DashboardStatsLoadingSkeleton } from "./ui";
 
 export function DashboardStats() {
   const {
@@ -12,14 +11,14 @@ export function DashboardStats() {
     error,
     isLoading,
     refetch,
-  } = useDashboardData({ page: 0, size: 20 });
+  } = useGetDashboardDataQuery({ page: 0, size: 20 });
 
   if (isLoading) {
-    return <StatsLoadingSkeleton />;
+    return <DashboardStatsLoadingSkeleton />;
   }
 
   if (error) {
-    return <StatsError onRetry={refetch} />;
+    return <LoadingError onRetry={refetch} />;
   }
 
   // Use stats from the dashboard data
@@ -66,6 +65,10 @@ export function DashboardStats() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {statCards.map((stat) => {
         const Icon = stat.icon;
+        const completionRate =
+          totalLessons > 0
+            ? Math.round((completedLessons / totalLessons) * 100)
+            : 0;
 
         return (
           <Card key={stat.title}>
@@ -80,6 +83,12 @@ export function DashboardStats() {
               <p className="text-xs text-muted-foreground">
                 {stat.description}
               </p>
+              {stat.title === "Lessons Completed" && completionRate > 0 && (
+                <div className="flex items-center mt-2 text-xs text-green-600">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  {completionRate}% overall progress
+                </div>
+              )}
             </CardContent>
           </Card>
         );

@@ -27,9 +27,13 @@ import { SearchBar } from "@/components/common/SearchBar";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth, useAuthStatus } from "@/hooks/useAuth";
-import { Avatar } from "@radix-ui/react-avatar";
-import { AvatarFallback, AvatarImage } from "../ui/avatar";
+import { set } from "zod";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { sign } from "crypto";
+import { signOut } from "next-auth/react";
+import { setAuthState } from "@/store/slices/auth/authSlice";
+import { useLogoutMutation } from "@/services/authApi";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -39,44 +43,53 @@ const navigation = [
 ];
 
 export function Header() {
-  const { logout: authLogout, user } = useAuth();
-  const { isAuthenticated: isLoggedIn, isReady } = useAuthStatus();
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  // Show loading skeleton while auth state is being determined
-  if (!isReady) {
-    return (
-      <header className="flex justify-center sticky top-0 z-50 w-full border-b backdrop-blur-xl bg-white/80 dark:bg-black/80 shadow-lg shadow-black/5 dark:shadow-white/5">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <GraduationCap className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              SybauEducation
-            </span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-      </header>
-    );
-  }
+  const userName = "John Doe";
 
-  const userName = user?.name || "";
-  const userEmail = user?.email || "";
-  const userThumbnail = user?.thumbnailUrl || "";
+  const dispatch = useDispatch();
+  const [logout] = useLogoutMutation();
+
+  // Initialize auth state from localStorage on component mount
+  useEffect(() => {
+    const isAuth = localStorage.getItem("isAuthenticated") === "true";
+    const token = localStorage.getItem("accessToken");
+
+    if (isAuth && token) {
+      dispatch(setAuthState(true));
+    }
+  }, [dispatch]);
 
   const handleLogout = async () => {
     try {
-      await authLogout("/");
+      // Try the logout API call FIRST while tokens still exist
+      try {
+        await logout().unwrap();
+      } catch (apiError) {}
+
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      dispatch(setAuthState(false));
+
+      router.replace("/");
     } catch (error) {
-      console.error("Logout failed:", error);
-      // Force redirect if logout fails
-      router.push("/login");
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      dispatch(setAuthState(false));
+
+      try {
+        await signOut({ redirect: false });
+      } catch (signOutError) {
+        // Silent fallback
+      }
+      router.replace("/");
     }
   };
 
@@ -148,19 +161,12 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                  <Avatar>
-                    <AvatarImage
-                      className="h-7 w-7 rounded-full"
-                      src={userThumbnail || "/placeholder.svg"}
-                      alt={`${userName} avatar`}
-                    />
-                    <AvatarFallback className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                      {userName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
+                    {userName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </div>
                   <span className="font-medium">{userName}</span>
                   <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
                 </button>
@@ -170,22 +176,15 @@ export function Header() {
                 className="w-56 mt-2 bg-white/95 dark:bg-black/95 backdrop-blur-xl border border-border/50 shadow-xl"
               >
                 <DropdownMenuLabel className="flex items-center gap-2 py-3">
-                  <Avatar>
-                    <AvatarImage
-                      className="h-7 w-7 rounded-full"
-                      src={userThumbnail || "/placeholder.svg"}
-                      alt={`${userName} avatar`}
-                    />
-                    <AvatarFallback className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                      {userName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+                    {userName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </div>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-sm text-muted-foreground">{userEmail}</span>
+                    <span className="text-sm text-muted-foreground">john@example.com</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -308,22 +307,15 @@ export function Header() {
                   {isLoggedIn ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-lg">
-                        <Avatar>
-                          <AvatarImage
-                            className="h-7 w-7 rounded-full"
-                            src={userThumbnail || "/placeholder.svg"}
-                            alt={`${userName} avatar`}
-                          />
-                          <AvatarFallback className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                            {userName
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                          {userName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </div>
                         <div className="flex flex-col">
                           <span className="font-medium">{userName}</span>
-                          <span className="text-sm text-muted-foreground">{userEmail}</span>
+                          <span className="text-sm text-muted-foreground">john@example.com</span>
                         </div>
                       </div>
                       <div className="space-y-2">

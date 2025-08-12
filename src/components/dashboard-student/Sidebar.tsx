@@ -100,7 +100,7 @@ export function MobileSidebar() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="lg:hidden size-10">
-          <Menu className="h-8 w-8 size-10" />
+          <Menu className="h-5 w-5 size-10" />
           <span className="sr-only">Toggle sidebar</span>
         </Button>
       </SheetTrigger>

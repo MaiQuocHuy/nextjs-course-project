@@ -4,25 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
-import { useDashboardData } from "@/hooks/student/useDashboard";
+import { useGetDashboardDataQuery } from "@/services/student/studentApi";
 import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
-import { ActivityFeedError } from "./ui/LoadingError";
-import type { ActivityType } from "@/types/student/index";
+import type { ActivityType } from "@/types/student";
 
 function getActivityIcon(type: ActivityType) {
   switch (type) {
     case "LESSON_COMPLETED":
-      return <CheckCircle className="h-4 w-4 text-green-600 mt-1" />;
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
     case "QUIZ_SUBMITTED":
-      return <FileText className="h-4 w-4 text-blue-600 mt-1" />;
+      return <FileText className="h-4 w-4 text-blue-600" />;
     case "COURSE_ENROLLED":
-      return <BookOpen className="h-4 w-4 text-purple-600 mt-1" />;
+      return <BookOpen className="h-4 w-4 text-purple-600" />;
     default:
-      return <Clock className="h-4 w-4 text-gray-600 mt-1" />;
+      return <Clock className="h-4 w-4 text-gray-600" />;
   }
 }
 
-function getActivityBadge(type: ActivityType) {
+function getActivityBadge(type: ActivityType, score?: number) {
   switch (type) {
     case "LESSON_COMPLETED":
       return (
@@ -33,7 +32,7 @@ function getActivityBadge(type: ActivityType) {
     case "QUIZ_SUBMITTED":
       return (
         <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Quiz
+          {score ? `${score}%` : "Quiz"}
         </Badge>
       );
     case "COURSE_ENROLLED":
@@ -53,7 +52,7 @@ export function ActivityFeed() {
     error,
     isLoading,
     refetch,
-  } = useDashboardData({ page: 0, size: 20 });
+  } = useGetDashboardDataQuery({ page: 0, size: 20 });
 
   if (isLoading) {
     return <ActivityFeedLoadingSkeleton />;
@@ -69,8 +68,13 @@ export function ActivityFeed() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="px-6 py-0">
-            <ActivityFeedError onRetry={refetch} />
+          <div className="px-6 py-8">
+            <LoadingError
+              error={error}
+              variant="inline"
+              onRetry={refetch}
+              message="Failed to load activities"
+            />
           </div>
         </CardContent>
       </Card>
@@ -98,7 +102,7 @@ export function ActivityFeed() {
   };
 
   return (
-    <Card className="h-fit gap-2">
+    <Card className="h-fit">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
@@ -132,9 +136,9 @@ export function ActivityFeed() {
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {getActivityBadge(activity.type)}{" "}
+                        {getActivityBadge(activity.type, activity.score)}
                         <time className="text-xs text-muted-foreground">
-                          {formatTimeAgo(activity.completedAt)}
+                          {formatTimeAgo(activity.completed_at)}
                         </time>
                       </div>
                     </div>

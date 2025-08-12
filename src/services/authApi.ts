@@ -1,12 +1,39 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { publicBaseQuery } from "@/lib/baseQueryWithReauth";
-import type { User, RegisterStudentRequest, RegisterInstructorRequest } from "@/types";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-interface AuthResponse {
-  user: User;
-  accessToken: string;
-  refreshToken: string;
-  refreshTokenExpires?: number; //* for test
+const baseQuery = fetchBaseQuery({
+  baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+  prepareHeaders: async (headers, api) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    } 
+    return headers;
+  },
+});
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface RegisterStudentRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+interface RegisterInstructorRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  portfolioUrl: string;
+  certificateFile: File ;
+  cvFile: File ;
+  supportingFile?: File;
 }
 
 interface RegisterUserResponse {
@@ -14,87 +41,29 @@ interface RegisterUserResponse {
   message?: string;
 }
 
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-interface LoginResponse {
-  data: AuthResponse;
-  message?: string;
-}
-
-interface RefreshTokenRequest {
-  refreshToken: string;
-}
-
-interface RefreshTokenResponse {
-  data: {
-    accessToken: string;
-    refreshToken?: string;
-    refreshTokenExpires?: number;
-    user?: User; // Optional updated user info
-  };
-}
-
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: publicBaseQuery, // Use public base query for auth endpoints
-  tagTypes: ["Auth"],
+  baseQuery: baseQuery,
   endpoints: (builder) => ({
-    login: builder.mutation<LoginResponse, LoginRequest>({
-      query: (credentials) => ({
-        url: "/auth/login",
-        method: "POST",
-        body: credentials,
-      }),
-    }),
+    // Define your endpoints here
 
-    refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenRequest>({
-      query: (tokenData) => ({
-        url: "/auth/refresh",
-        method: "POST",
-        body: tokenData,
-      }),
-    }),
-
-    logout: builder.mutation<{ message: string }, RefreshTokenRequest>({
-      query: (tokenData) => ({
-        url: "/auth/logout",
-        method: "POST",
-        body: tokenData,
-      }),
-    }),
-
-    // Register for Instructor
-    registerInstructor: builder.mutation<
-      RegisterUserResponse,
-      RegisterInstructorRequest
-    >({
-      query: ({
-        name,
-        email,
-        password,
-        role,
-        portfolioUrl,
-        certificateFile,
-        cvFile,
-        supportingFile,
-      }) => {
+    //* Register for Instructor
+    registerInstructor: builder.mutation<RegisterUserResponse, RegisterInstructorRequest>({
+      query: ({ name, email, password, role, portfolioUrl, certificateFile, cvFile, supportingFile }) => {
         const formData = new FormData();
-
-        formData.append("name", name);
-        formData.append("email", email);
-        formData.append("password", password);
-        formData.append("role", role);
-        formData.append("portfolio", portfolioUrl);
-        formData.append("certificate", certificateFile);
-        formData.append("cv", cvFile);
+        
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('password', password);
+        formData.append('role', role);
+        formData.append('portfolio', portfolioUrl); 
+        formData.append('certificate', certificateFile);
+        formData.append('cv', cvFile);
 
         if (supportingFile) {
-          formData.append("other", supportingFile);
+          formData.append('other', supportingFile);
         }
-
+        
         return {
           url: "/auth/register-application",
           method: "POST",
@@ -103,24 +72,30 @@ export const authApi = createApi({
       },
     }),
 
-    // Register for Student
-    registerStudent: builder.mutation<
-      RegisterUserResponse,
-      RegisterStudentRequest
-    >({
+    //* Register for Student
+    registerStudent: builder.mutation<RegisterUserResponse, RegisterStudentRequest>({
       query: ({ name, email, password, role }) => ({
         url: "/auth/register",
         method: "POST",
         body: { name, email, password, role },
       }),
     }),
+    
+    logout: builder.mutation<void, void>({
+      query: () => {
+        const refreshToken = typeof window !== 'undefined' 
+          ? localStorage.getItem("refreshToken") 
+          : null;
+        
+        return {
+          url: "/auth/logout",
+          method: "POST",
+          body: refreshToken ? { refreshToken } : {},
+        };
+      },
+    }),
+    
   }),
 });
 
-export const {
-  useLoginMutation,
-  useRefreshTokenMutation,
-  useLogoutMutation,
-  useRegisterStudentMutation,
-  useRegisterInstructorMutation,
-} = authApi;
+export const { useRegisterStudentMutation, useRegisterInstructorMutation, useLogoutMutation } = authApi;
