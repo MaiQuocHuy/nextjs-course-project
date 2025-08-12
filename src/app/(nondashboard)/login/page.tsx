@@ -38,13 +38,11 @@ const loginSchema = z.object({
     // .min(8, "Password must be at least 8 characters")
     // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
-  rememberMe: z.boolean().default(false),
 });
 
 type LoginFormValues = {
   email: string;
   password: string;
-  rememberMe?: boolean;
 };
 
 export default function LoginPage() {
@@ -62,7 +60,6 @@ export default function LoginPage() {
     defaultValues: {
       email: "bob@example.com",
       password: "bob123",
-      rememberMe: false,
     },
   });
 
@@ -91,11 +88,10 @@ export default function LoginPage() {
       if (result.success) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
-
-        setTimeout(() => {
+      
           const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
           router.replace(returnUrl);
-        }, 500);
+        
       } else {
         setModalMessage(result.error || "Login failed. Please check your credentials.");
         setShowErrorModal(true);
@@ -193,28 +189,6 @@ export default function LoginPage() {
                           </div>
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Remember Me Checkbox */}
-                  <FormField
-                    control={form.control}
-                    name="rememberMe"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-1 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            className="border-gray-600"
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-normal cursor-pointer ">
-                            Remember me for 30 days
-                          </FormLabel>
-                        </div>
                       </FormItem>
                     )}
                   />

@@ -99,18 +99,9 @@ export function EnrolledCoursesSummary() {
                     />
                   </div>
 
-                  <Button
-                    className="w-full"
-                    variant={
-                      enrollment.completionStatus === "COMPLETED"
-                        ? "outline"
-                        : "default"
-                    }
-                  >
+                  <Button className="w-full">
                     <Link href={`/dashboard/learning/${enrollment.courseId}`}>
-                      {enrollment.completionStatus === "COMPLETED"
-                        ? "Review Course"
-                        : "Continue Learning"}
+                      Continue Learning
                     </Link>
                   </Button>
                 </div>

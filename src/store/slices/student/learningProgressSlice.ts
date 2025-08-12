@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface LessonProgress {
   lessonId: string;
@@ -20,7 +20,7 @@ const initialState: LearningProgressState = {
 };
 
 const learningProgressSlice = createSlice({
-  name: 'learningProgress',
+  name: "learningProgress",
   initialState,
   reducers: {
     markLessonCompleted: (state, action: PayloadAction<LessonProgress>) => {
@@ -31,42 +31,51 @@ const learningProgressSlice = createSlice({
         completedAt: action.payload.completedAt || new Date().toISOString(),
       };
     },
-    
-    updateQuizScore: (state, action: PayloadAction<{ lessonId: string; score: number }>) => {
+
+    updateQuizScore: (
+      state,
+      action: PayloadAction<{ lessonId: string; score: number }>
+    ) => {
       const { lessonId, score } = action.payload;
       if (state.completedLessons[lessonId]) {
         state.completedLessons[lessonId].quizScore = score;
       }
     },
-    
-    updateCourseProgress: (state, action: PayloadAction<{ courseId: string; progress: number }>) => {
+
+    updateCourseProgress: (
+      state,
+      action: PayloadAction<{ courseId: string; progress: number }>
+    ) => {
       const { courseId, progress } = action.payload;
       state.currentCourseProgress[courseId] = progress;
     },
-    
+
     resetLearningProgress: (state) => {
       state.completedLessons = {};
       state.currentCourseProgress = {};
     },
-    
+
     // Batch update from API data
-    syncProgressFromAPI: (state, action: PayloadAction<{ 
-      courseId: string; 
-      lessons: Array<{
-        id: string;
-        sectionId: string;
-        isCompleted: boolean;
-        completedAt?: string;
-      }>;
-      progress: number;
-    }>) => {
+    syncProgressFromAPI: (
+      state,
+      action: PayloadAction<{
+        courseId: string;
+        lessons: Array<{
+          id: string;
+          sectionId: string;
+          isCompleted: boolean;
+          completedAt?: string;
+        }>;
+        progress: number;
+      }>
+    ) => {
       const { courseId, lessons, progress } = action.payload;
-      
+
       // Update course progress
       state.currentCourseProgress[courseId] = progress;
-      
+
       // Update individual lesson progress
-      lessons.forEach(lesson => {
+      lessons.forEach((lesson) => {
         if (lesson.isCompleted) {
           state.completedLessons[lesson.id] = {
             lessonId: lesson.id,
@@ -92,11 +101,20 @@ export const {
 export default learningProgressSlice.reducer;
 
 // Selectors
-export const selectLessonProgress = (state: { learningProgress: LearningProgressState }, lessonId: string) => 
-  state.learningProgress.completedLessons[lessonId];
+export const selectLessonProgress = (
+  state: { learningProgress: LearningProgressState },
+  lessonId: string
+) => state.learningProgress.completedLessons[lessonId];
 
-export const selectCourseProgress = (state: { learningProgress: LearningProgressState }, courseId: string) => 
-  state.learningProgress.currentCourseProgress[courseId] || 0;
+export const selectCourseProgress = (
+  state: { learningProgress: LearningProgressState },
+  courseId: string
+) => state.learningProgress.currentCourseProgress[courseId] || 0;
 
-export const selectCompletedLessonsForCourse = (state: { learningProgress: LearningProgressState }, courseId: string) => 
-  Object.values(state.learningProgress.completedLessons).filter(lesson => lesson.courseId === courseId);
+export const selectCompletedLessonsForCourse = (
+  state: { learningProgress: LearningProgressState },
+  courseId: string
+) =>
+  Object.values(state.learningProgress.completedLessons).filter(
+    (lesson) => lesson.courseId === courseId
+  );
