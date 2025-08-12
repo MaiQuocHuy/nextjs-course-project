@@ -82,8 +82,8 @@ export default function CourseDetailsPage({
   const handleSetCourseData = useCallback(
     async (courseDataQuery: any) => {
       const courseData: CourseBasicInfoType = { ...courseDataQuery };
-      if (courseDataQuery.category) {
-        courseData.categoryIds = [courseDataQuery.category.id];
+      if (courseDataQuery.categories) {
+        courseData.categoryIds = courseDataQuery.categories.map((cat:any) => cat.id);
       }
 
       if (courseDataQuery.thumbnailUrl && courseDataQuery.title) {

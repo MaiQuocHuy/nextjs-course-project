@@ -12,7 +12,6 @@ export const coursesInstSlice = createApi({
           courseParams.size || 10
         }&sort=${courseParams.sort || 'createdAt,desc'}`,
         method: 'GET',
-        credentials: 'include', // Include credentials if needed
       }),
       transformResponse: (response) => {
         // console.log('Response data:', response);

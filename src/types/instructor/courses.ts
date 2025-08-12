@@ -71,8 +71,7 @@ export interface Course {
   description: string;
   level: string;
   thumbnailUrl: string;
-  // category: Category | Category[];
-  category: Category;
+  categories: Category[];
   status: string;
   createdAt: string;
   updateAt: string;
@@ -84,7 +83,7 @@ export interface Course {
   canUnpublish: boolean;
   canDelete: boolean;
   canPublish: boolean;
-  approved: true;
+  approved: boolean;
 }
 
 export interface Page {

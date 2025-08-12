@@ -48,6 +48,9 @@ import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
+import Image from 'next/image';
+import { Separator } from '@radix-ui/react-select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const coursesParams = {
   page: 0,
@@ -68,6 +71,10 @@ export const CoursesPage = () => {
     },
     date: 'latest',
   });
+  const [filteredCourses, setFilterdCourses] = useState<Course[]>();
+  const [filters, setFilters] = useState(initFilterValues.current);
+  const [showFilters, setShowFilters] = useState(false);
+
   const {
     data: courses,
     isLoading: isFetchingCourses,
@@ -80,24 +87,21 @@ export const CoursesPage = () => {
     isError: isFetchCategoriesError,
     error: errorFetchCategories,
   } = useGetCategoriesQuery();
-  const [filteredCourses, setFilterdCourses] = useState<Course[]>();
-  const [filters, setFilters] = useState(initFilterValues.current);
-  const [showFilters, setShowFilters] = useState(false);
   const router = useRouter();
   const dispath: AppDispatch = useDispatch();
 
   // Loading animation
-  useEffect(() => {
-    if (isFetchingCourses || isFetchingCategories) {
-      loadingAnimation(true, dispath);
-    } else {
-      loadingAnimation(false, dispath);
-    }
+  // useEffect(() => {
+  //   if (isFetchingCourses || isFetchingCategories) {
+  //     loadingAnimation(true, dispath);
+  //   } else {
+  //     loadingAnimation(false, dispath);
+  //   }
 
-    return () => {
-      loadingAnimation(false, dispath);
-    };
-  }, [isFetchingCourses, isFetchingCategories]);
+  //   return () => {
+  //     loadingAnimation(false, dispath);
+  //   };
+  // }, [isFetchingCourses, isFetchingCategories]);
 
   useEffect(() => {
     if (courses && courses.content && courses.content.length > 0) {
@@ -111,7 +115,7 @@ export const CoursesPage = () => {
   // Handle filters
   useEffect(() => {
     if (courses && courses.content && courses.content.length > 0) {
-      let matchedCourses = [...courses.content];
+      let matchedCourses = [...courses.content] as Course[];
 
       // Search
       const searchTerm = filters.searchTerm.trim().toLowerCase();
@@ -119,18 +123,22 @@ export const CoursesPage = () => {
         matchedCourses = matchedCourses.filter(
           (course) =>
             course.title.toLowerCase().includes(searchTerm) ||
-            course.description?.toLowerCase().includes(searchTerm) ||
-            course.id.toLowerCase().includes(searchTerm)
+            course.description?.toLowerCase().includes(searchTerm)
         );
       }
 
       // Status
       if (filters.status !== 'all') {
-        matchedCourses = matchedCourses.filter(
-          (course) =>
-            getCourseStatus(course.is_published, course.is_approved) ===
-            filters.status
-        );
+        if (filters.status === 'pending') {
+          matchedCourses = matchedCourses.filter(
+            (course) => course.approved === false
+          );
+        } else {
+          matchedCourses = matchedCourses.filter(
+            (course) =>
+              course.approved && course.status.toLowerCase() === filters.status
+          );
+        }
       }
 
       // Category
@@ -146,7 +154,7 @@ export const CoursesPage = () => {
       // Rating
       if (filters.rating !== 0) {
         matchedCourses = matchedCourses.filter((course) => {
-          return course.rating && course.rating === filters.rating;
+          return course.averageRating >= filters.rating;
         });
       }
 
@@ -199,26 +207,15 @@ export const CoursesPage = () => {
   };
 
   const getStatusColor = (status: string) => {
+    status = status.toLowerCase();
     switch (status) {
       case 'pending':
         return 'bg-yellow-400 text-slate-900';
-      case 'discontinued':
+      case 'unpublished':
         return 'bg-destructive text-white';
       default:
         // published
         return 'bg-green-500 text-white';
-    }
-  };
-
-  const getCourseStatus = (isPublished: boolean, isAproved: boolean) => {
-    if (isAproved) {
-      if (isPublished) {
-        return 'published';
-      } else {
-        return 'discontinued';
-      }
-    } else {
-      return 'pending';
     }
   };
 
@@ -289,7 +286,7 @@ export const CoursesPage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search courses by name, description or ID"
+                placeholder="Search courses by title or description"
                 value={filters.searchTerm}
                 onChange={(e) =>
                   handleFilterCourse('searchTerm', e.target.value)
@@ -311,8 +308,8 @@ export const CoursesPage = () => {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="unpublished">Unpublished</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="discontinued">Discontinued</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -371,8 +368,8 @@ export const CoursesPage = () => {
                     <SelectContent>
                       <SelectItem value="0">All stars</SelectItem>
                       <SelectItem value="5">5 stars</SelectItem>
-                      <SelectItem value="4">4 stars</SelectItem>
-                      <SelectItem value="3">3 stars</SelectItem>
+                      <SelectItem value="4">4+ stars</SelectItem>
+                      <SelectItem value="3">3+ stars</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -520,20 +517,12 @@ export const CoursesPage = () => {
                     alt={course.title}
                     className="w-full h-48 object-cover rounded-t-lg"
                   />
-                  {/* <span
-                      className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                        getCourseStatus(course.is_published, course.is_approved)
-                      )}`}
-                    >
-                      {getCourseStatus(course.is_published, course.is_approved)}
-                    </span> */}
-
                   <span
                     className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                      'published'
+                      course.approved ? course.status : 'pending'
                     )}`}
                   >
-                    Published
+                    {course.approved ? course.status : 'Pending'}
                   </span>
                   {/* Actions */}
                   <DropdownMenu>
@@ -599,33 +588,21 @@ export const CoursesPage = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {/* Categories */}
-                    <div
-                      className={`flex text-sm ${
-                        Array.isArray(course.category) &&
-                        course.category.length > 1
-                          ? 'flex-col items-end gap-1'
-                          : 'justify-between'
-                      }`}
-                    >
+                    <div className={`flex items-start justify-between text-sm`}>
                       <span className="text-muted-foreground">Category</span>
-                      <div>
-                        {Array.isArray(course.category) ? (
-                          course.category?.map((category) => {
-                            return (
-                              <Badge key={category.id} variant="outline">
-                                {category.name}
-                              </Badge>
-                            );
-                          })
-                        ) : (
-                          <Badge variant="outline">
-                            {course.category.name}
-                          </Badge>
-                        )}
+                      <div className="flex flex-col gap-1">
+                        {course.categories.map((category) => {
+                          return (
+                            <Badge key={category.id} variant="outline">
+                              {category.name}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
+                    {/* Total students and sections */}
+                    <div className="flex items-center justify-between text-sm border-t-1 pt-2">
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
                         <span>{course.totalStudents} students</span>
@@ -636,11 +613,20 @@ export const CoursesPage = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span>{course.averageRating || 'No rating'}</span>
-                      </div>
+                    {/* Rating and created date */}
+                    <div
+                      className={`flex items-center text-sm ${
+                        course.averageRating > 0
+                          ? 'justify-between'
+                          : 'justify-end'
+                      }`}
+                    >
+                      {course.averageRating > 0 && (
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <span>{course.averageRating}</span>
+                        </div>
+                      )}
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>

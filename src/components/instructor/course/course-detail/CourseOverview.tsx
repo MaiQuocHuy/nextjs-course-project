@@ -20,7 +20,7 @@ const CourseOverview = ({ courseData, isEditCourse }: CourseHeaderProps) => {
 
   // Create course image
   useEffect(() => {
-    if (courseData) {      
+    if (courseData) {
       if (courseData.file) {
         const handleCreateCourseImage = async () => {
           const courseImage = await createFilePreview(courseData.file);
@@ -50,9 +50,7 @@ const CourseOverview = ({ courseData, isEditCourse }: CourseHeaderProps) => {
         <CreateCourseBasicInforPage
           mode="edit"
           courseInfor={courseData}
-          onCancel={() =>
-            router.push(`/instructor/courses/${courseData.id}`)
-          }
+          onCancel={() => router.push(`/instructor/courses/${courseData.id}`)}
         />
       ) : (
         <>
