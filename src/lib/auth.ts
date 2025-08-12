@@ -8,7 +8,7 @@ interface UserType {
   id: string;
   email?: string;
   name?: string;
-  role?: string;
+  role: string;
   thumbnailUrl?: string;
   bio?: string;
   isActive?: boolean;
@@ -23,7 +23,7 @@ interface DecodedToken {
   iat: number; // issued at
   sub?: string; // subject (user id)
   email?: string;
-  role?: string; // user role
+  roles?: string[]; // user roles
 }
 
 // Helper function to decode JWT token
@@ -124,14 +124,23 @@ export const authOptions: NextAuthOptions = {
           const response = await res.json();
 
           if (response && response.data) {
-            // Decode access token to get expiration time
+            // Decode access token to get expiration time and roles
             const accessTokenDecoded = decodeJWT(response.data.accessToken);
-
+            let userRole = "STUDENT"; // Mặc định
+            if (accessTokenDecoded?.roles && Array.isArray(accessTokenDecoded.roles)) {
+              // Chuyển đổi "ROLE_STUDENT" thành "STUDENT"
+              const role = accessTokenDecoded.roles[0]; 
+              if (role.startsWith("ROLE_")) {
+                userRole = role.replace("ROLE_", "");
+              } else {
+              userRole = role; // Giữ nguyên nếu không bắt đầu bằng "ROLE_"
+              }
+          }
             return {
               id: response.data.user.id,
               email: response.data.user.email || credentials.email,
               name: response.data.user.name,
-              role: response.data.user.role,
+              role: userRole,
               thumbnailUrl: response.data.user.thumbnailUrl,
               bio: response.data.user.bio,
               isActive: response.data.user.isActive,
@@ -154,7 +163,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }): Promise<JWT> {
       // Initial sign in - store fresh tokens
-      if (user) { 
+      if (user) {      
         return {
           ...token,
           userId: user.id,
@@ -171,6 +180,39 @@ export const authOptions: NextAuthOptions = {
           error: undefined, // Clear any previous errors
         };
       }
+  //     if (user) {
+  //   console.log("🔍 JWT Callback - User object received:", {
+  //     id: user.id,
+  //     email: user.email,
+  //     name: user.name,
+  //     role: user.role, // This should now show the role
+  //   });
+
+  //   const newToken = {
+  //     ...token,
+  //     userId: user.id,
+  //     email: user.email,
+  //     name: user.name,
+  //     role: user.role, // This should not be undefined anymore
+  //     thumbnailUrl: user.thumbnailUrl,
+  //     bio: user.bio,
+  //     isActive: user.isActive,
+  //     accessToken: user.accessToken,
+  //     refreshToken: user.refreshToken,
+  //     accessTokenExpires: user.accessTokenExpires,
+  //     refreshTokenExpires: user.refreshTokenExpires,
+  //     error: undefined,
+  //   };
+
+  //   console.log("🔍 JWT Callback - Token being returned:", {
+  //     userId: newToken.userId,
+  //     email: newToken.email,
+  //     role: newToken.role, // Check this
+  //   });
+
+  //   return newToken;
+  // }
+  // console.log("🔍 JWT Callback - Existing token role:", token.role);
 
       // If this is a manual session update, fetch fresh user data
       if (trigger === 'update') {
