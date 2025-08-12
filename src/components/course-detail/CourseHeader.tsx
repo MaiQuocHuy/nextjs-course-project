@@ -89,6 +89,7 @@ export function CourseHeader({
                 onError={(e) => {
                   e.currentTarget.src = "/placeholder-course.jpg";
                 }}
+                priority
               />
             </div>
 
@@ -149,6 +150,7 @@ export function CourseHeader({
               src={course.thumbnailUrl || "/placeholder-course.jpg"}
               alt={course.title}
               fill
+              sizes="100vh"
               className="object-cover"
               priority
               onError={(e) => {
@@ -171,13 +173,15 @@ export function CourseHeader({
             </div>
 
             {/* Category Badge */}
-            {course.category && (
+            {course.categories && (
               <div className="absolute top-4 right-4">
                 <Badge
                   variant="secondary"
                   className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium"
                 >
-                  {course.category.name}
+                  {course.categories
+                    .map((category) => category.name)
+                    .join(", ") || "Course"}
                 </Badge>
               </div>
             )}

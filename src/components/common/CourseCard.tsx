@@ -63,6 +63,7 @@ export function CourseCard({
               width={256}
               height={144}
               className="w-full h-full object-cover rounded-l-lg"
+              priority
             />
 
             {/* Top Badges */}
@@ -215,6 +216,7 @@ export function CourseCard({
           width={400}
           height={225}
           className="w-full h-48 object-cover transition-all duration-300 group-hover:scale-105"
+          priority
         />
 
         {/* Gradient Overlay */}
