@@ -64,16 +64,53 @@ export const geminiApi = createApi({
 
     // Lưu câu hỏi vào DB
     saveQuestions: builder.mutation<
-  any,
-  { sectionId: string; lessonId: string; questions: QuestionType[] }
->({
-  query: ({ sectionId, lessonId, questions }) => ({
-    url: `/instructor/sections/${sectionId}/lessons/quiz?lessonId=${lessonId}`,
-    method: "PUT",
-    body: questions, // hoặc { questions } nếu backend yêu cầu object
-  }),
-  invalidatesTags: ["GeminiQuestions"],
-}),
+      any,
+      { sectionId: string; lessonId: string; questions: QuestionType[] }
+    >({
+      queryFn: async (data, api, extraOptions, baseQuery) => {
+        try {
+          console.log("Saving questions with data:", data);
+          
+          // Format dữ liệu theo cấu trúc backend yêu cầu
+          const formattedQuestions = data.questions.map(question => ({
+            questionText: question.questionText,
+            options: question.options, // Giữ nguyên Map<string, string> format
+            correctAnswer: question.correctAnswer,
+            explanation: question.explanation || ""
+          }));
+
+          const requestBody = {
+            questions: formattedQuestions
+          };
+
+          console.log("Formatted request body:", requestBody);
+          
+          // Sử dụng baseQueryWithReauth thay vì localBaseQuery để gọi Spring Boot backend
+          const result = await baseQueryWithReauth(
+            { 
+              url: `/instructor/sections/${data.sectionId}/lessons/quiz?lessonId=${data.lessonId}`,
+              method: "PUT",
+              body: requestBody
+            },
+            api,
+            extraOptions
+          );
+          
+          console.log("Save questions result:", result);
+          
+          if (result.error) {
+            console.error("Save questions error:", result.error);
+            return { error: result.error };
+          }
+          
+          return { data: result.data };
+        } catch (error) {
+          console.error("Error in saveQuestions queryFn:", error);
+          return { error: { status: 'FETCH_ERROR', error: String(error) } };
+        }
+      },
+      invalidatesTags: ["GeminiQuestions"],
+    }),
   }),
 });
 

@@ -8,6 +8,7 @@ import { authSlice } from './slices/auth/authSlice';
 // Instructor
 import { coursesInstSlice } from '@/services/instructor/courses-api';
 import { loadingAnimaSlice } from './slices/instructor/loadingAnimaSlice';
+import { geminiApi } from '@/services/quiz/geminiApi';
 
 export const makeStore = () => {
   const store = configureStore({
@@ -19,6 +20,7 @@ export const makeStore = () => {
       loadingAnima: loadingAnimaSlice.reducer,
       [coursesInstSlice.reducerPath]: coursesInstSlice.reducer,
       [paymentApi.reducerPath]: paymentApi.reducer,
+      [geminiApi.reducerPath]: geminiApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -26,7 +28,8 @@ export const makeStore = () => {
         coursesApi.middleware,
         coursesInstSlice.middleware,
         studentApi.middleware,
-        paymentApi.middleware
+        paymentApi.middleware,
+        geminiApi.middleware,
       ),
   });
 
