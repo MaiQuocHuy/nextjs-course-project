@@ -1,6 +1,7 @@
-import type { NextAuthOptions, Session, User } from "next-auth";
+import type { NextAuthOptions, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
+import GoogleProvider from 'next-auth/providers/google'
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
 
@@ -87,6 +88,10 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days (matches refresh token)
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "Sign in",
       credentials: {
@@ -180,39 +185,6 @@ export const authOptions: NextAuthOptions = {
           error: undefined, // Clear any previous errors
         };
       }
-  //     if (user) {
-  //   console.log("🔍 JWT Callback - User object received:", {
-  //     id: user.id,
-  //     email: user.email,
-  //     name: user.name,
-  //     role: user.role, // This should now show the role
-  //   });
-
-  //   const newToken = {
-  //     ...token,
-  //     userId: user.id,
-  //     email: user.email,
-  //     name: user.name,
-  //     role: user.role, // This should not be undefined anymore
-  //     thumbnailUrl: user.thumbnailUrl,
-  //     bio: user.bio,
-  //     isActive: user.isActive,
-  //     accessToken: user.accessToken,
-  //     refreshToken: user.refreshToken,
-  //     accessTokenExpires: user.accessTokenExpires,
-  //     refreshTokenExpires: user.refreshTokenExpires,
-  //     error: undefined,
-  //   };
-
-  //   console.log("🔍 JWT Callback - Token being returned:", {
-  //     userId: newToken.userId,
-  //     email: newToken.email,
-  //     role: newToken.role, // Check this
-  //   });
-
-  //   return newToken;
-  // }
-  // console.log("🔍 JWT Callback - Existing token role:", token.role);
 
       // If this is a manual session update, fetch fresh user data
       if (trigger === 'update') {
