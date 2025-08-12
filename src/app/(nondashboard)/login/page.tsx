@@ -88,10 +88,9 @@ export default function LoginPage() {
       if (result.success) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
-      
-          const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
-          router.replace(returnUrl);
-        
+
+        const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
+        router.replace(returnUrl);
       } else {
         setModalMessage(result.error || "Login failed. Please check your credentials.");
         setShowErrorModal(true);
@@ -234,13 +233,6 @@ export default function LoginPage() {
                   {modalMessage}
                 </DialogDescription>
               </DialogHeader>
-              {/* <div className="flex justify-center mt-6">
-              <Button onClick={() => setShowSuccessModal(false)} className="px-8">
-                <Link href="/dashboard" className="font-medium ">
-                  Continue
-                </Link>
-              </Button>
-            </div> */}
             </DialogContent>
           </Dialog>
 

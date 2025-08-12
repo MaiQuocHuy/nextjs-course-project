@@ -132,9 +132,8 @@ export default function RegisterPage() {
         "Your account has been created successfully. You will be redirected to the login page."
       );
       setShowModal(true);
-      setTimeout(() => {
-        router.replace("/login");
-      }, 500);
+
+      router.replace("/login");
     };
 
     const commonFailure = (error: any) => {
