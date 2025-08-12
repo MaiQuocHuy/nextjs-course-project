@@ -1,19 +1,41 @@
 import { ApiResponse, PaginatedData } from "@/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { getSession } from "next-auth/react";
+// import { getSession } from "next-auth/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+  // prepareHeaders: (headers, { getState }) => {
+  //   // Có thể thêm Authorization header nếu cần
+  //   // const token = (getState() as RootState).auth.token;
+  //   // if (token) {
+  //   //   headers.set('Authorization', `Bearer ${token}`);
+  //   // }
+  //   return headers;
+  // },
 });
 
+// const baseQueryWithSession = async (args:any, api:any, extraOptions:any) => {
+//   const session = await getSession();
+//   const token = session?.user?.accessToken; // lấy token từ session nè
 
+//   const baseQuery = fetchBaseQuery({
+//     baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+//     prepareHeaders: (headers) => {
+//       if (token) {
+//         headers.set("Authorization", `Bearer ${token}`); // gắn token vào
+//       }
+//       return headers;
+//     },
+//   });
+
+//   return baseQuery(args, api, extraOptions); // gọi tiếp API
+// };
 
 // Interfaces cho Course API
 export interface Course {
   rating: any;
   updatedAt: string;
   id: string;
-  slug: string;
   title: string;
   description: string;
   price: number;
@@ -23,7 +45,10 @@ export interface Course {
   averageRating: number;
   sectionCount: number;
   sections?: Section[];
-  categories: Category[];
+  category: {
+    id: string;
+    name: string;
+  };
   instructor: {
     id: string;
     name: string;
@@ -66,7 +91,7 @@ export interface Lesson {
 
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
-  baseQuery,
+  baseQuery: baseQuery,
   tagTypes: ['Course', 'Category'],
   endpoints: (builder) => ({
     // Lấy danh sách courses với filter và pagination
@@ -119,7 +144,7 @@ export const coursesApi = createApi({
     };
   },
   transformResponse: (response: ApiResponse<PaginatedData<Course>>) => {
-    console.log("Courses API Response:", response);
+    // console.log("Courses API Response:", response);
     if (response.statusCode !== 200) {
       throw new Error(response.message || 'Failed to fetch courses');
     }
@@ -141,7 +166,7 @@ export const coursesApi = createApi({
         method: 'GET',
       }),
       transformResponse: (response: ApiResponse<Category[]>) => {
-        console.log("Categories API Response:", response);
+        // console.log("Categories API Response:", response);
         if (response.statusCode !== 200) {
           throw new Error(response.message || 'Failed to fetch categories');
         }
@@ -166,29 +191,12 @@ export const coursesApi = createApi({
       },
       providesTags: (result, error, id) => [{ type: 'Course', id }],
     }),
-
-    // Lấy thông tin courses theo slug
-    getCourseBySlug: builder.query<Course, string>({
-      query: (slug) => ({
-        url: `/courses/slug/${slug}`,
-        method: "GET",
-      }),
-      transformResponse: (response: ApiResponse<Course>) => {
-        console.log("Course by Slug API Response:", response);
-        if (response.statusCode !== 200) {
-          throw new Error(response.message || 'Failed to fetch course by slug');
-        }
-        return response.data;
-      },
-      providesTags: (result, error, slug) => [{ type: 'Course', id: slug }],
-    }),
   }),
 });
 
 export const { 
   useGetCoursesQuery, 
   useGetCourseByIdQuery,
-  useGetCourseBySlugQuery,
   useLazyGetCoursesQuery,
   useGetCategoriesQuery
 } = coursesApi;

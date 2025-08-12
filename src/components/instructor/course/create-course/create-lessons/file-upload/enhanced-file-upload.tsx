@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Upload,
-  type File,
   X,
   AlertCircle,
   CheckCircle,
@@ -34,7 +33,7 @@ interface EnhancedFileUploadProps {
   type: 'document' | 'video';
 }
 
-export function EnhancedFileUpload({
+export default function EnhancedFileUpload({
   accept,
   maxSize,
   onFileSelect,
@@ -97,8 +96,16 @@ export function EnhancedFileUpload({
     return <FileText className="h-4 w-4" />;
   };
 
+  const canPreview = () => {
+    if (!selectedFile) return false;
+    if (type === 'video') return true;
+    if (type === 'document' && selectedFile.type === 'application/pdf')
+      return true;
+    return false;
+  };
+
   const renderPreview = () => {
-    if (!selectedFile) return null;
+    if (!selectedFile || !canPreview()) return null;
 
     if (type === 'video' && previewUrl) {
       return (
@@ -109,15 +116,44 @@ export function EnhancedFileUpload({
               Preview
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl">
+          <DialogContent
+            style={{
+              width: '90vw',
+              maxWidth: '900px',
+              maxHeight: '95vh',
+              padding: '15px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <DialogHeader>
               <DialogTitle>Video Preview</DialogTitle>
             </DialogHeader>
-            <div className="aspect-video">
+            <div
+              style={{
+                width: '100%',
+                height: '70vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#000',
+                borderRadius: '12px',
+                overflow: 'hidden',
+              }}
+            >
               <video
                 src={previewUrl}
                 controls
-                className="w-full h-full rounded-lg"
+                // className="w-full h-fit rounded-lg"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  background: '#000',
+                  borderRadius: '12px',
+                }}
                 preload="metadata"
               >
                 Your browser does not support the video tag.
@@ -128,7 +164,7 @@ export function EnhancedFileUpload({
       );
     }
 
-    if (type === 'document') {
+    if (type === 'document' && selectedFile.type === 'application/pdf') {
       return (
         <Dialog>
           <DialogTrigger asChild>
@@ -137,26 +173,16 @@ export function EnhancedFileUpload({
               Preview
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogContent className="max-w-6xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Document Preview</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-auto">
-              {selectedFile.type === 'application/pdf' ? (
-                <iframe
-                  src={URL.createObjectURL(selectedFile)}
-                  className="w-full h-96 border rounded"
-                  title="PDF Preview"
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Preview not available for DOCX files. File:{' '}
-                    {selectedFile.name}
-                  </p>
-                </div>
-              )}
+            <div className="flex-1 overflow-auto" style={{ height: '80vh' }}>
+              <iframe
+                src={URL.createObjectURL(selectedFile)}
+                className="w-full h-full border rounded"
+                title="PDF Preview"
+              />
             </div>
           </DialogContent>
         </Dialog>
