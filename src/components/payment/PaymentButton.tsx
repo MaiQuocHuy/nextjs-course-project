@@ -157,7 +157,7 @@ export function PaymentButton({
       ) : (
         <>
           <ShoppingCart className="w-4 h-4 mr-2" />
-          Enroll Now
+          Enroll Now - {formatPrice(price)}
         </>
       )}
     </Button>

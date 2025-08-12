@@ -1,7 +1,7 @@
 'use client';
 
-import { Students } from '@/pages/instructor/students-page';
+import { StudentsPage } from '@/components/instructor/students/StudentsPage';
 
-export default function StudentsPage() {
-  return <Students />;
+export default function Index() {
+  return <StudentsPage />;
 }

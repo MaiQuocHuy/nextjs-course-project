@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useCourseWithSections } from "@/hooks/student/useDashboard";
+import { useGetCourseWithSectionsQuery } from "@/services/student/studentApi";
 import { LearningSidebar } from "./LearningSidebar";
 import { LearningContent } from "./LearningContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle, Menu, X } from "lucide-react";
-import type { Lesson, Section } from "@/types/student/index";
-import { LearningLoadingSkeleton } from "../ui/Loading";
-import { LearningPageError } from "../ui";
+import type { Lesson, Section } from "@/types/student";
 
 interface LearningPageClientProps {
   courseId: string;
@@ -28,7 +26,7 @@ export default function LearningPageClient({
     isLoading,
     error,
     refetch,
-  } = useCourseWithSections(courseId);
+  } = useGetCourseWithSectionsQuery(courseId);
 
   // Find current lesson and section
   const { currentLesson, currentSection } = useMemo(() => {
@@ -71,12 +69,68 @@ export default function LearningPageClient({
     console.log("Lesson marked as complete:", lessonId);
   };
 
+  const handleRefetchCourse = () => {
+    // Refetch course data to update progress and sidebar
+    refetch();
+  };
+
+  const handleRetry = () => {
+    refetch();
+  };
+
   if (isLoading) {
-    return <LearningLoadingSkeleton />;
+    return (
+      <div className="h-screen flex flex-col lg:flex-row">
+        {/* Sidebar Skeleton - Hidden on mobile when loading */}
+        <div className="hidden lg:block w-80 bg-white border-r border-gray-200 p-4 space-y-4">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-20 w-full" />
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Loading Header */}
+        <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+          <Skeleton className="h-6 w-6" />
+          <Skeleton className="h-6 w-32" />
+          <div className="w-6" />
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="flex-1 p-4 lg:p-6 space-y-4">
+          <Skeleton className="h-6 lg:h-8 w-48 lg:w-64" />
+          <Skeleton className="h-48 lg:h-96 w-full" />
+          <Skeleton className="h-10 lg:h-12 w-full" />
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <LearningPageError onRetry={refetch} />;
+    return (
+      <div className="h-screen flex items-center justify-center p-4">
+        <Alert variant="destructive" className="max-w-md mx-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="space-y-4">
+            <p className="text-sm">
+              Failed to load course content. Please try again.
+            </p>
+            <Button
+              onClick={handleRetry}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   if (!courseData) {
@@ -146,7 +200,7 @@ export default function LearningPageClient({
             section={currentSection}
             courseId={courseId}
             onMarkComplete={handleMarkComplete}
-            onRefetchCourse={refetch}
+            onRefetchCourse={handleRefetchCourse}
           />
         </div>
       </div>

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Trash2, Plus, Edit3 } from 'lucide-react';
-import type { QuizQuestionType } from '@/lib/instructor/create-course-validations/lessons-validations';
+import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
 interface QuizEditorProps {
   questions: QuizQuestionType[];

@@ -1,7 +1,7 @@
 'use client';
 
-import { Earnings } from '@/pages/instructor/earnings-page';
+import { EarningsPage } from '@/components/instructor/earnings/EarningsPage';
 
-export default function EarningsPage() {
-  return <Earnings />;
+export default function Index() {
+  return <EarningsPage />;
 }

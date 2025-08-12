@@ -1,20 +1,18 @@
 import { useMemo } from 'react';
-// import { useGetCourseByIdQuery } from '@/services/coursesApi';
-import { useGetCourseBySlugQuery } from '@/services/coursesApi';
+import { useGetCourseByIdQuery } from '@/services/coursesApi';
 
-
-export const useCourseDetail = (courseSlug: string) => {
-  console.log("useCourseDetail called with courseSlug:", courseSlug);
+export const useCourseDetail = (courseId: string) => {
+  console.log("useCourseDetail called with courseId:", courseId);
   
-  const { data, error, isLoading, refetch } = useGetCourseBySlugQuery(courseSlug, {
-    skip: !courseSlug, // Skip nếu không có courseSlug
+  const { data, error, isLoading, refetch } = useGetCourseByIdQuery(courseId, {
+    skip: !courseId, // Skip nếu không có courseId
   });
 
-  console.log("useGetCourseBySlugQuery result:", {
+  console.log("useGetCourseByIdQuery result:", {
     data,
     error,
     isLoading,
-    courseSlug
+    courseId
   });
 
   return useMemo(() => ({

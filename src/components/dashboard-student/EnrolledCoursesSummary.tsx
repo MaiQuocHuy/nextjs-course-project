@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { BookOpen } from "lucide-react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { Loading, CoursesLoadingSkeleton } from "./ui/Loading";
-import { LoadingError, EnrolledCoursesError } from "./ui/LoadingError";
+import { LoadingError, CourseLoadError } from "./ui/LoadingError";
 import { CourseStatus } from "./CourseStatus";
 
 export function EnrolledCoursesSummary() {
@@ -18,33 +18,10 @@ export function EnrolledCoursesSummary() {
     return <CoursesLoadingSkeleton />;
   }
   if (error) {
-    return <EnrolledCoursesError onRetry={refetch} />;
+    return <CourseLoadError onRetry={refetch} />;
   }
 
   const courses = data?.content || [];
-
-  if (courses.length === 0) {
-    return (
-      <Card className="w-full">
-        <CardContent className="py-12">
-          <div className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-medium">No courses enrolled</h3>
-              <p className="text-muted-foreground">
-                Discover and enroll in courses to start your learning journey.
-              </p>
-              <Button asChild>
-                <Link href="/">Browse Courses</Link>
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">
