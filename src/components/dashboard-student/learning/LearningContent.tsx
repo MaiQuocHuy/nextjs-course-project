@@ -17,6 +17,10 @@ import {
   SkipBack,
   SkipForward,
   Settings,
+  AlertTriangle,
+  X,
+  Eye,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -29,6 +33,7 @@ import {
   markLessonCompleted,
   updateQuizScore,
 } from "@/store/slices/student/learningProgressSlice";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface LearningContentProps {
   currentLesson?: Lesson;
@@ -62,6 +67,9 @@ const VideoContent = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [showSeekWarning, setShowSeekWarning] = useState(false);
+  const [maxWatchedTime, setMaxWatchedTime] = useState(0);
+  const allowSkipBuffer = 60; // Cho phép tua trước tối đa 60 giây so với điểm đã xem
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +117,10 @@ const VideoContent = ({
 
     setCurrentTime(currentTime);
     setDuration(duration);
+
+    if (currentTime > maxWatchedTime) {
+      setMaxWatchedTime(currentTime);
+    }
 
     // Lưu vào localStorage mỗi 5 giây để tránh quá nhiều write operations
     if (Math.floor(currentTime) % 5 === 0 || currentTime === 0) {
@@ -182,6 +194,12 @@ const VideoContent = ({
 
   const handleSeek = (seekTime: number) => {
     if (videoRef.current) {
+      // Kiểm tra xem có được phép tua trước không
+      if (seekTime > maxWatchedTime + allowSkipBuffer) {
+        videoRef.current.pause();
+        setShowSeekWarning(true);
+        return;
+      }
       videoRef.current.currentTime = seekTime;
       setCurrentTime(seekTime);
     }
@@ -261,6 +279,113 @@ const VideoContent = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {showSeekWarning && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 animate-in fade-in-0 duration-300">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            onClick={() => setShowSeekWarning(false)}
+          />
+
+          {/* Beautiful Warning Modal */}
+          <Card className="relative bg-card/95 backdrop-blur-xl border-destructive/20 shadow-2xl max-w-md mx-4 animate-in zoom-in-95 duration-300">
+            {/* Close Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSeekWarning(false)}
+              className="absolute top-3 right-3 h-8 w-8 rounded-full hover:bg-destructive/10 z-10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+
+            <CardHeader className="text-center pb-3">
+              {/* Warning Icon */}
+              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mb-4 shadow-lg ring-4 ring-amber-50">
+                <div className="relative">
+                  <AlertTriangle className="h-15 w-15 text-amber-600" />
+                </div>
+              </div>
+
+              {/* Title */}
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                Video Seek Restriction
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              {/* Alert Message */}
+              <Alert className="border-amber-200 bg-amber-50/50">
+                <Eye className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>Learning Mode Active:</strong> You're trying to skip
+                  ahead to content you haven't watched yet.
+                </AlertDescription>
+              </Alert>
+
+              {/* Message */}
+              <div className="text-center space-y-3">
+                <p className="text-muted-foreground leading-relaxed">
+                  To ensure effective learning and proper content progression,
+                  please continue from where you left off or start from the
+                  beginning.
+                </p>
+
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  <span>Watchable content</span>
+                  <div className="w-2 h-2 bg-gray-300 rounded-full ml-2" />
+                  <span>Locked content</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = maxWatchedTime;
+                      setCurrentTime(maxWatchedTime);
+                    }
+                    setShowSeekWarning(false);
+                    videoRef.current?.play();
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 group"
+                  size="lg"
+                >
+                  <Play className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  Continue from {formatTime(maxWatchedTime)}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = 0;
+                      setCurrentTime(0);
+                    }
+                    setShowSeekWarning(false);
+                    videoRef.current?.play();
+                  }}
+                  className="w-full border-gray-200 hover:bg-gray-50 group"
+                >
+                  <SkipBack className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+                  Start from Beginning
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSeekWarning(false)}
+                  className="w-full text-muted-foreground hover:text-foreground"
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       {/* Custom Video Player with Controls */}
       <div
         ref={containerRef}
@@ -381,6 +506,21 @@ const VideoContent = ({
                   const clickPosition = (e.clientX - rect.left) / rect.width;
                   const seekTime = clickPosition * duration;
                   handleSeek(seekTime);
+                }}
+                style={{
+                  background: `
+                    linear-gradient(
+                      to right,
+                      rgba(34,197,94,0.5) 0%,
+                      rgba(34,197,94,0.5) ${
+                        ((maxWatchedTime + allowSkipBuffer) / duration) * 100
+                      }%,
+                      rgba(255,255,255,0.2) ${
+                        ((maxWatchedTime + allowSkipBuffer) / duration) * 100
+                      }%,
+                      rgba(255,255,255,0.2) 100%
+                    )
+                  `,
                 }}
               >
                 <div
