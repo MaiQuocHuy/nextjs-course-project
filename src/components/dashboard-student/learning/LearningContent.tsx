@@ -386,6 +386,12 @@ const VideoContent = ({
           </Card>
         </div>
       )}
+
+      {/* Video title */}
+      <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+        Video: {lesson.video.title}
+      </p>
+
       {/* Custom Video Player with Controls */}
       <div
         ref={containerRef}
@@ -414,7 +420,7 @@ const VideoContent = ({
             key={lesson.id}
             controls={false}
             className="w-full h-full object-cover cursor-pointer"
-            poster=""
+            poster={lesson.video.thumbnail}
             onClick={togglePlay}
             onTimeUpdate={handleTimeUpdate}
             onPlay={handlePlay}

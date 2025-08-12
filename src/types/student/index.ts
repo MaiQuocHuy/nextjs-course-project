@@ -38,6 +38,8 @@ export interface Video {
   id: string; // ID video
   url: string; // Link video
   duration: number; // Thời lượng video (tính bằng giây)
+  title: string; // Tiêu đề video
+  thumbnail: string; // Ảnh thumbnail video
 }
 
 export interface QuizQuestion {
