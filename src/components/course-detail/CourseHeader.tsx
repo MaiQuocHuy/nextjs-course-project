@@ -171,13 +171,15 @@ export function CourseHeader({
             </div>
 
             {/* Category Badge */}
-            {course.category && (
+            {course.categories && (
               <div className="absolute top-4 right-4">
                 <Badge
                   variant="secondary"
                   className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium"
                 >
-                  {course.category.name}
+                  {course.categories
+                    .map((category) => category.name)
+                    .join(", ")}
                 </Badge>
               </div>
             )}
