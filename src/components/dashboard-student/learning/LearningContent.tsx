@@ -1,10 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Play, FileText, HelpCircle, Loader2 } from "lucide-react";
+import {
+  CheckCircle,
+  Play,
+  FileText,
+  HelpCircle,
+  Loader2,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  SkipBack,
+  SkipForward,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useCompleteLessonMutation,
@@ -43,6 +56,50 @@ const VideoContent = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const storageKey = `video-progress-${lesson.video?.id}`; // key duy nhất cho mỗi video
+  const volumeStorageKey = "video-player-volume"; // key chung cho tất cả video
+  const playbackRateStorageKey = "video-player-playback-rate"; // key cho tốc độ phát
+
+  // Load lại tiến trình xem, volume và playback rate
+  useEffect(() => {
+    const savedTime = localStorage.getItem(storageKey);
+    const savedVolume = localStorage.getItem(volumeStorageKey);
+    const savedPlaybackRate = localStorage.getItem(playbackRateStorageKey);
+
+    if (savedTime && videoRef.current) {
+      const time = parseFloat(savedTime);
+      setCurrentTime(time);
+      // Set thời gian thực sự của video khi video đã sẵn sàng
+      if (videoRef.current.readyState >= 2) {
+        videoRef.current.currentTime = time;
+      }
+    }
+
+    if (savedVolume) {
+      const vol = parseFloat(savedVolume);
+      setVolume(vol);
+      if (videoRef.current) {
+        videoRef.current.volume = vol;
+      }
+    }
+
+    if (savedPlaybackRate) {
+      const rate = parseFloat(savedPlaybackRate);
+      setPlaybackRate(rate);
+      if (videoRef.current) {
+        videoRef.current.playbackRate = rate;
+      }
+    }
+  }, [lesson.id, storageKey, volumeStorageKey, playbackRateStorageKey]);
 
   if (!lesson.video) return null;
 
@@ -52,6 +109,11 @@ const VideoContent = ({
 
     setCurrentTime(currentTime);
     setDuration(duration);
+
+    // Lưu vào localStorage mỗi 5 giây để tránh quá nhiều write operations
+    if (Math.floor(currentTime) % 5 === 0 || currentTime === 0) {
+      localStorage.setItem(storageKey, currentTime.toString());
+    }
 
     // Auto complete when user watches >= 90% of video
     if (
@@ -65,8 +127,42 @@ const VideoContent = ({
   };
 
   const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
+
+  const handlePause = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    setIsPlaying(false);
+    // Lưu tiến trình khi pause
+    const video = e.currentTarget;
+    localStorage.setItem(storageKey, video.currentTime.toString());
+  };
+
   const handleLoadedData = () => setIsLoaded(true);
+
+  const handleVolumeChange = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    const newVolume = video.volume;
+    setVolume(newVolume);
+    localStorage.setItem(volumeStorageKey, newVolume.toString());
+  };
+
+  // Lưu tiến trình, volume và playback rate khi component unmount
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        localStorage.setItem(
+          storageKey,
+          videoRef.current.currentTime.toString()
+        );
+        localStorage.setItem(
+          volumeStorageKey,
+          videoRef.current.volume.toString()
+        );
+        localStorage.setItem(
+          playbackRateStorageKey,
+          videoRef.current.playbackRate.toString()
+        );
+      }
+    };
+  }, [storageKey, volumeStorageKey, playbackRateStorageKey]);
 
   const formatTime = (timeInSeconds: number) => {
     const minutes = Math.floor(timeInSeconds / 60);
@@ -74,34 +170,181 @@ const VideoContent = ({
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const handleSeek = (seekTime: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = seekTime;
+      setCurrentTime(seekTime);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const newMuted = !isMuted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+    }
+  };
+
+  const handleVolumeSliderChange = (newVolume: number) => {
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      setVolume(newVolume);
+      localStorage.setItem(volumeStorageKey, newVolume.toString());
+      if (newVolume === 0) {
+        setIsMuted(true);
+        videoRef.current.muted = true;
+      } else if (isMuted) {
+        setIsMuted(false);
+        videoRef.current.muted = false;
+      }
+    }
+  };
+
+  const handlePlaybackRateChange = (rate: number) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+      setPlaybackRate(rate);
+      localStorage.setItem(playbackRateStorageKey, rate.toString());
+    }
+    setShowSettings(false);
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement && containerRef.current) {
+      containerRef.current.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  // Handle fullscreen change
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Handle click outside settings to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showSettings &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setShowSettings(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSettings]);
+
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Video Container with Enhanced Design */}
-      <div className="relative group">
-        {/* Video Player with Shadow and Border */}
+      {/* Custom Video Player with Controls */}
+      <div
+        ref={containerRef}
+        className="relative group"
+        onMouseEnter={() => setShowControls(true)}
+        onMouseLeave={() => {
+          setShowControls(false);
+          setShowSettings(false);
+        }}
+      >
+        {/* Video Player Container */}
         <div className="aspect-video bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden shadow-2xl border border-gray-700/50 relative">
           {/* Loading State */}
           {!isLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 text-blue-500 animate-spin " />
+                <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
                 <span className="text-gray-300 text-sm">Loading video...</span>
               </div>
             </div>
           )}
 
-          {/* Video Element */}
+          {/* Video Element - No Default Controls */}
           <video
+            ref={videoRef}
             key={lesson.id}
-            controls={true}
-            className="w-full h-full object-cover"
+            controls={false}
+            className="w-full h-full object-cover cursor-pointer"
             poster=""
+            onClick={togglePlay}
             onTimeUpdate={handleTimeUpdate}
             onPlay={handlePlay}
             onPause={handlePause}
             onLoadedData={handleLoadedData}
+            onVolumeChange={handleVolumeChange}
+            onLoadedMetadata={(e) => {
+              const video = e.currentTarget;
+              const savedTime = localStorage.getItem(storageKey);
+              const savedVolume = localStorage.getItem(volumeStorageKey);
+              const savedPlaybackRate = localStorage.getItem(
+                playbackRateStorageKey
+              );
+
+              if (savedTime) {
+                const time = parseFloat(savedTime);
+                setCurrentTime(time);
+                video.currentTime = time;
+              }
+
+              if (savedVolume) {
+                const vol = parseFloat(savedVolume);
+                setVolume(vol);
+                video.volume = vol;
+              }
+
+              if (savedPlaybackRate) {
+                const rate = parseFloat(savedPlaybackRate);
+                setPlaybackRate(rate);
+                video.playbackRate = rate;
+              }
+            }}
+            onCanPlay={(e) => {
+              const video = e.currentTarget;
+              const savedTime = localStorage.getItem(storageKey);
+              const savedVolume = localStorage.getItem(volumeStorageKey);
+              const savedPlaybackRate = localStorage.getItem(
+                playbackRateStorageKey
+              );
+
+              if (savedTime && video.currentTime === 0) {
+                const time = parseFloat(savedTime);
+                video.currentTime = time;
+              }
+
+              if (savedVolume) {
+                const vol = parseFloat(savedVolume);
+                video.volume = vol;
+              }
+
+              if (savedPlaybackRate) {
+                const rate = parseFloat(savedPlaybackRate);
+                video.playbackRate = rate;
+              }
+            }}
             style={{
               filter: "contrast(1.05) brightness(1.02)",
             }}
@@ -110,26 +353,166 @@ const VideoContent = ({
             Your browser does not support the video tag.
           </video>
 
-          {/* Play/Pause Overlay Indicator */}
+          {/* Center Play/Pause Button */}
           <div
             className={cn(
               "absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300",
               isPlaying ? "opacity-0" : "opacity-100"
             )}
           >
-            <div className="bg-black/30 backdrop-blur-sm rounded-full p-3 mb-5">
-              <Play className="h-10 w-10 text-white fill-white" />
+            <div className="bg-black/50 backdrop-blur-sm rounded-full p-4">
+              <Play className="h-12 w-12 text-white fill-white" />
             </div>
           </div>
-        </div>
 
-        {/* Completion Badge Overlay */}
-        {lesson.isCompleted && (
-          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            <span>Completed</span>
+          {/* Custom Video Controls */}
+          <div
+            className={cn(
+              "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 transition-opacity duration-300",
+              showControls ? "opacity-100" : "opacity-0"
+            )}
+          >
+            {/* Progress Bar */}
+            <div className="mb-2">
+              <div
+                className="w-full h-2 bg-white/20 rounded-full cursor-pointer group/progress"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const clickPosition = (e.clientX - rect.left) / rect.width;
+                  const seekTime = clickPosition * duration;
+                  handleSeek(seekTime);
+                }}
+              >
+                <div
+                  className="h-full bg-blue-500 rounded-full relative group-hover/progress:bg-blue-400 transition-colors"
+                  style={{ width: `${progressPercentage}%` }}
+                >
+                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity" />
+                </div>
+              </div>
+            </div>
+
+            {/* Controls Row */}
+            <div className="flex items-center justify-between">
+              {/* Left Controls */}
+              <div className="flex items-center gap-6">
+                {/* Play/Pause Button */}
+                <button
+                  onClick={togglePlay}
+                  className="text-white hover:text-blue-400 transition-colors"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6 fill-current" />
+                  )}
+                </button>
+
+                {/* Volume Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleMute}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
+                  </button>
+
+                  {/* Volume Slider */}
+                  <div className="w-20 h-1 bg-white/20 rounded-full cursor-pointer group/volume">
+                    <div
+                      className="h-full bg-white rounded-full relative"
+                      style={{ width: `${volume * 100}%` }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect =
+                          e.currentTarget.parentElement!.getBoundingClientRect();
+                        const clickPosition =
+                          (e.clientX - rect.left) / rect.width;
+                        handleVolumeSliderChange(
+                          Math.max(0, Math.min(1, clickPosition))
+                        );
+                      }}
+                    >
+                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover/volume:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time Display */}
+                <div className="text-white/90 text-sm font-mono">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </div>
+              </div>
+
+              {/* Right Controls */}
+              <div className="flex items-center gap-6 relative">
+                {/* Settings Button */}
+                <div className="relative mt-2">
+                  <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="text-white/80 hover:text-white transition-colors "
+                  >
+                    <Settings className="h-5 w-5" />
+                  </button>
+
+                  {/* Settings Dropdown */}
+                  {showSettings && (
+                    <div className="absolute bottom-8 right-0 bg-black/90 backdrop-blur-sm rounded-lg p-3 min-w-[200px] z-20">
+                      <div className="text-white text-sm font-medium mb-3">
+                        Settings
+                      </div>
+
+                      {/* Playback Speed */}
+                      <div className="mb-3">
+                        <div className="text-white/80 text-xs mb-2">
+                          Playback Speed
+                        </div>
+                        <div className="space-y-1">
+                          {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(
+                            (rate) => (
+                              <button
+                                key={rate}
+                                onClick={() => handlePlaybackRateChange(rate)}
+                                className={cn(
+                                  "w-full text-left px-2 py-1 rounded text-sm transition-colors",
+                                  playbackRate === rate
+                                    ? "bg-blue-600 text-white"
+                                    : "text-white/80 hover:text-white hover:bg-white/10"
+                                )}
+                              >
+                                {rate === 1 ? "Normal" : `${rate}x`}
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fullscreen Button */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <Maximize className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Completion Badge Overlay */}
+          {lesson.isCompleted && (
+            <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2 z-10">
+              <CheckCircle className="h-4 w-4" />
+              <span>Completed</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Video Information Panel */}
@@ -145,7 +528,8 @@ const VideoContent = ({
                   Video Lesson
                 </h3>
                 <p className="text-gray-600 text-xs sm:text-sm">
-                  Duration: {Math.floor(lesson.video.duration / 60)} minutes
+                  Duration: {Math.floor((lesson.video?.duration || 0) / 60)}{" "}
+                  minutes
                 </p>
               </div>
             </div>
