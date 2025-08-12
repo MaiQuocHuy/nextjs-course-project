@@ -189,3 +189,11 @@ export async function getCurrentAccessToken(): Promise<string | null> {
     return null;
   }
 }
+
+export const localBaseQuery = fetchBaseQuery({
+  baseUrl: "", // goi den front-end thay vi backend
+  prepareHeaders: (headers) => {
+    headers.set("Content-Type", "application/json");
+    return headers;
+  },
+});

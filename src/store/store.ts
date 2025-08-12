@@ -16,11 +16,13 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
     store.dispatch(profileApi.util.resetApiState());
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
+    store.dispatch(geminiApi.util.resetApiState());
   }
 
   return result;
 };
 import courseFilterReducer from "./slices/student/courseFilterSlice";
+import { geminiApi } from "@/services/quiz/geminiApi";
 
 export const makeStore = () => {
   const store = configureStore({
@@ -35,6 +37,7 @@ export const makeStore = () => {
       [coursesApi.reducerPath]: coursesApi.reducer,
       [paymentApi.reducerPath]: paymentApi.reducer,
       [profileApi.reducerPath]: profileApi.reducer,
+      [geminiApi.reducerPath]: geminiApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -43,6 +46,7 @@ export const makeStore = () => {
         studentApi.middleware,
         paymentApi.middleware,
         profileApi.middleware,
+        geminiApi.middleware,
         clearCacheOnLogout
       ),
   });
