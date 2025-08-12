@@ -194,7 +194,7 @@ export default function PaymentSuccessPage({
                   Check Status
                 </Button>
                 <Button
-                  onClick={() => router.push("/dashboard/courses")}
+                  onClick={() => router.push("/dashboard/my-courses")}
                   className="flex-1"
                 >
                   <BookOpen className="w-4 h-4 mr-2" />
