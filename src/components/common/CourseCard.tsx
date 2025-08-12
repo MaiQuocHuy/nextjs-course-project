@@ -70,7 +70,7 @@ export function CourseCard({
                 variant="secondary"
                 className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-sm font-medium text-xs px-2 py-1"
               >
-                {course.category?.name || "Course"}
+                {course.categories?.[0]?.name || "Course"}
               </Badge>
             </div>
 
@@ -219,7 +219,7 @@ export function CourseCard({
             variant="secondary"
             className="bg-white/95 backdrop-blur-sm text-gray-800 hover:bg-white border-0 shadow-sm font-medium text-xs px-2 py-1"
           >
-            {course.category?.name || "Course"}
+            {course.categories?.[0]?.name || "Course"}
           </Badge>
         </div>
 
