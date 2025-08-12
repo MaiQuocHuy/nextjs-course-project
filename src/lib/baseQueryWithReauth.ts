@@ -151,8 +151,12 @@ export const baseQueryWithReauth: BaseQueryFn<
 //query ko can token
 export const publicBaseQuery = fetchBaseQuery({
   baseUrl,
-  prepareHeaders: (headers) => {
-    headers.set("Content-Type", "application/json");
+  prepareHeaders: (headers, {arg}) => {
+    const isFormData = (arg as any)?.body instanceof FormData;
+      
+      if (!isFormData) {
+        headers.set("Content-Type", "application/json");
+      }
     return headers;
   },
 });
