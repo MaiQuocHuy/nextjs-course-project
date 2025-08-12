@@ -10,9 +10,21 @@ import { Receipt } from "lucide-react";
 import { PaymentMobileCard } from "./PaymentMobileCard";
 import { PaymentTableLoadingSkeleton } from "../ui/Loading";
 import { PaymentsError } from "../ui/LoadingError";
+import {
+  CustomPagination,
+  usePagination,
+} from "@/components/ui/custom-pagination";
 
 export function PaymentTable() {
   const { data: payments, isLoading, error, refetch } = useGetPaymentsQuery();
+
+  // Pagination với 12 payments per page
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedPayments,
+    handlePageChange,
+  } = usePagination(payments || [], 12);
 
   if (isLoading) {
     return <PaymentTableLoadingSkeleton />;
@@ -62,7 +74,7 @@ export function PaymentTable() {
       <CardContent className="px-4">
         {/* Mobile View - Card Layout */}
         <div className="block md:hidden space-y-3">
-          {payments.map((payment) => (
+          {paginatedPayments.map((payment) => (
             <PaymentMobileCard key={payment.id} payment={payment} />
           ))}
         </div>
@@ -73,13 +85,24 @@ export function PaymentTable() {
             <Table>
               <PaymentTableHead />
               <TableBody>
-                {payments.map((payment) => (
+                {paginatedPayments.map((payment) => (
                   <PaymentTableRow key={payment.id} payment={payment} />
                 ))}
               </TableBody>
             </Table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <CustomPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
