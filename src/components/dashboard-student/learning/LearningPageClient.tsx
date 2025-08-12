@@ -22,6 +22,9 @@ export default function LearningPageClient({
   const [selectedLessonId, setSelectedLessonId] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Storage key for persisting current lesson
+  const lessonStorageKey = `current-lesson-${courseId}`;
+
   // Fetch course with sections
   const {
     data: courseData,
@@ -29,6 +32,36 @@ export default function LearningPageClient({
     error,
     refetch,
   } = useCourseWithSections(courseId);
+
+  // Load saved lesson from localStorage and set default lesson
+  useEffect(() => {
+    if (
+      courseData?.sections &&
+      courseData.sections.length > 0 &&
+      !selectedLessonId
+    ) {
+      // First try to load saved lesson
+      const savedLessonId = localStorage.getItem(lessonStorageKey);
+      if (savedLessonId) {
+        // Verify that the saved lesson still exists in the course
+        const lessonExists = courseData.sections.some((section) =>
+          section.lessons.some((lesson) => lesson.id === savedLessonId)
+        );
+        if (lessonExists) {
+          setSelectedLessonId(savedLessonId);
+          return;
+        }
+      }
+
+      // If no saved lesson or saved lesson doesn't exist, use first lesson
+      const firstSection = courseData.sections[0];
+      if (firstSection.lessons && firstSection.lessons.length > 0) {
+        const firstLessonId = firstSection.lessons[0].id;
+        setSelectedLessonId(firstLessonId);
+        localStorage.setItem(lessonStorageKey, firstLessonId);
+      }
+    }
+  }, [courseData?.sections, selectedLessonId, lessonStorageKey]);
 
   // Find current lesson and section
   const { currentLesson, currentSection } = useMemo(() => {
@@ -46,22 +79,10 @@ export default function LearningPageClient({
     return { currentLesson: undefined, currentSection: undefined };
   }, [courseData?.sections, selectedLessonId]);
 
-  // Set default lesson (first lesson of first section)
-  useEffect(() => {
-    if (
-      courseData?.sections &&
-      courseData.sections.length > 0 &&
-      !selectedLessonId
-    ) {
-      const firstSection = courseData.sections[0];
-      if (firstSection.lessons && firstSection.lessons.length > 0) {
-        setSelectedLessonId(firstSection.lessons[0].id);
-      }
-    }
-  }, [courseData?.sections, selectedLessonId]);
-
   const handleSelectLesson = (lessonId: string) => {
     setSelectedLessonId(lessonId);
+    // Save selected lesson to localStorage
+    localStorage.setItem(lessonStorageKey, lessonId);
     setSidebarOpen(false); // Close sidebar on mobile after selection
   };
 
