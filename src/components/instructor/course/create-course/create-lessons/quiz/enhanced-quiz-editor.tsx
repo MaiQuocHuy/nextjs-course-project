@@ -7,15 +7,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Trash2, Plus, Edit3 } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Trash2, Plus, Edit3, ChevronRight } from 'lucide-react';
+import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';
 import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
-interface QuizEditorProps {
+interface EnhancedQuizEditorProps {
+  canEdit: boolean;
   questions: QuizQuestionType[];
   onQuestionsChange: (questions: QuizQuestionType[]) => void;
 }
 
-export function QuizEditor({ questions, onQuestionsChange }: QuizEditorProps) {
+export function EnhancedQuizEditor({
+  canEdit,
+  questions,
+  onQuestionsChange,
+}: EnhancedQuizEditorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const updateQuestion = (id: string, updates: Partial<QuizQuestionType>) => {
@@ -27,7 +38,24 @@ export function QuizEditor({ questions, onQuestionsChange }: QuizEditorProps) {
 
   const deleteQuestion = (id: string) => {
     const updatedQuestions = questions.filter((q) => q.id !== id);
+    // Reorder remaining questions
+    updatedQuestions.forEach((q, index) => {
+      q.order = index + 1;
+    });
     onQuestionsChange(updatedQuestions);
+  };
+
+  const addNewQuestion = () => {
+    const newQuestion: QuizQuestionType = {
+      id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      question: '',
+      options: ['', ''],
+      correctAnswer: 0,
+      explanation: '',
+      order: questions.length + 1,
+    };
+    onQuestionsChange([...questions, newQuestion]);
+    setEditingId(newQuestion.id);
   };
 
   const addOption = (questionId: string) => {
@@ -72,41 +100,52 @@ export function QuizEditor({ questions, onQuestionsChange }: QuizEditorProps) {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">
-          Edit Questions ({questions.length})
-        </h3>
-      </div>
-
-      {questions.map((question, index) => (
-        <Card key={question.id}>
-          <CardHeader className="pb-3">
+  const renderQuestion = (question: QuizQuestionType, index: number) => (
+    <Collapsible key={question.id} defaultOpen={editingId === question.id}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50">
             <CardTitle className="text-base flex items-center justify-between">
-              <span>Question {index + 1}</span>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setEditingId(editingId === question.id ? null : question.id)
-                  }
-                >
-                  <Edit3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteQuestion(question.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+                <span>Question {question.order + 1}</span>
+                {question.question && (
+                  <span className="text-sm font-normal text-muted-foreground truncate max-w-md">
+                    - {question.question}
+                  </span>
+                )}
               </div>
+              {canEdit && (
+                <div
+                  className="flex gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setEditingId(
+                        editingId === question.id ? null : question.id
+                      )
+                    }
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteQuestion(question.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
           <CardContent className="space-y-4">
             {editingId === question.id ? (
               <>
@@ -231,8 +270,50 @@ export function QuizEditor({ questions, onQuestionsChange }: QuizEditorProps) {
               </div>
             )}
           </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">
+          Quiz Questions ({questions.length})
+        </h3>
+        {canEdit && (
+          <Button type="button" onClick={addNewQuestion}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Question
+          </Button>
+        )}
+      </div>
+
+      {questions.length > 0 ? (
+        <DragDropReorder
+          items={questions} // Pass full question objects
+          onReorder={
+            canEdit
+              ? (reorderedQuestions) => {
+                  // Update the order property and reorder
+                  const updatedQuestions = reorderedQuestions.map(
+                    (question, index) => ({
+                      ...question,
+                      order: index + 1,
+                    })
+                  );
+                  onQuestionsChange(updatedQuestions);
+                }
+              : null
+          }
+          renderItem={renderQuestion}
+          className="space-y-4"
+        />
+      ) : (
+        <Card className="p-8 text-center text-muted-foreground">
+          <p>No questions yet. Click "Add Question" to get started.</p>
         </Card>
-      ))}
+      )}
     </div>
   );
 }

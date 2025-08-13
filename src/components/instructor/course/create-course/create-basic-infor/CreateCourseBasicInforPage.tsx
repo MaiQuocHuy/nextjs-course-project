@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import _ from 'lodash';
+
 import {
-  type CourseFormData,
+  type CourseBasicInfoType,
   getWordCount,
   getCharacterCount,
-  fullCourseFormSchema,
-} from '@/lib/instructor/validations/course';
+  fullCourseSchema,
+} from '@/utils/instructor/create-course-validations/course-basic-info-validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,12 +46,29 @@ import {
   FileText,
   ImageIcon,
   Upload,
+  Trash2,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useGetCategoriesQuery } from '@/services/coursesApi';
+import { loadingAnimation } from '@/utils/instructor/loading-animation';
+import { toast } from 'sonner';
+import {
+  useDeleteCourseMutation,
+  useUpdateCourseMutation,
+} from '@/services/instructor/courses-api';
+import { AppDispatch } from '@/store/store';
+import { useDispatch } from 'react-redux';
+import { Switch } from '@/components/ui/switch';
+import { useRouter } from 'next/navigation';
+import WarningAlert from '@/components/instructor/commom/WarningAlert';
 
 interface CourseFormProps {
-  onSubmit?: (data: CourseFormData) => void;
-  className?: string;
+  mode: 'create' | 'edit';
+  courseInfor?: CourseBasicInfoType;
+  onCancel?: () => void;
+  onSubmit?: (data: CourseBasicInfoType) => void;
+  onGetProgress?: (process: number) => void;
 }
 
 interface UploadedFile {
@@ -57,7 +76,6 @@ interface UploadedFile {
   file: File;
   preview: string;
   type: 'image' | 'video';
-  // progress: number;
   status: 'uploading' | 'success' | 'error';
   error?: string;
 }
@@ -65,52 +83,120 @@ interface UploadedFile {
 const accept = 'image/*,video/*';
 const maxFiles = 1;
 const maxSize = 10;
-const tempTitle = 'Complete Web Development Bootcamp';
-const tempDes =
-  'Learn HTML, CSS, JavaScript, React, Node.js and more in this comprehensive web development course. Perfect for beginners who want to become full-stack developers.';
 
-export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) {
+export function CreateCourseBasicInforPage({
+  mode,
+  courseInfor,
+  onCancel,
+  onSubmit,
+  onGetProgress,
+}: CourseFormProps) {
+  const { data: categories } = useGetCategoriesQuery();
   const [courseThumb, setCourseThumb] = useState<UploadedFile | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [courseStatus, setCourseStatus] = useState<
+    'published' | 'unpublished' | 'pending'
+  >('published');
+  const [updateCourse, { isLoading: isUpdatingCourse }] =
+    useUpdateCourseMutation();
+  const [deleteCourse] = useDeleteCourseMutation();
+  const dispatch: AppDispatch = useDispatch();
+  const router = useRouter();
 
-  const form = useForm<CourseFormData>({
-    resolver: zodResolver(fullCourseFormSchema),
-    defaultValues: {
-      title: tempTitle,
-      description: tempDes,
-      price: 0,
-      category: 'programming',
-      level: 'beginner',
-    },
+  const form = useForm<CourseBasicInfoType>({
+    resolver: zodResolver(fullCourseSchema),
+    defaultValues: courseInfor
+      ? courseInfor
+      : {
+          title: '',
+          description: '',
+          price: 0,
+          categoryIds: [],
+          level: 'BEGINNER',
+        },
     mode: 'onChange', // Enable real-time validation
   });
 
   const {
     watch,
-    formState: { errors, isValid },
+    formState: { errors, isValid, isDirty },
   } = form;
 
   const watchThumbnail = watch('file');
 
-  // Set value for course's thumbnail
+  // Loading animation
   useEffect(() => {
-    const handleCourseThumb = async (file: File) => {
-      const preview = await createFilePreview(file);
-      const courseThumb: UploadedFile = {
-        id: crypto.randomUUID(),
-        file,
-        preview,
-        type: file.type.startsWith('image/') ? 'image' : 'video',
-        status: 'success',
-      };
-      setCourseThumb(courseThumb);
-    };
-
-    if (watchThumbnail && watchThumbnail.size > 0) {
-      handleCourseThumb(watchThumbnail);
+    if (isUpdatingCourse) {
+      loadingAnimation(true, dispatch);
+    } else {
+      loadingAnimation(false, dispatch);
     }
-  }, [watchThumbnail]);
+    return () => {
+      loadingAnimation(false, dispatch);
+    };
+  }, [isUpdatingCourse]);
+
+  // Clear thumbnail if file is invalid
+  useEffect(() => {
+    if (errors.file !== undefined) {
+      setCourseThumb(null);
+    }
+  }, [errors.file]);
+
+  // Set thumbnail only if file is valid
+  useEffect(() => {
+    // Only set thumbnail if file exists and is valid
+    if (
+      watchThumbnail &&
+      watchThumbnail.size > 0 &&
+      errors.file === undefined
+    ) {
+      const handleCourseThumb = async (file: File) => {
+        const preview = await createFilePreview(file);
+        const courseThumb: UploadedFile = {
+          id: crypto.randomUUID(),
+          file,
+          preview,
+          type: file.type.startsWith('image/') ? 'image' : 'video',
+          status: 'success',
+        };
+        setCourseThumb(courseThumb);
+      };
+      handleCourseThumb(watchThumbnail);
+    } else {
+      // Clear thumbnail if file is invalid or removed
+      setCourseThumb(null);
+    }
+  }, [watchThumbnail, errors.file]);
+
+  // Calculate form completion percentage
+  const getFormCompletionPercentage = useCallback(() => {
+    const fields = [
+      errors.title === undefined && watch('title').length > 0,
+      watch('price') >= 0,
+      watch('categoryIds') && watch('categoryIds').length > 0,
+      watch('description').length > 0 && errors.description === undefined,
+      watch('file') !== undefined && errors.file === undefined,
+    ];
+    const completedFields = fields.filter(Boolean).length;
+    // return Math.round((completedFields / fields.length) * 100);
+    return (completedFields / fields.length) * 100;
+  }, [
+    watch('title'),
+    watch('price'),
+    watch('categoryIds'),
+    watch('description'),
+    errors,
+  ]);
+
+  useEffect(() => {
+    const progress = getFormCompletionPercentage();
+    if (onGetProgress) {
+      onGetProgress(progress);
+    }
+  }, [isDirty, getFormCompletionPercentage]);
 
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -138,24 +224,12 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
     });
   };
 
-  // Calculate form completion percentage
-  const getFormCompletionPercentage = () => {
-    const fields = [
-      watch('title'),
-      watch('price') >= 0,
-      watch('category'),
-      watch('description'),
-      watchThumbnail,
-    ];
-    const completedFields = fields.filter(Boolean).length;
-    return Math.round((completedFields / fields.length) * 100);
-  };
-
-  const handleSubmit = (data: CourseFormData) => {
+  const handleSubmit = (data: CourseBasicInfoType) => {
     // console.log('Course form data:', data);
-    if (courseThumb) {
-      const courseData = { ...data, file: courseThumb };
-      onSubmit?.(courseData);
+    if (mode === 'edit') {
+      handleUpdateCourse(data);
+    } else {
+      onSubmit?.(data);
     }
   };
 
@@ -179,20 +253,125 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
     );
   };
 
+  const handleUpdateCourse = async (data: CourseBasicInfoType) => {
+    // console.log(data);
+    if (courseInfor) {
+      const dataWithCourseId = { ...data, id: courseInfor.id };
+      try {
+        loadingAnimation(
+          true,
+          dispatch,
+          'Course is being updated. Please wait...'
+        );
+        const res = await updateCourse(dataWithCourseId).unwrap();
+        // console.log(res);
+        if ('statusCode' in res && res.statusCode === 200) {
+          loadingAnimation(false, dispatch);
+          form.reset(data);
+          toast.success(res.message);
+        }
+      } catch (error) {
+        // console.log(error);
+        loadingAnimation(false, dispatch);
+        toast.error('Update course failed!');
+      }
+    }
+  };
+
+  const handlePublishCourseToggle = () => {
+    setCourseStatus((prev) => {
+      if (prev === 'published') {
+        return 'unpublished';
+      } else {
+        return 'published';
+      }
+    });
+  };
+
+  const handleDeleCourse = async () => {
+    try {
+      loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
+      if (courseInfor?.id) {
+        await deleteCourse(courseInfor?.id);
+        router.push('/instructor/courses');
+      }
+    } catch (error) {
+      loadingAnimation(false, dispatch);
+      toast.error('Delete course failed!');
+    }
+    loadingAnimation(false, dispatch);
+    toast.error('Delete course successfully!');
+  };
+
+  const handleRequestApproval = () => {};
+
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn('space-y-6')}>
       {/* Form Progress */}
-      <Card className="shadow-card">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Form Completion</span>
-            <span className="text-sm text-muted-foreground">
-              {getFormCompletionPercentage()}%
-            </span>
-          </div>
-          <Progress value={getFormCompletionPercentage()} className="h-2" />
-        </CardContent>
-      </Card>
+      {/* {mode === 'create' && (
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Form Completion</span>
+              <span className="text-sm text-muted-foreground">
+                {getFormCompletionPercentage()}%
+              </span>
+            </div>
+            <Progress value={getFormCompletionPercentage()} className="h-2" />
+          </CardContent>
+        </Card>
+      )} */}
+
+      {/* Course actions */}
+      {mode === 'edit' && courseInfor && (
+        <div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Course Actions</CardTitle>
+              <div className="flex items-center gap-4">
+                {courseStatus !== 'pending' ? (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={courseStatus === 'published'}
+                      onCheckedChange={handlePublishCourseToggle}
+                    />
+                    <span>
+                      {courseStatus === 'published'
+                        ? 'Published'
+                        : 'Unpublished'}
+                    </span>
+                  </div>
+                ) : (
+                  <Button onClick={handleRequestApproval}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Request Approval
+                  </Button>
+                )}
+
+                {/* Delete course */}
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Display warning message and handle delete course if can */}
+          <WarningAlert
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            title="Are you sure you want to delete this course?"
+            description="This action cannot be undone. This will permanently delete the
+                  course and all its content."
+            onClick={handleDeleCourse}
+            actionTitle="Delete Course"
+          />
+        </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -200,13 +379,32 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
           <Card className="shadow-card">
             {/* Card header */}
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
-                Course Information
-              </CardTitle>
-              <CardDescription>
-                Provide basic information about your course
-              </CardDescription>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="w-5 h-5" />
+                    Course Information
+                  </CardTitle>
+                  <CardDescription>
+                    Provide basic information about your course
+                  </CardDescription>
+                </div>
+                {mode === 'edit' && (
+                  <Button
+                    variant="outline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onCancel) {
+                        onCancel();
+                      }
+                    }}
+                    // disabled={isLoading}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Course Title */}
@@ -275,15 +473,16 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <div className="space-x-4">
                             <span>
-                              {getCharacterCount(field.value)}/2000 characters
+                              {getCharacterCount(field.value)}
+                              /2000 characters
                             </span>
                             <span>
-                              {getWordCount(field.value)} words (min: 10)
+                              {getWordCount(field.value)} words (min: 20)
                             </span>
                           </div>
                           {!errors.description &&
                             field.value &&
-                            getWordCount(field.value) >= 10 && (
+                            getWordCount(field.value) >= 20 && (
                               <span className="text-green-600 flex items-center gap-1">
                                 <CheckCircle className="w-3 h-3" />
                                 Good description
@@ -301,137 +500,143 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
                 )}
               />
 
-              <div className="flex items-start gap-6">
-                {/* Category */}
+              {/* Categories */}
+              {categories && categories.length > 0 ? (
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="categoryIds"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Category <strong className="text-red-500">*</strong>
+                        Categories <strong className="text-red-500">*</strong>
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        defaultValue={
+                          field.value[0] ? field.value[0] : categories[0].id
+                        }
                       >
                         <FormControl>
-                          <SelectTrigger
-                            className={cn(
-                              errors.category && 'border-red-500',
-                              !errors.category &&
-                                field.value &&
-                                'border-green-500'
-                            )}
-                          >
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
+                          <div className="flex gap-x-4 gap-y-2 flex-wrap">
+                            {categories.map((cat) => {
+                              return (
+                                <label
+                                  key={cat.id}
+                                  className="flex items-center gap-2 cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    value={cat.id}
+                                    checked={field.value.includes(cat.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        field.onChange([
+                                          ...field.value,
+                                          cat.id,
+                                        ]);
+                                      } else {
+                                        field.onChange(
+                                          field.value.filter(
+                                            (id: string) => id !== cat.id
+                                          )
+                                        );
+                                      }
+                                    }}
+                                    className="accent-primary"
+                                  />
+                                  <span className="text-sm">{cat.name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="programming">
-                            Programming
-                          </SelectItem>
-                          <SelectItem value="design">Design</SelectItem>
-                          <SelectItem value="data-science">
-                            Data Science
-                          </SelectItem>
-                          <SelectItem value="business">Business</SelectItem>
-                          <SelectItem value="marketing">Marketing</SelectItem>
-                          <SelectItem value="photography">
-                            Photography
-                          </SelectItem>
-                          <SelectItem value="music">Music</SelectItem>
-                          <SelectItem value="language">Language</SelectItem>
-                          <SelectItem value="health">
-                            Health & Fitness
-                          </SelectItem>
-                          <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                        </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  No categories available
+                </span>
+              )}
 
-                {/* Level */}
-                <FormField
-                  control={form.control}
-                  name="level"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Course Level <strong className="text-red-500">*</strong>
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger
-                            className={cn(
-                              errors.level && 'border-red-500',
-                              !errors.level && field.value && 'border-green-500'
-                            )}
-                          >
-                            <SelectValue placeholder="Select difficulty level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="beginner">Beginner</SelectItem>
-                          <SelectItem value="intermediate">
-                            Intermediate
-                          </SelectItem>
-                          <SelectItem value="advanced">Advanced</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Price */}
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel className="flex items-center gap-2">
-                        Price (USD) <strong className="text-red-500">*</strong>
-                      </FormLabel>
+              {/* Level */}
+              <FormField
+                control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Course Level <strong className="text-red-500">*</strong>
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value ? field.value : 'BEGINNER'}
+                    >
                       <FormControl>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="999.99"
-                            placeholder="0.00"
-                            className={cn(
-                              'pl-8',
-                              errors.price && 'border-red-500',
-                              !errors.price &&
-                                field.value >= 0 &&
-                                'border-green-500'
-                            )}
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(
-                                Number.parseFloat(e.target.value) || 0
-                              )
-                            }
-                          />
-                          <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        </div>
+                        <SelectTrigger
+                          className={cn(
+                            errors.level && 'border-red-500',
+                            !errors.level && field.value && 'border-green-500',
+                            'min-w-[150px]'
+                          )}
+                        >
+                          <SelectValue placeholder="Select difficulty level" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                      {/* <FormDescription>
-                        Set a competitive price for your course (free courses:
-                        $0.00)
-                      </FormDescription> */}
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        <SelectItem value="BEGINNER">Beginner</SelectItem>
+                        <SelectItem value="INTERMEDIATE">
+                          Intermediate
+                        </SelectItem>
+                        <SelectItem value="ADVANCED">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Price */}
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel className="flex items-center gap-2">
+                      Price (USD) <strong className="text-red-500">*</strong>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="999.99"
+                          placeholder="0.00"
+                          defaultValue={field.value}
+                          className={cn(
+                            'pl-8',
+                            errors.price && 'border-red-500',
+                            !errors.price &&
+                              field.value >= 0 &&
+                              'border-green-500'
+                          )}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              Number.parseFloat(e.target.value) || 0
+                            )
+                          }
+                        />
+                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Course Image Upload */}
               <FormField
@@ -507,8 +712,8 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
                                     </span>
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Supports images and videos up to {maxSize}MB
-                                    each
+                                    Supports images and videos up to {maxSize}
+                                    MB each
                                   </p>
                                 </div>
                               </div>
@@ -569,13 +774,13 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
 
                                     {/* Error Message */}
                                     {/* {errors.file && (
-                                      <div className="mt-2 flex items-center space-x-2">
-                                        <AlertCircle className="w-4 h-4 text-red-500" />
-                                        <p className="text-sm text-red-600 dark:text-red-400">
-                                          {errors.file.message?.toString()}
-                                        </p>
-                                      </div>
-                                    )} */}
+                                        <div className="mt-2 flex items-center space-x-2">
+                                          <AlertCircle className="w-4 h-4 text-red-500" />
+                                          <p className="text-sm text-red-600 dark:text-red-400">
+                                            {errors.file.message?.toString()}
+                                          </p>
+                                        </div>
+                                      )} */}
                                   </div>
 
                                   {/* Status & Actions */}
@@ -615,9 +820,15 @@ export function CreateCourseBasicInfo({ onSubmit, className }: CourseFormProps) 
 
           {/* Submit Button */}
           <div className="flex justify-end">
-            <Button type="submit" disabled={isValid === false}>
-              Continue to Add Lessons
-            </Button>
+            {mode === 'create' && (
+              <Button type="submit" disabled={isValid === false}>
+                Continue to Add Lessons
+              </Button>
+            )}
+
+            {mode === 'edit' && isValid && isDirty && (
+              <Button type="submit">Save changes</Button>
+            )}
           </div>
         </form>
       </Form>
