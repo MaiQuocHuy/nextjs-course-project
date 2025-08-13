@@ -7,7 +7,7 @@ const roleRouteMap = [
     { path: "/manage-users", roles: ["ADMIN"] },
 
     // Instructor routes  
-    { path: "/courses/create", roles: ["INSTRUCTOR"] },
+    { path: "/instructor", roles: ["INSTRUCTOR"] },
 
     // Student routes
     { path: "/dashboard", roles: ["STUDENT"] },
@@ -109,7 +109,6 @@ export async function middleware(req: NextRequest) {
       if (route.isDynamic && route.path instanceof RegExp) {
         // Kiểm tra dynamic route với regex
         const isMatch = route.path.test(pathname);
-        console.log(`🔍 Testing regex ${route.path} against ${pathname}: ${isMatch}`);
         return isMatch;
       } else {
         return pathname.startsWith(route.path as string);
