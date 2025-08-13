@@ -37,20 +37,18 @@ import {
   Edit,
   Trash2,
   Eye,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 import { useGetCoursesQuery } from '@/services/instructor/courses-api';
-import { Course } from '@/types';
+import { Course } from '@/types/instructor/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
-import Image from 'next/image';
-import { Separator } from '@radix-ui/react-select';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const coursesParams = {
   page: 0,
@@ -91,17 +89,17 @@ export const CoursesPage = () => {
   const dispath: AppDispatch = useDispatch();
 
   // Loading animation
-  // useEffect(() => {
-  //   if (isFetchingCourses || isFetchingCategories) {
-  //     loadingAnimation(true, dispath);
-  //   } else {
-  //     loadingAnimation(false, dispath);
-  //   }
+  useEffect(() => {
+    if (isFetchingCourses || isFetchingCategories) {
+      loadingAnimation(true, dispath);
+    } else {
+      loadingAnimation(false, dispath);
+    }
 
-  //   return () => {
-  //     loadingAnimation(false, dispath);
-  //   };
-  // }, [isFetchingCourses, isFetchingCategories]);
+    return () => {
+      loadingAnimation(false, dispath);
+    };
+  }, [isFetchingCourses, isFetchingCategories]);
 
   useEffect(() => {
     if (courses && courses.content && courses.content.length > 0) {
@@ -588,24 +586,37 @@ export const CoursesPage = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {/* Categories */}
-                    <div className={`flex items-start justify-between text-sm`}>
-                      <span className="text-muted-foreground">Category</span>
-                      <div className="flex flex-col gap-1">
-                        {course.categories.map((category) => {
-                          return (
-                            <Badge key={category.id} variant="outline">
-                              {category.name}
-                            </Badge>
-                          );
-                        })}
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                          {course.categories.slice(0, 2).map((category) => {
+                            return (
+                              <Badge key={category.id} variant="outline">
+                                {category.name}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+
+                      {course.categories.length > 2 && (
+                        // <Button
+                        //   variant={'secondary'}
+                        //   className="w-fit text-xs"
+                        // >
+                        //   View more categories
+                        // </Button>
+                        <ArrowRight/>
+                      )}
                     </div>
 
                     {/* Total students and sections */}
                     <div className="flex items-center justify-between text-sm border-t-1 pt-2">
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.totalStudents} students</span>
+                        <span>
+                          {course.totalStudents > 0
+                            ? `${course.totalStudents} students`
+                            : 'No enrolled students'}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -635,9 +646,10 @@ export const CoursesPage = () => {
                       </div>
                     </div>
 
+                    {/* Price and view detail course button */}
                     <div className="flex items-center justify-between pt-2 border-t">
                       <span className="text-2xl font-bold text-primary">
-                        ${course.price}
+                        {course.price > 0 ? '$' + course.price : 'Free'}
                       </span>
                       <Button
                         variant="outline"

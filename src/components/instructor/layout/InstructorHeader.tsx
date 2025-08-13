@@ -31,15 +31,6 @@ export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
       </Button>
 
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-end">
-        {/* Search bar */}
-        {/* <div className="relative flex flex-1 items-center">
-          <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search courses, students..."
-            className="pl-10 w-full max-w-sm"
-          />
-        </div> */}
-
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">

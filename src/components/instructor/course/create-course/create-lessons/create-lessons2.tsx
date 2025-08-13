@@ -37,7 +37,7 @@ import {
   FileSpreadsheet,
   FileText,
 } from 'lucide-react';
-import { CourseSummary } from '@/components/instructor/course/create-course/create-lessons/course-summary';
+import { CourseSummary } from '@/components/instructor/course/create-course/create-lessons/CourseSummary';
 import EnhancedFileUpload from '@/components/instructor/course/create-course/create-lessons/file-upload/enhanced-file-upload';
 import { EnhancedQuizEditor } from '@/components/instructor/course/create-course/create-lessons/quiz/enhanced-quiz-editor';
 import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';

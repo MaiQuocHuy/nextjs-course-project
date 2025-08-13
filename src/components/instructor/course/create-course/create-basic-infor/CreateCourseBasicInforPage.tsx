@@ -60,24 +60,15 @@ import {
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import WarningAlert from '@/components/instructor/commom/WarningAlert';
 
 interface CourseFormProps {
   mode: 'create' | 'edit';
   courseInfor?: CourseBasicInfoType;
   onCancel?: () => void;
   onSubmit?: (data: CourseBasicInfoType) => void;
-  className?: string;
+  onGetProgress?: (process: number) => void;
 }
 
 interface UploadedFile {
@@ -98,7 +89,7 @@ export function CreateCourseBasicInforPage({
   courseInfor,
   onCancel,
   onSubmit,
-  className,
+  onGetProgress,
 }: CourseFormProps) {
   const { data: categories } = useGetCategoriesQuery();
   const [courseThumb, setCourseThumb] = useState<UploadedFile | null>(null);
@@ -180,6 +171,33 @@ export function CreateCourseBasicInforPage({
     }
   }, [watchThumbnail, errors.file]);
 
+  // Calculate form completion percentage
+  const getFormCompletionPercentage = useCallback(() => {
+    const fields = [
+      errors.title === undefined && watch('title').length > 0,
+      watch('price') >= 0,
+      watch('categoryIds') && watch('categoryIds').length > 0,
+      watch('description').length > 0 && errors.description === undefined,
+      watch('file') !== undefined && errors.file === undefined,
+    ];
+    const completedFields = fields.filter(Boolean).length;
+    // return Math.round((completedFields / fields.length) * 100);
+    return (completedFields / fields.length) * 100;
+  }, [
+    watch('title'),
+    watch('price'),
+    watch('categoryIds'),
+    watch('description'),
+    errors,
+  ]);
+
+  useEffect(() => {
+    const progress = getFormCompletionPercentage();
+    if (onGetProgress) {
+      onGetProgress(progress);
+    }
+  }, [isDirty, getFormCompletionPercentage]);
+
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       if (file.type.startsWith('image/')) {
@@ -204,19 +222,6 @@ export function CreateCourseBasicInforPage({
         video.src = URL.createObjectURL(file);
       }
     });
-  };
-
-  // Calculate form completion percentage
-  const getFormCompletionPercentage = () => {
-    const fields = [
-      watch('title'),
-      watch('price') >= 0,
-      watch('categoryIds') && watch('categoryIds').length > 0,
-      watch('description'),
-      watchThumbnail,
-    ];
-    const completedFields = fields.filter(Boolean).length;
-    return Math.round((completedFields / fields.length) * 100);
   };
 
   const handleSubmit = (data: CourseBasicInfoType) => {
@@ -301,9 +306,9 @@ export function CreateCourseBasicInforPage({
   const handleRequestApproval = () => {};
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn('space-y-6')}>
       {/* Form Progress */}
-      {mode === 'create' && (
+      {/* {mode === 'create' && (
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
@@ -315,8 +320,9 @@ export function CreateCourseBasicInforPage({
             <Progress value={getFormCompletionPercentage()} className="h-2" />
           </CardContent>
         </Card>
-      )}
+      )} */}
 
+      {/* Course actions */}
       {mode === 'edit' && courseInfor && (
         <div>
           <Card>
@@ -341,6 +347,8 @@ export function CreateCourseBasicInforPage({
                     Request Approval
                   </Button>
                 )}
+
+                {/* Delete course */}
                 <Button
                   variant="destructive"
                   onClick={() => setIsDeleteDialogOpen(true)}
@@ -353,34 +361,18 @@ export function CreateCourseBasicInforPage({
           </Card>
 
           {/* Display warning message and handle delete course if can */}
-          <AlertDialog
+          <WarningAlert
             open={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Are you sure you want to delete this course?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  course and all its content.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleCourse}
-                  className="bg-destructive text-destructive-foreground"
-                >
-                  Delete Course
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            title="Are you sure you want to delete this course?"
+            description="This action cannot be undone. This will permanently delete the
+                  course and all its content."
+            onClick={handleDeleCourse}
+            actionTitle="Delete Course"
+          />
         </div>
       )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           {/* Basic Information */}
