@@ -24,6 +24,7 @@ export interface Course {
   sectionCount: number;
   sections?: Section[];
   categories: Category[];
+  isEnrolled?: boolean; 
   instructor: {
     id: string;
     name: string;
