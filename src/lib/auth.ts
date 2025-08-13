@@ -8,7 +8,7 @@ import {
   isRefreshTokenExpired, 
   isUnrecoverableError, 
   handleGoogleSignIn,
-  handleCredentialsLogin, // Import helper function mới
+  handleCredentialsLogin,
   AuthError 
 } from "@/utils/auth";
 
@@ -30,8 +30,6 @@ export interface UserType {
 
   provider?: 'credentials' | 'google';
 }
-
-
 
 
 export const authOptions: NextAuthOptions = {
@@ -70,9 +68,16 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === 'google') {      
+      if (account?.provider === 'google') {  
+        (profile as any).email_verified = false;    
         const backendUser = await handleGoogleSignIn(account, profile);
         
+        if (!(profile as any)?.email_verified) {
+          console.error('Google OAuth: Email not verified');
+         
+          return `/login?error=EmailNotVerified`;
+        }
+
         if (backendUser) {
           Object.assign(user, backendUser);
           return true;

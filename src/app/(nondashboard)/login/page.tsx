@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useAuthStatus } from "@/hooks/useAuth";
 import { handleGoogleSignIn } from "@/utils/common/login";
 import GoogleIcon from "@/components/common/GoogleIcon";
@@ -54,6 +54,7 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, error } = useAuth();
   const { isAuthenticated, isReady } = useAuthStatus();
 
@@ -64,6 +65,34 @@ export default function LoginPage() {
       password: "bob123",
     },
   });
+
+  // Check for URL error parameters (like from Google OAuth)
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      let errorMessage = "";
+
+      switch (urlError) {
+        case "EmailNotVerified":
+          errorMessage =
+            "Your Google account email is not verified. Please verify your email with Google and try again.";
+          break;
+        case "OAuthAccountNotLinked":
+          errorMessage = "This account is already associated with a different sign-in method.";
+          break;
+        default:
+          errorMessage = "Authentication failed. Please try again.";
+      }
+
+      setModalMessage(errorMessage);
+      setShowErrorModal(true);
+
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("error");
+      window.history.replaceState({}, "", newUrl.toString());
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
