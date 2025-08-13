@@ -10,7 +10,6 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -29,6 +28,8 @@ import {
 import { CheckCircle, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth, useAuthStatus } from "@/hooks/useAuth";
+import { handleGoogleSignIn } from "@/utils/common/login";
+import GoogleIcon from "@/components/common/GoogleIcon";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -50,6 +51,7 @@ export default function LoginPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const router = useRouter();
   const { login, isLoading, error } = useAuth();
@@ -193,7 +195,11 @@ export default function LoginPage() {
                   />
 
                   {/* Submit Button */}
-                  <Button type="submit" className="w-full h-11" disabled={isLoading || !isReady}>
+                  <Button
+                    type="submit"
+                    className="w-full h-11"
+                    disabled={isLoading || isGoogleLoading || !isReady}
+                  >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -205,6 +211,45 @@ export default function LoginPage() {
                   </Button>
                 </form>
               </Form>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">OR</span>
+                </div>
+              </div>
+
+              {/* Google OAuth Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleGoogleSignIn(
+                    router,
+                    setModalMessage,
+                    setShowErrorModal,
+                    setShowSuccessModal,
+                    setIsGoogleLoading
+                  );
+                }}
+                disabled={isLoading || isGoogleLoading || !isReady}
+                className="w-full h-11 flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50"
+              >
+                {isGoogleLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    <span>Sign in with Google</span>
+                  </>
+                )}
+              </Button>
 
               {/* Register Link */}
               <div className="text-center text-sm text-gray-600">
