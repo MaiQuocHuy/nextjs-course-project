@@ -42,7 +42,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DragDropReorder } from '../course/create-course/create-lessons/drag-drop-reorder';
+import { DragDropReorder } from './create-course/create-lessons/drag-drop-reorder';
 import {
   courseCreationSchema,
   QuizQuestionType,

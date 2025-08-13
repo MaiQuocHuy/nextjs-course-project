@@ -6,6 +6,9 @@ import { paymentApi } from "@/services/paymentApi";
 import { studentApi } from "@/services/student/studentApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
 import { profileApi } from "@/services/common/profileApi";
+// Instructor
+import { coursesInstSlice } from '@/services/instructor/courses-api';
+import { loadingAnimaSlice } from './slices/instructor/loadingAnimaSlice';
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
@@ -43,6 +46,10 @@ export const makeStore = () => {
       [profileApi.reducerPath]: profileApi.reducer,
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
+
+      // Instructor
+      loadingAnima: loadingAnimaSlice.reducer,
+      [coursesInstSlice.reducerPath]: coursesInstSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(

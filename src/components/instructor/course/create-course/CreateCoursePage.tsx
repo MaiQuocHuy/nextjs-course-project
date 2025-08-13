@@ -18,16 +18,18 @@ import {
 } from '@/store/slices/instructor/loadingAnimaSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store/store';
+import WarningAlert from '../../commom/WarningAlert';
 
 export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseBasicInfo, setCourseBasicInfo] =
     useState<CourseBasicInfoType | null>();
   const [progress, setProgress] = useState(0);
-  const [
-    createCourse,
-    { isLoading: isCreatingCourse, error: creatingCourseError },
-  ] = useCreateCourseMutation();
+  const [sectionProgress, setSectionProgress] = useState(0);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const [createCourse, { isLoading: isCreatingCourse }] =
+    useCreateCourseMutation();
   const router = useRouter();
   const dispatch: AppDispatch = useDispatch();
 
@@ -44,13 +46,23 @@ export default function CreateCoursePage() {
     };
   }, [isCreatingCourse, dispatch]);
 
+  const handleSetProgress = (progress: number) => {
+    setSectionProgress(progress);
+  };
+
   // Handle back button to go to previous step or exit
   const handleSteps = () => {
-    if (currentStep > 1) {
-      setCurrentStep(1);
-    } else {
-      router.push('/instructor/courses');
-    }
+    console.log(progress);
+
+    // if (progress > 20) {
+    //   setIsDeleteDialogOpen(true);
+    // } else {
+    //   router.push('/instructor/courses');
+    // }
+  };
+
+  const handleExitCreateCourse = () => {
+    router.push('/instructor/courses');
   };
 
   // Get basic course info
@@ -77,6 +89,10 @@ export default function CreateCoursePage() {
       toast.error('Create course failed!');
     }
   };
+
+  if (isCreatingCourse) {
+    return <></>;
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -134,11 +150,24 @@ export default function CreateCoursePage() {
           </CardContent>
         </Card>
 
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Form Completion</span>
+              <span className="text-sm text-muted-foreground">
+                {sectionProgress}%
+              </span>
+            </div>
+            <Progress value={sectionProgress} className="h-2" />
+          </CardContent>
+        </Card>
+
         {/* Step 1: Create course's basic information */}
         {currentStep === 1 && (
           <CreateCourseBasicInforPage
             mode="create"
             onSubmit={handleCourseFormSubmit}
+            onGetProgress={handleSetProgress}
           />
         )}
 
@@ -149,6 +178,15 @@ export default function CreateCoursePage() {
             setProgress={setProgress}
           />
         )}
+
+        <WarningAlert
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Are you sure you want to exit!"
+          description="You are creating course's information. If you exit, these information will not be saved."
+          onClick={handleExitCreateCourse}
+          actionTitle="Exit"
+        />
       </div>
     </div>
   );
