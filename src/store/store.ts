@@ -59,6 +59,7 @@ export const makeStore = () => {
         paymentApi.middleware,
         profileApi.middleware,
         settingsApi.middleware,
+        geminiApi.middleware,
         clearCacheOnLogout
       ),
   });
