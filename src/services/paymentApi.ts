@@ -82,6 +82,11 @@ export const paymentApi = createApi({
         // Backend returns wrapped response with ApiResponse structure
         return response.data;
       },
+      transformErrorResponse: (error: any) => {
+        console.error("Payment history API error:", error);
+        // Handle error response
+        return error.data;
+      },
       providesTags: ["Payment"],
     }),
   }),
