@@ -68,8 +68,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === 'google') {  
-        (profile as any).email_verified = false;    
+      if (account?.provider === 'google') {      
         const backendUser = await handleGoogleSignIn(account, profile);
         
         if (!(profile as any)?.email_verified) {
