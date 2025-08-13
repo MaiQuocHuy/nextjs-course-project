@@ -15,6 +15,9 @@ import {
   CourseFilterStatus,
   CourseSortBy,
 } from "@/store/slices/student/courseFilterSlice";
+import { CustomPagination, usePagination } from "@/components/ui/custom-pagination";
+
+const COURSES_PER_PAGE = 8;
 
 export function CourseList() {
   const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
@@ -77,6 +80,15 @@ export function CourseList() {
     return filtered;
   }, [courses, searchQuery, filterStatus, sortBy]);
 
+  // Use pagination hook
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedCourses,
+    handlePageChange,
+    totalItems,
+  } = usePagination(filteredAndSortedCourses, COURSES_PER_PAGE);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -123,18 +135,18 @@ export function CourseList() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {filteredAndSortedCourses.length} course
-              {filteredAndSortedCourses.length !== 1 ? "s" : ""} found
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredAndSortedCourses.map((course) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {paginatedCourses.map((course) => (
               <CourseCard key={course.courseId} course={course} />
             ))}
           </div>
+
+          {/* Pagination */}
+          <CustomPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
         </>
       )}
     </div>

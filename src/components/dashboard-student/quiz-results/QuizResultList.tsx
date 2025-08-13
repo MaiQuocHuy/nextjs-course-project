@@ -5,9 +5,18 @@ import { useQuizResults } from "@/hooks/student/useQuizResults";
 import { Loader2, BookOpen, Target } from "lucide-react";
 import { QuizResultsLoadingSkeleton } from "../ui/Loading";
 import { QuizResultError } from "../ui/LoadingError";
+import { CustomPagination, usePagination } from "@/components/ui/custom-pagination";
 
 export function QuizResultList() {
   const { data: quizResults, isLoading, error, refetch } = useQuizResults();
+  
+  // Pagination với 6 quiz results per page
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedResults,
+    handlePageChange
+  } = usePagination(quizResults?.content || [], 6);
 
   if (isLoading) {
     return <QuizResultsLoadingSkeleton />;
@@ -34,10 +43,22 @@ export function QuizResultList() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {quizResults.content.map((quizResult) => (
-        <QuizResultCard key={quizResult.id} quizResult={quizResult} />
-      ))}
+    <div className="space-y-6">
+      {/* Quiz Results Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {paginatedResults.map((quizResult) => (
+          <QuizResultCard key={quizResult.id} quizResult={quizResult} />
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <CustomPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }

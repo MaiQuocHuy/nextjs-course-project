@@ -22,6 +22,8 @@ export function EnrolledCoursesSummary() {
   }
 
   const courses = data?.content || [];
+  // Chỉ hiển thị 3 khóa học gần đây nhất
+  const recentCourses = courses.slice(0, 3);
 
   if (courses.length === 0) {
     return (
@@ -49,15 +51,15 @@ export function EnrolledCoursesSummary() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">My Courses</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Recent Courses</h2>
         <Button variant="outline" size="sm">
           <Link href="/dashboard/my-courses">View All</Link>
         </Button>
       </div>
 
-      {courses && courses.length > 0 ? (
+      {recentCourses && recentCourses.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((enrollment) => (
+          {recentCourses.map((enrollment) => (
             <Card
               key={enrollment.courseId}
               className="overflow-hidden hover:shadow-lg transition-shadow "
@@ -73,7 +75,7 @@ export function EnrolledCoursesSummary() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col items-start justify-between gap-2">
                     <CardTitle className="text-lg line-clamp-2 flex-1">
                       {enrollment.title}
                     </CardTitle>
@@ -99,18 +101,9 @@ export function EnrolledCoursesSummary() {
                     />
                   </div>
 
-                  <Button
-                    className="w-full"
-                    variant={
-                      enrollment.completionStatus === "COMPLETED"
-                        ? "outline"
-                        : "default"
-                    }
-                  >
+                  <Button className="w-full">
                     <Link href={`/dashboard/learning/${enrollment.courseId}`}>
-                      {enrollment.completionStatus === "COMPLETED"
-                        ? "Review Course"
-                        : "Continue Learning"}
+                      Continue Learning
                     </Link>
                   </Button>
                 </div>

@@ -5,6 +5,10 @@ import { Card } from "@/components/ui/card";
 import { ReviewItem } from "./ReviewItem";
 import { ReviewListLoadingSkeleton } from "../ui/Loading";
 import { ReviewsError } from "../ui/LoadingError";
+import {
+  CustomPagination,
+  usePagination,
+} from "@/components/ui/custom-pagination";
 
 export function ReviewList() {
   const {
@@ -14,6 +18,16 @@ export function ReviewList() {
     refetch,
   } = useGetStudentReviewsQuery();
 
+  const reviews = reviewsData?.content || [];
+
+  // Pagination với 5 reviews per page
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedReviews,
+    handlePageChange,
+  } = usePagination(reviews, 5);
+
   if (isLoading) {
     return <ReviewListLoadingSkeleton />;
   }
@@ -21,8 +35,6 @@ export function ReviewList() {
   if (error) {
     return <ReviewsError onRetry={refetch} />;
   }
-
-  const reviews = reviewsData?.content || [];
 
   if (reviews.length === 0) {
     return (
@@ -45,11 +57,22 @@ export function ReviewList() {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-900">Your Reviews</h2>
+
+      {/* Reviews List */}
       <div className="space-y-4">
-        {reviews.map((review) => (
+        {paginatedReviews.map((review) => (
           <ReviewItem key={review.id} review={review} />
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <CustomPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }
