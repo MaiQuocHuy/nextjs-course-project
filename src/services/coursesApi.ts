@@ -21,6 +21,7 @@ export interface Course {
   thumbnailUrl: string;
   enrollCount: number;
   averageRating: number;
+  totalDuration: number;
   sectionCount: number;
   sections?: Section[];
   categories: Category[];
@@ -65,11 +66,49 @@ export interface Lesson {
   isPreview?: boolean;
 }
 
+// Review Section - Updated to match backend DTOs
+export interface UserSummary {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
+export interface CourseReview {
+  id: string;
+  rating: number;
+  reviewText: string;
+  reviewedAt: string;
+  user: UserSummary;
+}
+
+export interface PageInfo {
+  number: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+  first: boolean;
+  last: boolean;
+}
+
+export interface CourseReviewData {
+  content: CourseReview[];
+  page: PageInfo;
+}
+
+// export interface ApiResponse<T> {
+//   statusCode: number;
+//   message: string;
+//   data: T;
+//   timestamp: string;
+// }
+// End Review Section
+
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
   baseQuery,
-  tagTypes: ['Course', 'Category'],
+  tagTypes: ['Course', 'Category', 'CourseReview'],
   endpoints: (builder) => ({
+
     // Lấy danh sách courses với filter và pagination
   getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
   query: (filters = {}) => {
@@ -183,6 +222,22 @@ export const coursesApi = createApi({
       },
       providesTags: (result, error, slug) => [{ type: 'Course', id: slug }],
     }),
+
+    // Lấy danh sách Reviews theo slug
+    getCourseReviewsBySlug: builder.query<CourseReviewData, string>({
+      query: (slug) => ({
+        url: `/courses/slug/${slug}/reviews`,
+        method: "GET",
+      }),
+      transformResponse: (response: ApiResponse<CourseReviewData>) => {
+        console.log("Reviews by Course Slug API Response:", response);
+        if (response.statusCode !== 200) {
+          throw new Error(response.message || 'Failed to fetch reviews by course slug');
+        }
+        return response.data;
+      },
+      providesTags: (result, error, slug) => [{ type: 'CourseReview', id: slug }],
+    }),
   }),
 });
 
@@ -191,5 +246,6 @@ export const {
   useGetCourseByIdQuery,
   useGetCourseBySlugQuery,
   useLazyGetCoursesQuery,
-  useGetCategoriesQuery
+  useGetCategoriesQuery,
+  useGetCourseReviewsBySlugQuery,
 } = coursesApi;
