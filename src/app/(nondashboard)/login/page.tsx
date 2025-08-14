@@ -10,7 +10,6 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -27,8 +26,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckCircle, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useAuthStatus } from "@/hooks/useAuth";
+import { handleGoogleSignIn } from "@/utils/common/login";
+import GoogleIcon from "@/components/common/GoogleIcon";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -50,8 +51,10 @@ export default function LoginPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, error } = useAuth();
   const { isAuthenticated, isReady } = useAuthStatus();
 
@@ -62,6 +65,34 @@ export default function LoginPage() {
       password: "bob123",
     },
   });
+
+  // Check for URL error parameters (like from Google OAuth)
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      let errorMessage = "";
+
+      switch (urlError) {
+        case "EmailNotVerified":
+          errorMessage =
+            "Your Google account email is not verified. Please verify your email with Google and try again.";
+          break;
+        case "OAuthAccountNotLinked":
+          errorMessage = "This account is already associated with a different sign-in method.";
+          break;
+        default:
+          errorMessage = "Authentication failed. Please try again.";
+      }
+
+      setModalMessage(errorMessage);
+      setShowErrorModal(true);
+
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("error");
+      window.history.replaceState({}, "", newUrl.toString());
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -88,10 +119,9 @@ export default function LoginPage() {
       if (result.success) {
         setModalMessage("Login successful!");
         setShowSuccessModal(true);
-      
-          const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
-          router.replace(returnUrl);
-        
+
+        const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
+        router.replace(returnUrl);
       } else {
         setModalMessage(result.error || "Login failed. Please check your credentials.");
         setShowErrorModal(true);
@@ -156,8 +186,9 @@ export default function LoginPage() {
                         <div className="flex items-center justify-between">
                           <FormLabel>Password</FormLabel>
                           <Link
+                            tabIndex={-1}
                             href="/forgot-password"
-                            className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
+                            className="text-sm text-blue-600 hover:text-blue-500 hover:underline "
                           >
                             Forgot your password?
                           </Link>
@@ -194,7 +225,11 @@ export default function LoginPage() {
                   />
 
                   {/* Submit Button */}
-                  <Button type="submit" className="w-full h-11" disabled={isLoading || !isReady}>
+                  <Button
+                    type="submit"
+                    className="w-full h-11"
+                    disabled={isLoading || isGoogleLoading || !isReady}
+                  >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -206,6 +241,45 @@ export default function LoginPage() {
                   </Button>
                 </form>
               </Form>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">OR</span>
+                </div>
+              </div>
+
+              {/* Google OAuth Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleGoogleSignIn(
+                    router,
+                    setModalMessage,
+                    setShowErrorModal,
+                    setShowSuccessModal,
+                    setIsGoogleLoading
+                  );
+                }}
+                disabled={isLoading || isGoogleLoading || !isReady}
+                className="w-full h-11 flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50"
+              >
+                {isGoogleLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    <span>Sign in with Google</span>
+                  </>
+                )}
+              </Button>
 
               {/* Register Link */}
               <div className="text-center text-sm text-gray-600">
@@ -234,13 +308,6 @@ export default function LoginPage() {
                   {modalMessage}
                 </DialogDescription>
               </DialogHeader>
-              {/* <div className="flex justify-center mt-6">
-              <Button onClick={() => setShowSuccessModal(false)} className="px-8">
-                <Link href="/dashboard" className="font-medium ">
-                  Continue
-                </Link>
-              </Button>
-            </div> */}
             </DialogContent>
           </Dialog>
 

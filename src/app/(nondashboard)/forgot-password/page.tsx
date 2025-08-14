@@ -10,7 +10,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useForgotPasswordMutation, useForgotPasswordConfirmMutation } from "@/services/authApi";
 import {
   Form,
   FormControl,
@@ -37,8 +37,9 @@ const otpSchema = z.object({
   otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
 });
 
-const passwordSchema = z
+const resetFormSchema = z
   .object({
+    otp: z.string().min(6, "OTP must be 6 digits").max(6, "OTP must be 6 digits"),
     newPassword: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -52,17 +53,20 @@ const passwordSchema = z
   });
 
 type EmailForm = z.infer<typeof emailSchema>;
-type OTPForm = z.infer<typeof otpSchema>;
-type PasswordForm = z.infer<typeof passwordSchema>;
+type ResetForm = z.infer<typeof resetFormSchema>;
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [step, setStep] = useState<"email" | "otp" | "reset">("email");
+  const [step, setStep] = useState<"email" | "reset">("email");
   const [countdown, setCountdown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  // API mutations
+  const [forgotPassword, { isLoading: isSendingCode }] = useForgotPasswordMutation();
+  const [forgotPasswordConfirm, { isLoading: isResettingPassword }] =
+    useForgotPasswordConfirmMutation();
 
   // Email form
   const emailForm = useForm<EmailForm>({
@@ -70,20 +74,17 @@ export default function ForgotPasswordPage() {
     defaultValues: { email: "" },
   });
 
-  // OTP form
-  const otpForm = useForm<OTPForm>({
-    resolver: zodResolver(otpSchema),
-    defaultValues: { otp: "" },
-  });
-
-  // Password form
-  const passwordForm = useForm<PasswordForm>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: { newPassword: "", confirmPassword: "" },
+  // Reset form (OTP + Password)
+  const resetForm = useForm<ResetForm>({
+    resolver: zodResolver(resetFormSchema),
+    defaultValues: { otp: "", newPassword: "", confirmPassword: "" },
   });
 
   const isEmailValid = emailForm.formState.isValid && emailForm.watch("email");
-  const otpValue = otpForm.watch("otp");
+  const passwordsMatch =
+    resetForm.watch("newPassword") === resetForm.watch("confirmPassword") &&
+    resetForm.watch("newPassword") !== "" &&
+    resetForm.watch("confirmPassword") !== "";
 
   // Countdown timer effect
   useEffect(() => {
@@ -93,45 +94,63 @@ export default function ForgotPasswordPage() {
     }
   }, [countdown]);
 
-  // Auto-validate OTP when 6 digits entered
-  useEffect(() => {
-    if (otpValue && otpValue.length === 6) {
-      // Simulate OTP validation - in real app, this would be an API call
-      setTimeout(() => {
-        setIsModalOpen(true);
-      }, 500);
-    }
-  }, [otpValue]);
-
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!isEmailValid) return;
 
     const email = emailForm.getValues("email");
     setUserEmail(email);
-    setStep("otp");
-    setCountdown(60);
 
-    // Simulate API call
-    toast.success("OTP sent to your email!");
+    try {
+      const response = await forgotPassword({ email }).unwrap();
+      setStep("reset");
+      setCountdown(60);
+      toast.success(`OTP sent to ${response.data.maskedEmail}!`);
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      const errorMsg =
+        error?.data?.message || error?.message || "Failed to send OTP. Please try again.";
+
+      setStep("email");
+      toast.error(errorMsg);
+    }
   };
 
-  const handleResendCode = () => {
-    setCountdown(60);
-    toast.success("OTP resent to your email!");
+  const handleResendCode = async () => {
+    if (!userEmail) return;
+    try {
+      const response = await forgotPassword({ email: userEmail }).unwrap();
+      setCountdown(60);
+      toast.success(`OTP resent to ${response.data.maskedEmail}!`);
+    } catch (error: any) {
+      console.error("Resend OTP error:", error);
+      const errorMsg =
+        error?.data?.message || error?.message || "Failed to resend OTP. Please try again.";
+
+      setCountdown(60);
+      toast.error(errorMsg);
+    }
   };
 
-  const handlePasswordReset = (data: PasswordForm) => {
-    // Simulate password reset API call
-    setTimeout(() => {
-      setIsModalOpen(false);
+  const handlePasswordReset = async (data: ResetForm) => {
+    try {
+      await forgotPasswordConfirm({
+        email: userEmail,
+        otpCode: data.otp,
+        newPassword: data.newPassword,
+        confirmPassword: data.confirmPassword,
+        passwordMatching: passwordsMatch,
+      }).unwrap();
       setShowSuccessPopup(true);
-
-      // Auto close success popup and redirect after 3 seconds
       setTimeout(() => {
         setShowSuccessPopup(false);
-        router.push("/login");
       }, 3000);
-    }, 1000);
+      setTimeout(() => {
+        router.replace("/login");
+      }, 1000);
+      toast.success("Password reset successfully!");
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to reset password. Please try again.");
+    }
   };
 
   return (
@@ -151,108 +170,203 @@ export default function ForgotPasswordPage() {
             <p className="mt-2 text-sm text-gray-600">
               {step === "email" &&
                 "Enter your email address and we'll send you an OTP to reset your password."}
-              {step === "otp" && "We've sent an OTP to your email. Enter it below to continue."}
+              {step === "reset" && `Enter the OTP sent to your email and set your new password.`}
             </p>
           </div>
 
           <div className="space-y-6">
-            {/* Email Input */}
-            <Form {...emailForm}>
-              <form className="space-y-4">
-                <FormField
-                  control={emailForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        Email address
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="Enter your email"
-                          disabled={step === "otp" && countdown > 0}
-                          className="h-11 border-gray-900"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
+            {step === "email" ? (
+              // Email Input Step
+              <Form {...emailForm}>
+                <form className="space-y-4">
+                  <FormField
+                    control={emailForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Email address
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="Enter your email"
+                            className="h-11 border-gray-900"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={!isEmailValid || isSendingCode}
+                    className="w-full h-11"
+                  >
+                    {isSendingCode ? "Sending..." : "Send OTP"}
+                  </Button>
+                </form>
+              </Form>
+            ) : (
+              // Reset Form Step (OTP + Password)
+              <Form {...resetForm}>
+                <form onSubmit={resetForm.handleSubmit(handlePasswordReset)} className="space-y-4">
+                  {/* Display Email (Read-only) */}
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email address
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        value={userEmail}
+                        disabled
+                        className="h-11 border-gray-900 bg-gray-50"
+                      />
+                    </FormControl>
+                  </FormItem>
 
-            {/* OTP Section */}
-            <div className="space-y-4">
-              <Label className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                OTP Code
-              </Label>
+                  {/* OTP Input */}
+                  <FormField
+                    control={resetForm.control}
+                    name="otp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          OTP Code
+                        </FormLabel>
+                        <FormControl>
+                          <div className="flex justify-center">
+                            <InputOTP maxLength={6} value={field.value} onChange={field.onChange}>
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} className="border-gray-900" />
+                                <InputOTPSlot index={1} className="border-gray-900" />
+                                <InputOTPSlot index={2} className="border-gray-900" />
+                                <InputOTPSlot index={3} className="border-gray-900" />
+                                <InputOTPSlot index={4} className="border-gray-900" />
+                                <InputOTPSlot index={5} className="border-gray-900" />
+                              </InputOTPGroup>
+                            </InputOTP>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="flex items-end gap-3">
-                <div className="flex-1">
-                  <Form {...otpForm}>
-                    <FormField
-                      control={otpForm.control}
-                      name="otp"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <div className="flex justify-center">
-                              <InputOTP
-                                maxLength={6}
-                                disabled={!isEmailValid || step === "email"}
-                                value={field.value}
-                                onChange={field.onChange}
-                              >
-                                <InputOTPGroup>
-                                  <InputOTPSlot index={0} className="border-gray-900" />
-                                  <InputOTPSlot index={1} className="border-gray-900" />
-                                  <InputOTPSlot index={2} className="border-gray-900" />
-                                  <InputOTPSlot index={3} className="border-gray-900" />
-                                  <InputOTPSlot index={4} className="border-gray-900" />
-                                  <InputOTPSlot index={5} className="border-gray-900" />
-                                </InputOTPGroup>
-                              </InputOTP>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </Form>
-                </div>
+                  {/* Resend OTP Button */}
+                  <div className="flex justify-center">
+                    {countdown > 0 ? (
+                      <Button disabled variant="outline" size="sm">
+                        Resend OTP in {countdown}s
+                      </Button>
+                    ) : (
+                      <Button
+                        tabIndex={-1}
+                        type="button"
+                        onClick={handleResendCode}
+                        disabled={isSendingCode}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {isSendingCode ? "Sending..." : "Resend OTP"}
+                      </Button>
+                    )}
+                  </div>
 
-                <div className="flex-shrink-0">
-                  {step === "email" ? (
-                    <Button onClick={handleSendCode} disabled={!isEmailValid} className="h-10 px-6">
-                      Send Code
-                    </Button>
-                  ) : countdown > 0 ? (
-                    <Button disabled className="h-10 px-6 min-w-[120px]">
-                      Resend ({countdown}s)
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleResendCode}
-                      variant="outline"
-                      className="h-10 px-6 bg-transparent"
-                    >
-                      Resend Code
-                    </Button>
-                  )}
-                </div>
-              </div>
+                  {/* New Password */}
+                  <FormField
+                    control={resetForm.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          New Password
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              {...field}
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Enter new password"
+                              className="h-11 pr-10 border-gray-900"
+                            />
+                            <button
+                              tabIndex={-1}
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-gray-900" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-900" />
+                              )}
+                            </button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {step === "otp" && (
-                <p className="text-sm text-green-600 flex items-center gap-2 justify-center">
-                  <Mail className="h-4 w-4" />
-                  Check your email for OTP code.
-                </p>
-              )}
-            </div>
+                  {/* Confirm Password */}
+                  <FormField
+                    control={resetForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          Confirm Password
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              {...field}
+                              type="password"
+                              placeholder="Confirm new password"
+                              className="h-11 pr-10 border-gray-900"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                        {passwordsMatch && (
+                          <p className="text-sm text-green-600 flex items-center gap-1">
+                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            Passwords match
+                          </p>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={
+                      resetForm.formState.isSubmitting || isResettingPassword || !passwordsMatch
+                    }
+                    className="w-full h-11"
+                  >
+                    {resetForm.formState.isSubmitting || isResettingPassword
+                      ? "Resetting..."
+                      : "Reset Password"}
+                  </Button>
+                </form>
+              </Form>
+            )}
           </div>
         </div>
 
@@ -266,91 +380,6 @@ export default function ForgotPasswordPage() {
           </button>
         </div>
       </div>
-
-      {/* Password Reset Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reset password for {userEmail}</DialogTitle>
-            <DialogDescription>
-              Enter your new password below. Make sure it's strong and secure.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(handlePasswordReset)} className="space-y-4">
-              <FormField
-                control={passwordForm.control}
-                name="newPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          {...field}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter new password"
-                          className="pr-10 border-gray-900"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-900" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-900" />
-                          )}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={passwordForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        className="border-gray-900"
-                        {...field}
-                        type="password"
-                        placeholder="Confirm new password"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={passwordForm.formState.isSubmitting}
-                  className="flex-1"
-                >
-                  {passwordForm.formState.isSubmitting ? "Resetting..." : "Reset Password"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
 
       {/* Success Popup */}
       <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
