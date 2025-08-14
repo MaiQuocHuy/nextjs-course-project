@@ -186,8 +186,9 @@ export default function LoginPage() {
                         <div className="flex items-center justify-between">
                           <FormLabel>Password</FormLabel>
                           <Link
+                            tabIndex={-1}
                             href="/forgot-password"
-                            className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
+                            className="text-sm text-blue-600 hover:text-blue-500 hover:underline "
                           >
                             Forgot your password?
                           </Link>

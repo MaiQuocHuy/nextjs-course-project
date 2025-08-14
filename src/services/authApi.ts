@@ -37,32 +37,57 @@ interface RefreshTokenResponse {
   };
 }
 
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+interface ForgotPasswordResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    message: string;
+    maskedEmail: string;
+    expiresAt: string;
+    maxAttempts: number;
+    previousTokensInvalidated: boolean;
+  };
+  timestamp: string;
+}
+
+interface ForgotPasswordConfirmRequest {
+  email: string;
+  otpCode: string; 
+  newPassword: string;
+  confirmPassword: string;
+  passwordMatching: boolean;
+}
+
+interface ForgotPasswordConfirmResponse {
+  statusCode: number;
+  message: string;
+  data: null;
+  timestamp: string;
+}
+
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: publicBaseQuery, // Use public base query for auth endpoints
-  tagTypes: ["Auth"],
+  baseQuery: publicBaseQuery,
   endpoints: (builder) => ({
-    login: builder.mutation<LoginResponse, LoginRequest>({
-      query: (credentials) => ({
-        url: "/auth/login",
+
+    //forgot password
+    forgotPassword: builder.mutation<ForgotPasswordResponse, ForgotPasswordRequest>({
+      query: (body) => ({
+        url: "/auth/forgot-password",
         method: "POST",
-        body: credentials,
+        body,
       }),
     }),
 
-    refreshToken: builder.mutation<RefreshTokenResponse, RefreshTokenRequest>({
-      query: (tokenData) => ({
-        url: "/auth/refresh",
+    forgotPasswordConfirm: builder.mutation<ForgotPasswordConfirmResponse, ForgotPasswordConfirmRequest>({
+      query: (body) => ({
+        url: "/auth/forgot-password/confirm",
         method: "POST",
-        body: tokenData,
-      }),
-    }),
-
-    logout: builder.mutation<{ message: string }, RefreshTokenRequest>({
-      query: (tokenData) => ({
-        url: "/auth/logout",
-        method: "POST",
-        body: tokenData,
+        body,
       }),
     }),
 
@@ -118,9 +143,8 @@ export const authApi = createApi({
 });
 
 export const {
-  useLoginMutation,
-  useRefreshTokenMutation,
-  useLogoutMutation,
   useRegisterStudentMutation,
   useRegisterInstructorMutation,
+  useForgotPasswordMutation,
+  useForgotPasswordConfirmMutation
 } = authApi;
