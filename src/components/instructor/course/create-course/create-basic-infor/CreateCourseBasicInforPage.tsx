@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import _ from 'lodash';
 
 import {
   type CourseBasicInfoType,
@@ -68,16 +67,12 @@ interface CourseFormProps {
   courseInfor?: CourseBasicInfoType;
   onCancel?: () => void;
   onSubmit?: (data: CourseBasicInfoType) => void;
-  onGetProgress?: (process: number) => void;
 }
 
-interface UploadedFile {
+interface Thumbnail {
   id: string;
   file: File;
   preview: string;
-  type: 'image' | 'video';
-  status: 'uploading' | 'success' | 'error';
-  error?: string;
 }
 
 const accept = 'image/*,video/*';
@@ -89,10 +84,9 @@ export function CreateCourseBasicInforPage({
   courseInfor,
   onCancel,
   onSubmit,
-  onGetProgress,
 }: CourseFormProps) {
   const { data: categories } = useGetCategoriesQuery();
-  const [courseThumb, setCourseThumb] = useState<UploadedFile | null>(null);
+  const [courseThumb, setCourseThumb] = useState<Thumbnail | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -118,7 +112,7 @@ export function CreateCourseBasicInforPage({
         },
     mode: 'onChange', // Enable real-time validation
   });
-
+  
   const {
     watch,
     formState: { errors, isValid, isDirty },
@@ -155,12 +149,10 @@ export function CreateCourseBasicInforPage({
     ) {
       const handleCourseThumb = async (file: File) => {
         const preview = await createFilePreview(file);
-        const courseThumb: UploadedFile = {
+        const courseThumb: Thumbnail = {
           id: crypto.randomUUID(),
           file,
           preview,
-          type: file.type.startsWith('image/') ? 'image' : 'video',
-          status: 'success',
         };
         setCourseThumb(courseThumb);
       };
@@ -170,33 +162,6 @@ export function CreateCourseBasicInforPage({
       setCourseThumb(null);
     }
   }, [watchThumbnail, errors.file]);
-
-  // Calculate form completion percentage
-  const getFormCompletionPercentage = useCallback(() => {
-    const fields = [
-      errors.title === undefined && watch('title').length > 0,
-      watch('price') >= 0,
-      watch('categoryIds') && watch('categoryIds').length > 0,
-      watch('description').length > 0 && errors.description === undefined,
-      watch('file') !== undefined && errors.file === undefined,
-    ];
-    const completedFields = fields.filter(Boolean).length;
-    // return Math.round((completedFields / fields.length) * 100);
-    return (completedFields / fields.length) * 100;
-  }, [
-    watch('title'),
-    watch('price'),
-    watch('categoryIds'),
-    watch('description'),
-    errors,
-  ]);
-
-  useEffect(() => {
-    const progress = getFormCompletionPercentage();
-    if (onGetProgress) {
-      onGetProgress(progress);
-    }
-  }, [isDirty, getFormCompletionPercentage]);
 
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -288,40 +253,27 @@ export function CreateCourseBasicInforPage({
     });
   };
 
-  const handleDeleCourse = async () => {
+  const handleDeleteCourse = async () => {
     try {
       loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
       if (courseInfor?.id) {
-        await deleteCourse(courseInfor?.id);
-        router.push('/instructor/courses');
+        const res = await deleteCourse(courseInfor?.id);
+        if (res) {
+          loadingAnimation(false, dispatch);
+          toast.error('Delete course successfully!');
+          router.push('/instructor/courses');
+        }
       }
     } catch (error) {
       loadingAnimation(false, dispatch);
       toast.error('Delete course failed!');
     }
-    loadingAnimation(false, dispatch);
-    toast.error('Delete course successfully!');
   };
 
   const handleRequestApproval = () => {};
 
   return (
     <div className={cn('space-y-6')}>
-      {/* Form Progress */}
-      {/* {mode === 'create' && (
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Form Completion</span>
-              <span className="text-sm text-muted-foreground">
-                {getFormCompletionPercentage()}%
-              </span>
-            </div>
-            <Progress value={getFormCompletionPercentage()} className="h-2" />
-          </CardContent>
-        </Card>
-      )} */}
-
       {/* Course actions */}
       {mode === 'edit' && courseInfor && (
         <div>
@@ -367,7 +319,7 @@ export function CreateCourseBasicInforPage({
             title="Are you sure you want to delete this course?"
             description="This action cannot be undone. This will permanently delete the
                   course and all its content."
-            onClick={handleDeleCourse}
+            onClick={handleDeleteCourse}
             actionTitle="Delete Course"
           />
         </div>
@@ -406,6 +358,7 @@ export function CreateCourseBasicInforPage({
                 )}
               </div>
             </CardHeader>
+
             <CardContent className="space-y-6">
               {/* Course Title */}
               <FormField
@@ -615,7 +568,6 @@ export function CreateCourseBasicInforPage({
                           min="0"
                           max="999.99"
                           placeholder="0.00"
-                          defaultValue={field.value}
                           className={cn(
                             'pl-8',
                             errors.price && 'border-red-500',
@@ -650,9 +602,9 @@ export function CreateCourseBasicInforPage({
                     </FormLabel>
                     <FormControl>
                       <div>
+                        {/* Upload Area */}
                         {courseThumb === null ? (
                           <>
-                            {/* Upload Area */}
                             <div
                               className={cn(
                                 'relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer group',
@@ -744,62 +696,48 @@ export function CreateCourseBasicInforPage({
                                     : 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
                                 )}
                               >
-                                <div className="flex items-center space-x-4">
-                                  {/* Preview */}
-                                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                    <img
-                                      src={
-                                        courseThumb.preview ||
-                                        '/placeholder.svg'
-                                      }
-                                      alt={courseThumb.file.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-
-                                  {/* File Info */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center space-x-2">
+                                <div className="space-y-4">
+                                  {/* File Info Header */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2 flex-1 min-w-0">
                                       <ImageIcon className="w-4 h-4 text-blue-500" />
-                                      <p className="font-medium truncate">
+                                      <p className="font-medium truncate text-sm">
                                         {courseThumb.file.name}
                                       </p>
-                                    </div>
-
-                                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                      <span>
+                                      <span className="text-sm text-muted-foreground">
                                         {formatFileSize(courseThumb.file.size)}
                                       </span>
                                     </div>
 
-                                    {/* Error Message */}
-                                    {/* {errors.file && (
-                                        <div className="mt-2 flex items-center space-x-2">
-                                          <AlertCircle className="w-4 h-4 text-red-500" />
-                                          <p className="text-sm text-red-600 dark:text-red-400">
-                                            {errors.file.message?.toString()}
-                                          </p>
-                                        </div>
-                                      )} */}
+                                    {/* Status & Actions */}
+                                    <div className="flex items-center space-x-2">
+                                      {errors.file === undefined && (
+                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                      )}
+
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          field.onChange(null);
+                                          setCourseThumb(null);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
                                   </div>
 
-                                  {/* Status & Actions */}
-                                  <div className="flex items-center space-x-2">
-                                    {errors.file === undefined && (
-                                      <CheckCircle className="w-5 h-5 text-green-500" />
+                                  {/* Full Width Preview */}
+                                  <div className="relative w-full rounded-lg overflow-hidden">
+                                    {courseThumb.preview && (
+                                      <img
+                                        src={courseThumb.preview}
+                                        alt={courseThumb.file.name}
+                                        className="w-full h-auto object-cover max-h-80"
+                                      />
                                     )}
-
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        field.onChange(null);
-                                        setCourseThumb(null);
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
                                   </div>
                                 </div>
                               </div>

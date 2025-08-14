@@ -27,6 +27,8 @@ const courseSchema = z.object({
       (level) => ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(level),
       'Please select a valid Level'
     ),
+
+  thumbnailUrl: z.string().optional(),
 });
 
 export const imageFileSchema = z.object({
