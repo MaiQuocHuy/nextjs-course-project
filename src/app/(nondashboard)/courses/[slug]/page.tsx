@@ -9,6 +9,15 @@ import { InstructorProfile } from "@/components/course-detail/InstructorProfile"
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function CourseDetailPage({
   params,
@@ -16,8 +25,9 @@ export default function CourseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const router = useRouter();
-  const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showAlreadyEnrolledDialog, setShowAlreadyEnrolledDialog] =
+    useState(false);
 
   const { slug } = use(params);
 
@@ -29,13 +39,20 @@ export default function CourseDetailPage({
   } = useGetCourseBySlugQuery(slug);
 
   const handleEnroll = async () => {
+    // Kiểm tra nếu user đã enroll rồi
+    if (course?.isEnrolled) {
+      setShowAlreadyEnrolledDialog(true);
+      return;
+    }
+
     setIsEnrolling(true);
     try {
       // Simulate enrollment API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setIsEnrolled(true);
-      // TODO: Make an API call to enroll the user
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // TODO: Make an API call to enroll the user and refetch course data
       console.log("Enrolling in course:", slug);
+      // Sau khi enroll thành công, refetch để cập nhật isEnrolled
+      refetch();
     } catch (error) {
       console.error("Enrollment failed:", error);
     } finally {
@@ -118,7 +135,7 @@ export default function CourseDetailPage({
             {/* Course Header */}
             <CourseHeader
               course={course}
-              isEnrolled={isEnrolled}
+              isEnrolled={course.isEnrolled || false}
               onEnroll={handleEnroll}
               isEnrolling={isEnrolling}
               variant="full"
@@ -128,7 +145,7 @@ export default function CourseDetailPage({
             <CourseContent
               course={course}
               sections={course.sections || []}
-              isEnrolled={isEnrolled}
+              isEnrolled={course.isEnrolled || false}
             />
 
             {/* Instructor Profile */}
@@ -141,7 +158,7 @@ export default function CourseDetailPage({
             <div className="lg:block hidden">
               <CourseHeader
                 course={course}
-                isEnrolled={isEnrolled}
+                isEnrolled={course.isEnrolled || false}
                 onEnroll={handleEnroll}
                 isEnrolling={isEnrolling}
                 variant="compact"
@@ -154,6 +171,29 @@ export default function CourseDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Alert Dialog for Already Enrolled */}
+        <AlertDialog
+          open={showAlreadyEnrolledDialog}
+          onOpenChange={setShowAlreadyEnrolledDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Already Enrolled</AlertDialogTitle>
+              <AlertDialogDescription>
+                You have already enrolled in this course "{course?.title}". You
+                can access the course content and continue learning.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                onClick={() => setShowAlreadyEnrolledDialog(false)}
+              >
+                Got it
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
