@@ -217,7 +217,6 @@ export default function SettingsPage() {
     async (data: PersonalInfoForm) => {
       try {
         if (!hasPersonalChanges) {
-          setSuccess("No changes to save");
           return;
         }
         const trimmedName = data.name.trim();
