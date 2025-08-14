@@ -60,7 +60,10 @@ export const makeStore = () => {
         profileApi.middleware,
         settingsApi.middleware,
         geminiApi.middleware,
-        clearCacheOnLogout
+        clearCacheOnLogout,
+
+        // Instructor
+        coursesInstSlice.middleware
       ),
   });
 

@@ -23,7 +23,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/instructor/course/course-detail/Collapsible';
+} from '@/components/instructor/commom/Collapsible';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Plus,
@@ -76,43 +76,19 @@ import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
-// Types
-interface StudentComment {
-  id: string;
-  studentName: string;
-  studentAvatar?: string;
-  content: string;
-  timestamp: Date;
-  likes: number;
-  dislikes: number;
-  replies?: StudentComment[];
-}
-
-export interface LessonWithComments extends LessonType {
-  comments?: StudentComment[];
-  completionRate?: number;
-  avgRating?: number;
-  totalViews?: number;
-}
-
-export interface SectionWithComments extends Omit<SectionType, 'lessons'> {
-  lessons: LessonWithComments[];
-  totalStudents?: number;
-  completionRate?: number;
-}
-
 interface SectionsLessonsManagerProps {
   courseId: string;
   mode: 'view' | 'edit' | 'create';
-  sections: SectionWithComments[];
-  onSectionsChange?: (sections: SectionWithComments[]) => void;
+  sections?: SectionType[];
+  onSectionsChange?: (sections: SectionType[]) => void;
   onSave?: () => void;
   onCancel?: () => void;
   isLoading?: boolean;
-  canEditContent: boolean;
+  canEditContent?: boolean;
+  setProgress?: (progress: number) => void;
 }
 
-export default function SectionsLessonsManager({
+export default function SectionsLessonsManager2({
   courseId,
   mode,
   sections: initialSections,
@@ -120,6 +96,7 @@ export default function SectionsLessonsManager({
   onCancel,
   isLoading = false,
   canEditContent,
+  setProgress,
 }: SectionsLessonsManagerProps) {
   const [currentMode, setCurrentMode] = useState<'view' | 'edit' | 'create'>(
     mode
@@ -130,9 +107,10 @@ export default function SectionsLessonsManager({
   const [expandedLessons, setExpandedLessons] = useState<Set<string>>(
     new Set()
   );
-  // const [expandedComments, setExpandedComments] = useState<Set<string>>(
-  //   new Set()
-  // );
+  const [step, setStep] = useState<'create' | 'review' | 'success'>('create');
+  const [lessonsData, setLessonsData] = useState<CourseCreationType | null>(
+    null
+  );
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [isParsingExcel, setIsParsingExcel] = useState(false);
   const [isValidInputs, setIsValidInput] = useState(true);
@@ -155,7 +133,26 @@ export default function SectionsLessonsManager({
   const form = useForm<CourseCreationType>({
     resolver: zodResolver(courseCreationSchema),
     defaultValues: {
-      sections: initialSections,
+      sections: initialSections
+        ? initialSections
+        : [
+            {
+              id: `section-${crypto.randomUUID()}`,
+              title: '',
+              description: '',
+              orderIndex: 0,
+              isCollapsed: false,
+              lessons: [
+                {
+                  id: `lesson-${crypto.randomUUID()}`,
+                  title: 'Set up React Environment',
+                  orderIndex: 0,
+                  type: 'VIDEO',
+                  isCollapsed: false,
+                },
+              ],
+            },
+          ],
     },
     mode: 'onChange',
   });
@@ -201,20 +198,9 @@ export default function SectionsLessonsManager({
     setExpandedLessons(newExpanded);
   };
 
-  // const toggleComments = (lessonId: string) => {
-  //   const newExpanded = new Set(expandedComments);
-  //   if (newExpanded.has(lessonId)) {
-  //     newExpanded.delete(lessonId);
-  //   } else {
-  //     newExpanded.add(lessonId);
-  //   }
-  //   setExpandedComments(newExpanded);
-  // };
-
   // CRUD operations
-
   const addSection = () => {
-    const newSection: SectionWithComments = {
+    const newSection: SectionType = {
       id: `new-section-${crypto.randomUUID()}`,
       description: '',
       title: '',
@@ -222,11 +208,10 @@ export default function SectionsLessonsManager({
       isCollapsed: false,
       lessons: [
         {
-          id: '',
+          id: `new-lesson-${crypto.randomUUID()}`,
           title: '',
           orderIndex: 0,
           type: 'VIDEO',
-          documents: [],
           isCollapsed: false,
         },
       ],
@@ -274,12 +259,11 @@ export default function SectionsLessonsManager({
 
   const addLesson = (sectionIndex: number) => {
     const currentLessons = form.getValues(`sections.${sectionIndex}.lessons`);
-    const newLesson: LessonWithComments = {
+    const newLesson: LessonType = {
       id: `new-lesson-${crypto.randomUUID()}`,
       title: '',
       orderIndex: currentLessons.length,
       type: 'VIDEO',
-      documents: [],
       isCollapsed: false,
     };
 
@@ -297,10 +281,10 @@ export default function SectionsLessonsManager({
         // Check if the deleted lesson is existed or not.
         // If no then just delete lesson in client side.
         // else perform delete both client and server side.
-        const section = form.getValues(`sections.${sectionIndex}`);        
-        if (section && !section.id.includes('new-section')) {          
+        const section = form.getValues(`sections.${sectionIndex}`);
+        if (section && !section.id.includes('new-section')) {
           const deletedLesson = currentLessons[lessonIndex];
-          if (deletedLesson && !deletedLesson.id.includes('new-lesson')) {            
+          if (deletedLesson && !deletedLesson.id.includes('new-lesson')) {
             const data = {
               sectionId: section.id,
               lessonId: deletedLesson.id,
@@ -335,28 +319,34 @@ export default function SectionsLessonsManager({
     lessonIndex: number
   ) => {
     setIsGeneratingQuiz(true);
-
-    // Simulate AI quiz generation
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     const mockQuestions: QuizQuestionType[] = [
       {
         id: `q1-${Date.now()}`,
-        question: 'What is React?',
-        options: ['JavaScript Library', 'CSS Framework', 'Database', 'Server'],
-        correctAnswer: 0,
+        questionText: 'What is React?',
+        options: [
+          'A. JavaScript Library',
+          'B. CSS Framework',
+          'C. Database',
+          'D. Server',
+        ],
+        correctAnswer: 'A'.toString(),
         explanation:
           'React is a JavaScript library for building user interfaces.',
-        order: 0,
+        orderIndex: 0,
       },
       {
         id: `q2-${Date.now()}`,
-        question: 'Which hook is used to manage state in React?',
-        options: ['useEffect', 'useState', 'useContext', 'useReducer'],
-        correctAnswer: 1,
+        questionText: 'Which hook is used to manage state in React?',
+        options: [
+          'A. useEffect',
+          'B. useState',
+          'C. useContext',
+          'D. useReducer',
+        ],
+        correctAnswer: 'B'.toString(),
         explanation:
           'useState is the most basic hook for managing state in functional components.',
-        order: 1,
+        orderIndex: 1,
       },
     ];
 
@@ -399,7 +389,7 @@ export default function SectionsLessonsManager({
       }));
 
       form.setValue(
-        `sections.${sectionIndex}.lessons.${lessonIndex}.questions`,
+        `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
         questions
       );
       form.setValue(
@@ -422,208 +412,9 @@ export default function SectionsLessonsManager({
     setCurrentMode(currentMode === 'view' ? 'edit' : 'view');
   };
 
-  const createNewLesson = async (section: SectionType, lesson: LessonType) => {
-    try {
-      const lessonData = {
-        title: lesson.title,
-        type: lesson.type.toUpperCase(),
-        videoFile: lesson.video?.file,
-      };
-      const createLesRes = await createLesson({
-        sectionId: section.id,
-        lessonData,
-      }).unwrap();
-
-      // Assign id to lesson
-      if ('statusCode' in createLesRes && createLesRes.statusCode === 201) {
-        // console.log(createLesRes);
-        if (currentMode === 'edit') {
-          if (section.orderIndex) {
-            const lessonId = createLesRes.data.id;
-            const lessonIndex = createLesRes.data.orderIndex;
-            form.setValue(
-              `sections.${section.orderIndex}.lessons.${lessonIndex}.id`,
-              lessonId
-            );
-            form.setValue(
-              `sections.${section.orderIndex}.lessons.${lessonIndex}.orderIndex`,
-              lessonIndex
-            );
-          }
-        }
-      }
-    } catch (error) {
-      loadingAnimation(false, dispatch);
-      toast.error('Error!');
-      return;
-    }
-  };
-
-  const createNewSection = async (section: SectionType) => {
-    try {
-      const sectionData = {
-        title: section.title,
-        description: section.description,
-      };
-      const createSecRes = await createSection({
-        courseId,
-        sectionData,
-      }).unwrap();
-      // Create each lesson in the section
-      if ('statusCode' in createSecRes && createSecRes.statusCode === 201) {
-        if ('data' in createSecRes) {
-          // console.log(createSecRes);
-          // Assign id to section. Cause in edit mode, id of a new created section is ''
-          if (currentMode === 'edit') {
-            const sectionId = createSecRes.data.id;
-            const secIndex = createSecRes.data.orderIndex;
-            if (secIndex) {
-              form.setValue(`sections.${secIndex}.id`, sectionId);
-              form.setValue(`sections.${secIndex}.orderIndex`, secIndex);
-            }
-          }
-
-          // // Create lessons if have
-          // const sectionData = { ...section };
-          // sectionData.id = sectionId;
-          // if (secIndex) {
-          //   sectionData.orderIndex = secIndex;
-          //   // await createNewLesson(sectionData);
-          // }
-          // for (const lesson of section.lessons) {
-          //   await createNewLesson(sectionData, lesson);
-          // }
-        }
-      }
-    } catch (error) {
-      loadingAnimation(false, dispatch);
-      toast.error('Error!');
-      return;
-    }
-  };
-
-  const handleSave = async () => {
-    // console.log(formData);
-    const sections = form.watch('sections');
-    try {
-      loadingAnimation(
-        true,
-        dispatch,
-        'Section(s) and lesson(s) is being updated'
-      );
-      
-      // const sections = formData.sections;
-      for (const [idx, sec] of sections.entries()) {
-        if (dirtyFields.sections) {
-          // Update section's title and description if have
-          if (
-            dirtyFields.sections[idx]?.title ||
-            dirtyFields.sections[idx]?.description
-          ) {
-            // Create new section and lesson into databse if it is not created before
-            if (sec.id.includes('new-section')) {
-              await createNewSection(sec);
-            } else {
-              // Update existed section
-              const data = {
-                courseId,
-                sectionId: sec.id,
-                sectionData: {
-                  title: sec.title,
-                  description: sec.description,
-                },
-              };
-              await updatedSections(data).unwrap();
-            }
-          }
-
-          // Update lesson's fields if have
-          const changedLessons = dirtyFields.sections[idx]?.lessons;          
-          if (changedLessons) {
-            for (const [lessonIdx, les] of sec.lessons.entries()) {
-              if (changedLessons[lessonIdx]) {
-                if (sec.id) {
-                  // Create new lesson                  
-                  if (les.id.includes('new-lesson')) {
-                    await createNewLesson(sec, les);
-                  } else {
-                    // Update existed lessons
-                    const lessonData = {
-                      sectionId: sec.id,
-                      lessonId: les.id,
-                      title: les.title,
-                      type: les.type,
-                      videoFile: les.video?.file,
-                    };
-                    await updatedLessons(lessonData);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Handle Reorder sections and lessons if have
-      if (isReorderedContent.isReorder) {
-        // Reorder quizs
-        if (
-          isReorderedContent.sectionId !== '' &&
-          isReorderedContent.lessonId !== ''
-        ) {
-        } else if (isReorderedContent.sectionId !== '') {
-          // Reorder lessons
-          const section = sections.find(
-            (sec) => sec.id === isReorderedContent.sectionId
-          );
-          if (section) {
-            const lessons = section.lessons;
-            console.log('lessons: ', lessons);
-            
-            if (lessons && lessons.length > 0) {
-              const lessonIds = lessons.map((les) => les.id);
-              const data = {
-                sectionId: section.id,
-                lessonOrder: lessonIds,
-              };
-              const res = await reorderLessons(data);
-              if ('statusCode' in res && res.statusCode === 200) {
-                setIsReorderedContent((prev) => ({
-                  ...prev,
-                  isReorder: false,
-                  sectionId: '',
-                }));
-              }
-            }
-          }
-        } else {
-          // Reorder sections
-          const sectionIds = sections.map((sec) => sec.id);
-          const data = {
-            courseId,
-            sectionOrder: sectionIds,
-          };
-          const res = await reorderSections(data);
-          if ('statusCode' in res && res.statusCode === 200) {
-            setIsReorderedContent((prev) => ({ ...prev, isReorder: false }));
-          }
-        }
-      }
-    } catch (error) {
-      // console.error('Update error:', error);
-      loadingAnimation(false, dispatch);
-      toast.error('Update failed!');
-      return;
-    }
-
-    form.reset({sections});
-    loadingAnimation(false, dispatch);
-    toast.success('Update Section(s) and lesson(s) successfully!');
-  };
-
   const renderLesson = (
     sectionIndex: number,
-    lesson: LessonWithComments,
+    lesson: LessonType,
     lessonIndex: number
   ) => {
     const isExpanded = expandedLessons.has(lesson.id);
@@ -631,7 +422,7 @@ export default function SectionsLessonsManager({
     return (
       <Collapsible key={lesson.id} defaultOpen={lessonIndex === 0}>
         <Card key={lesson.id} className="ml-4 gap-2">
-          <CollapsibleTrigger>
+          <CollapsibleTrigger asChild>
             <CardHeader
               className="pb-3 cursor-pointer hover:bg-muted/50"
               onClick={() => toggleLesson(lesson.id)}
@@ -676,7 +467,10 @@ export default function SectionsLessonsManager({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeLesson(sectionIndex, lessonIndex)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeLesson(sectionIndex, lessonIndex);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -690,42 +484,33 @@ export default function SectionsLessonsManager({
             <CardContent className="space-y-4">
               {currentMode === 'view' ? (
                 <>
-                  {/* Lesson title in view mode */}
-                  {/* {lesson.title && (
-                    <div>
-                      <h4 className="font-medium mb-2">{lesson.title}</h4>
-                    </div>
-                  )} */}
-
                   {/* Documents list in view mode */}
-                  {lesson.documents && lesson.documents.length > 0 && (
-                    <CombinedFileUpload documents={lesson.documents} />
-                  )}
+                  {lesson.quiz &&
+                    lesson.quiz.documents &&
+                    lesson.quiz.documents.length > 0 && (
+                      <CombinedFileUpload documents={lesson.quiz.documents} />
+                    )}
 
                   {/* Lesson video */}
-                  {lesson.video && lesson.video?.file && (
-                    <CombinedFileUpload videoFile={lesson.video?.file} />
+                  {lesson.video && lesson.video.file && (
+                    <CombinedFileUpload videoFile={lesson.video.file} />
                   )}
 
                   {/* Quiz questions preview in view mode */}
-                  {lesson.questions && lesson.questions.length > 0 && (
-                    <EnhancedQuizEditor
-                      canEdit={false}
-                      questions={lesson.questions}
-                      onQuestionsChange={(questions) => {
-                        form.setValue(
-                          `sections.${sectionIndex}.lessons.${lessonIndex}.questions`,
-                          questions
-                        );
-                      }}
-                    />
-                  )}
-
-                  {/* Lesson statistics */}
-                  {/* {renderLessonStats(lesson)} */}
-
-                  {/* Student comments */}
-                  {/* {renderStudentComments(lesson)} */}
+                  {lesson.quiz &&
+                    lesson.quiz.questions &&
+                    lesson.quiz.questions.length > 0 && (
+                      <EnhancedQuizEditor
+                        canEdit={false}
+                        questions={lesson.quiz.questions}
+                        onQuestionsChange={(questions) => {
+                          form.setValue(
+                            `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
+                            questions
+                          );
+                        }}
+                      />
+                    )}
                 </>
               ) : (
                 <>
@@ -748,105 +533,93 @@ export default function SectionsLessonsManager({
                     )}
                   />
 
-                  {/* Multiple Documents Upload */}
-                  <CombinedFileUpload
-                    documents={
-                      form.watch(
-                        `sections.${sectionIndex}.lessons.${lessonIndex}.documents`
-                      ) || []
-                    }
-                    onDocumentsChange={(documents) => {
-                      form.setValue(
-                        `sections.${sectionIndex}.lessons.${lessonIndex}.documents`,
-                        documents
-                      );
-                    }}
-                  />
-
                   {/* Lesson type input */}
-                  <FormField
-                    control={form.control}
-                    name={`sections.${sectionIndex}.lessons.${lessonIndex}.type`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lesson Type</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            value={field.value}
-                            className="flex gap-6"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem
-                                value="VIDEO"
-                                id={`video-${sectionIndex}-${lessonIndex}`}
-                              />
-                              <Label
-                                htmlFor={`video-${sectionIndex}-${lessonIndex}`}
-                              >
-                                <Video className="h-4 w-4 inline mr-2" />
-                                Video
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem
-                                value="QUIZ"
-                                id={`quiz-${sectionIndex}-${lessonIndex}`}
-                              />
-                              <Label
-                                htmlFor={`quiz-${sectionIndex}-${lessonIndex}`}
-                              >
-                                <Brain className="h-4 w-4 inline mr-2" />
-                                Quiz
-                              </Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {mode === 'create' && (
+                    <FormField
+                      control={form.control}
+                      name={`sections.${sectionIndex}.lessons.${lessonIndex}.type`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Lesson Type</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              className="flex gap-6"
+                            >
+                              {/* Video type */}
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem
+                                  value="VIDEO"
+                                  id={`video-${sectionIndex}-${lessonIndex}`}
+                                />
+                                <Label
+                                  htmlFor={`video-${sectionIndex}-${lessonIndex}`}
+                                >
+                                  <Video className="h-4 w-4 inline mr-2" />
+                                  Video
+                                </Label>
+                              </div>
+
+                              {/* Quiz type */}
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem
+                                  value="QUIZ"
+                                  id={`quiz-${sectionIndex}-${lessonIndex}`}
+                                />
+                                <Label
+                                  htmlFor={`quiz-${sectionIndex}-${lessonIndex}`}
+                                >
+                                  <Brain className="h-4 w-4 inline mr-2" />
+                                  Quiz
+                                </Label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   {/* Video upload */}
                   {form.watch(
                     `sections.${sectionIndex}.lessons.${lessonIndex}.type`
                   ) === 'VIDEO' && (
-                    <div>
-                      <FormField
-                        control={form.control}
-                        name={`sections.${sectionIndex}.lessons.${lessonIndex}.video`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <CombinedFileUpload
-                                videoFile={form.watch(
-                                  `sections.${sectionIndex}.lessons.${lessonIndex}.video.file`
-                                )}
-                                onVideoSelect={(file) => {
-                                  field.onChange(() => {
-                                    form.setValue(
-                                      `sections.${sectionIndex}.lessons.${lessonIndex}.video.file`,
-                                      file
-                                    );
-                                  });
-                                }}
-                                onVideoRemove={() => {
-                                  field.onChange(undefined);
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name={`sections.${sectionIndex}.lessons.${lessonIndex}.video`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <CombinedFileUpload
+                              videoFile={form.watch(
+                                `sections.${sectionIndex}.lessons.${lessonIndex}.video.file`
+                              )}
+                              onVideoSelect={(file) => {
+                                field.onChange(() => {
+                                  form.setValue(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.video.file`,
+                                    file
+                                  );
+                                });
+                              }}
+                              onVideoRemove={() => {
+                                field.onChange(undefined);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
 
                   {/* Quiz section */}
                   {form.watch(
                     `sections.${sectionIndex}.lessons.${lessonIndex}.type`
                   ) === 'QUIZ' && (
-                    <div>
+                    <div className="space-y-3">
                       {(lesson.quiz === null || currentMode === 'create') && (
                         <div className="space-y-4">
                           {/* Quiz method */}
@@ -862,6 +635,7 @@ export default function SectionsLessonsManager({
                                     value={field.value}
                                     className="flex gap-6"
                                   >
+                                    {/* Generate with AI */}
                                     <div className="flex items-center space-x-2">
                                       <RadioGroupItem
                                         value="ai"
@@ -874,6 +648,8 @@ export default function SectionsLessonsManager({
                                         Generate with AI
                                       </Label>
                                     </div>
+
+                                    {/* Upload Excel File */}
                                     <div className="flex items-center space-x-2">
                                       <RadioGroupItem
                                         value="upload"
@@ -897,38 +673,42 @@ export default function SectionsLessonsManager({
                           {form.watch(
                             `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
                           ) === 'ai' && (
-                            <div className="space-y-4">
-                              {(!form.watch(
-                                `sections.${sectionIndex}.lessons.${lessonIndex}.documents`
-                              ) ||
-                                form.watch(
-                                  `sections.${sectionIndex}.lessons.${lessonIndex}.documents`
-                                )?.length === 0) && (
-                                <Alert>
-                                  <AlertCircle className="h-4 w-4" />
-                                  <AlertDescription>
-                                    You need to upload related documents for AI
-                                    to generate questions.
-                                  </AlertDescription>
-                                </Alert>
-                              )}
+                            <div className="space-y-2">
+                              {/* Multiple Documents Upload */}
+                              <CombinedFileUpload
+                                documents={
+                                  form.watch(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
+                                  ) || []
+                                }
+                                onDocumentsChange={(documents) => {
+                                  form.setValue(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`,
+                                    documents
+                                  );
+                                }}
+                              />
 
-                              <Button
-                                type="button"
-                                onClick={() =>
-                                  generateQuizWithAI(sectionIndex, lessonIndex)
-                                }
-                                disabled={
-                                  isGeneratingQuiz ||
-                                  !form.watch(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.documents`
-                                  )?.length
-                                }
-                              >
-                                {isGeneratingQuiz
-                                  ? 'Generating Questions...'
-                                  : 'Generate Questions with AI'}
-                              </Button>
+                              {Boolean(
+                                form.watch(
+                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
+                                )?.length
+                              ) && (
+                                <Button
+                                  type="button"
+                                  onClick={() =>
+                                    generateQuizWithAI(
+                                      sectionIndex,
+                                      lessonIndex
+                                    )
+                                  }
+                                  disabled={isGeneratingQuiz}
+                                >
+                                  {isGeneratingQuiz
+                                    ? 'Generating Questions...'
+                                    : 'Generate Questions with AI'}
+                                </Button>
+                              )}
                             </div>
                           )}
 
@@ -978,7 +758,7 @@ export default function SectionsLessonsManager({
                                     undefined
                                   );
                                   form.setValue(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.questions`,
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
                                     []
                                   );
                                 }}
@@ -999,21 +779,6 @@ export default function SectionsLessonsManager({
                               )}
                             </div>
                           )}
-
-                          {/* Warning alert */}
-                          {/* {form.watch(
-                            `sections.${sectionIndex}.lessons.${lessonIndex}.type`
-                          ) === 'QUIZ' &&
-                            form.watch(
-                              `sections.${sectionIndex}.lessons.${lessonIndex}.quiz`
-                            ) === null && (
-                              <Alert>
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                  Quiz lessons must have at least one question.
-                                </AlertDescription>
-                              </Alert>
-                            )} */}
                         </div>
                       )}
 
@@ -1023,7 +788,7 @@ export default function SectionsLessonsManager({
                       ) &&
                         form.watch(
                           `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`
-                        ).length > 0 && (
+                        )?.length > 0 && (
                           <EnhancedQuizEditor
                             canEdit={true}
                             questions={form.watch(
@@ -1048,11 +813,7 @@ export default function SectionsLessonsManager({
     );
   };
 
-  // Render section
-  const renderSection = (
-    section: SectionWithComments,
-    sectionIndex: number
-  ) => {
+  const renderSection = (section: SectionType, sectionIndex: number) => {
     const isExpanded = expandedSections.has(section.id);
 
     return (
@@ -1224,7 +985,13 @@ export default function SectionsLessonsManager({
                 </h4>
 
                 {/* Render lessons in edit mode */}
-                {currentMode === 'edit' ? (
+                {currentMode === 'view' ? (
+                  <div className="space-y-4">
+                    {section.lessons.map((lesson, lessonIndex) =>
+                      renderLesson(sectionIndex, lesson, lessonIndex)
+                    )}
+                  </div>
+                ) : (
                   <div className="space-y-4">
                     <DragDropReorder
                       items={watchedSections[sectionIndex]?.lessons || []}
@@ -1234,7 +1001,7 @@ export default function SectionsLessonsManager({
                             ...lesson,
                             orderIndex: index,
                           })
-                        );                        
+                        );
                         form.setValue(
                           `sections.${sectionIndex}.lessons`,
                           updatedLessons
@@ -1262,12 +1029,6 @@ export default function SectionsLessonsManager({
                       Add Lesson
                     </Button>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {section.lessons.map((lesson, lessonIndex) =>
-                      renderLesson(sectionIndex, lesson, lessonIndex)
-                    )}
-                  </div>
                 )}
               </div>
             </CardContent>
@@ -1277,20 +1038,380 @@ export default function SectionsLessonsManager({
     );
   };
 
+  const createNewLesson = async (section: SectionType, lesson: LessonType) => {
+    try {
+      if (lesson.video) {
+        const lessonData = {
+          title: lesson.title,
+          type: lesson.type.toUpperCase(),
+          videoFile: lesson.video.file,
+        };
+        const createLesRes = await createLesson({
+          sectionId: section.id,
+          lessonData,
+        }).unwrap();
+
+        // Assign id to lesson
+        if ('statusCode' in createLesRes && createLesRes.statusCode === 201) {
+          // console.log(createLesRes);
+          if (currentMode === 'edit') {
+            if (section.orderIndex) {
+              const lessonId = createLesRes.data.id;
+              const lessonIndex = createLesRes.data.orderIndex;
+              form.setValue(
+                `sections.${section.orderIndex}.lessons.${lessonIndex}.id`,
+                lessonId
+              );
+              form.setValue(
+                `sections.${section.orderIndex}.lessons.${lessonIndex}.orderIndex`,
+                lessonIndex
+              );
+            }
+          }
+        }
+      }
+    } catch (error) {
+      loadingAnimation(false, dispatch);
+      toast.error('Error!');
+      return;
+    }
+  };
+
+  const createNewSection = async (section: SectionType) => {
+    try {
+      const sectionData = {
+        title: section.title,
+        description: section.description,
+      };
+      const createSecRes = await createSection({
+        courseId: courseId,
+        sectionData,
+      }).unwrap();
+      // Create each lesson in the section
+      if ('statusCode' in createSecRes && createSecRes.statusCode === 201) {
+        console.log('create section successfully');
+
+        if ('data' in createSecRes) {
+          // console.log(createSecRes);
+          // Assign id to section. Cause in edit mode, id of a new created section is ''
+          if (currentMode === 'edit') {
+            const sectionId = createSecRes.data.id;
+            const secIndex = createSecRes.data.orderIndex;
+            if (secIndex) {
+              form.setValue(`sections.${secIndex}.id`, sectionId);
+              form.setValue(`sections.${secIndex}.orderIndex`, secIndex);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      loadingAnimation(false, dispatch);
+      toast.error('Error!');
+      return;
+    }
+  };
+
+  const handleSave = async () => {
+    // console.log(formData);
+    const sections = form.watch('sections');
+    try {
+      loadingAnimation(
+        true,
+        dispatch,
+        'Section(s) and lesson(s) is being updated'
+      );
+
+      // const sections = formData.sections;
+      for (const [idx, sec] of sections.entries()) {
+        if (dirtyFields.sections) {
+          // Update section's title and description if have
+          if (
+            dirtyFields.sections[idx]?.title ||
+            dirtyFields.sections[idx]?.description
+          ) {
+            // Create new section and lesson into databse if it is not created before
+            if (sec.id.includes('new-section')) {
+              await createNewSection(sec);
+            } else {
+              // Update existed section
+              const data = {
+                courseId,
+                sectionId: sec.id,
+                sectionData: {
+                  title: sec.title,
+                  description: sec.description,
+                },
+              };
+              await updatedSections(data).unwrap();
+            }
+          }
+
+          // Update lesson's fields if have
+          const changedLessons = dirtyFields.sections[idx]?.lessons;
+          if (changedLessons) {
+            for (const [lessonIdx, les] of sec.lessons.entries()) {
+              if (changedLessons[lessonIdx]) {
+                if (sec.id) {
+                  // Create new lesson
+                  if (les.id.includes('new-lesson')) {
+                    await createNewLesson(sec, les);
+                  } else {
+                    // Update existed lessons                    
+                    const lessonData = {
+                      sectionId: sec.id,
+                      lessonId: les.id,
+                      title: les.title,
+                      type: les.type,
+                      videoFile: les.video?.file,
+                    };
+                    await updatedLessons(lessonData);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Handle Reorder sections and lessons if have
+      // if (isReorderedContent.isReorder) {
+      //   // Reorder quizs
+      //   if (
+      //     isReorderedContent.sectionId !== '' &&
+      //     isReorderedContent.lessonId !== ''
+      //   ) {
+      //   } else if (isReorderedContent.sectionId !== '') {
+      //     // Reorder lessons
+      //     const section = sections.find(
+      //       (sec) => sec.id === isReorderedContent.sectionId
+      //     );
+      //     if (section) {
+      //       const lessons = section.lessons;
+      //       if (lessons && lessons.length > 0) {
+      //         const lessonIds = lessons.map((les) => les.id);
+      //         const data = {
+      //           sectionId: section.id,
+      //           lessonOrder: lessonIds,
+      //         };
+      //         const res = await reorderLessons(data);
+      //         if ('statusCode' in res && res.statusCode === 200) {
+      //           setIsReorderedContent((prev) => ({
+      //             ...prev,
+      //             isReorder: false,
+      //             sectionId: '',
+      //           }));
+      //         }
+      //       }
+      //     }
+      //   } else {
+      //     // Reorder sections
+      //     const sectionIds = sections.map((sec) => sec.id);
+      //     const data = {
+      //       courseId: courseId,
+      //       sectionOrder: sectionIds,
+      //     };
+      //     const res = await reorderSections(data);
+      //     if ('statusCode' in res && res.statusCode === 200) {
+      //       setIsReorderedContent((prev) => ({ ...prev, isReorder: false }));
+      //     }
+      //   }
+      // }
+
+      form.reset({ sections });
+      loadingAnimation(false, dispatch);
+      toast.success('Update Section(s) and lesson(s) successfully!');
+    } catch (error) {
+      // console.error('Update error:', error);
+      loadingAnimation(false, dispatch);
+      toast.error('Update failed!');
+      return;
+    }
+  };
+
+  const handleSubmitForm = (data: CourseCreationType) => {
+    // console.log(data);
+    setLessonsData(data);
+    setStep('review');
+  };
+
+  const handleFinalSubmit = async () => {
+    if (lessonsData) {
+      if (courseId) {
+        try {
+          loadingAnimation(
+            true,
+            dispatch,
+            'Creating section(s) and lesson(s). Please wait...'
+          );
+          for (const section of lessonsData.sections) {
+            // Create each section
+            const sectionData = {
+              title: section.title,
+              description: section.description,
+            };
+            const createSecRes = await createSection({
+              courseId,
+              sectionData,
+            }).unwrap();
+            // Create each lesson in the section
+            if (
+              'statusCode' in createSecRes &&
+              createSecRes.statusCode === 201
+            ) {
+              if ('data' in createSecRes) {
+                const sectionId = createSecRes.data.id;
+                for (const lesson of section.lessons) {
+                  const lessonData = {
+                    title: lesson.title,
+                    type: lesson.type.toUpperCase(),
+                    videoFile: lesson.video?.file,
+                  };
+                  await createLesson({
+                    sectionId,
+                    lessonData,
+                  }).unwrap();
+                }
+              }
+            }
+          }
+        } catch (error) {
+          loadingAnimation(false, dispatch);
+          toast.error('Create section(s) and lesson(s) failed!');
+        }
+        loadingAnimation(false, dispatch);
+        setStep('success');
+        setProgress?.(100); // Update progress to 100% on success
+      }
+    }
+  };
+
+  if (step === 'success') {
+    return (
+      <div className="container mx-auto py-8">
+        <Card className="max-w-2xl mx-auto text-center">
+          <CardContent className="p-8">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">
+              Course Created Successfully!
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              Your course has been submitted to admin for approval. You will
+              receive a notification when the course is approved.
+            </p>
+            <Button
+              onClick={() => (window.location.href = '/instructor/courses')}
+            >
+              Back to Course List
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === 'review') {
+    const formData = form.getValues();
+
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Review Course Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {formData.sections.map((section) => (
+              <div key={section.id} className="space-y-4">
+                <h3 className="text-lg font-semibold">
+                  Section {section.orderIndex + 1}: {section.title}
+                </h3>
+
+                {section.lessons.map((lesson) => (
+                  <Card key={lesson.id} className="ml-4">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {lesson.type === 'VIDEO' ? (
+                          <Video className="h-4 w-4" />
+                        ) : (
+                          <Brain className="h-4 w-4" />
+                        )}
+                        <span className="font-medium">
+                          Lesson {lesson.orderIndex + 1}: {lesson.title}
+                        </span>
+                        <Badge
+                          variant={
+                            lesson.type === 'VIDEO' ? 'default' : 'secondary'
+                          }
+                        >
+                          {lesson.type === 'VIDEO' ? 'VIDEO' : 'QUIZ'}
+                        </Badge>
+                      </div>
+
+                      {lesson.quiz &&
+                        lesson.quiz.documents &&
+                        lesson.quiz.documents.length > 0 && (
+                          <div className="text-sm text-muted-foreground">
+                            Documents: {lesson.quiz.documents.length} files
+                          </div>
+                        )}
+
+                      {lesson.quiz &&
+                        lesson.quiz.questions &&
+                        lesson.quiz.questions.length > 0 && (
+                          <div className="text-sm text-muted-foreground">
+                            Quiz: {lesson.quiz.questions.length} questions
+                          </div>
+                        )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ))}
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Please review all information before submitting. After
+                submitting, you must wait for the administrator to approve the
+                course.
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => setStep('create')}>
+                Back to Edit
+              </Button>
+              <Button onClick={handleFinalSubmit}>
+                Confirm and Submit for Approval
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">
-            {currentMode === 'view' ? 'Course Content' : 'Edit Course Content'}
+            {currentMode === 'view'
+              ? 'View Course Content'
+              : currentMode === 'create'
+              ? 'Create Course Content'
+              : 'Edit Course Content'}
           </h2>
           <p className="text-muted-foreground">
             {currentMode === 'view'
-              ? 'View your course sections and lessons with student engagement data'
+              ? 'View the content of your course'
+              : currentMode === 'create'
+              ? 'Create your course sections and lessons'
               : 'Manage your course sections and lessons'}
           </p>
         </div>
+
+        {/* Actions */}
         <div className="flex gap-2">
           {currentMode === 'edit' && (
             <>
@@ -1314,6 +1435,7 @@ export default function SectionsLessonsManager({
                 )}
             </>
           )}
+
           {currentMode === 'view' && canEditContent && (
             <Button onClick={handleModeToggle} disabled={isLoading}>
               <Edit3 className="h-4 w-4 mr-2" />
@@ -1325,39 +1447,59 @@ export default function SectionsLessonsManager({
 
       {/* Content */}
       <Form {...form}>
-        <div className="space-y-6">
-          {currentMode === 'edit' ? (
-            <DragDropReorder
-              items={watchedSections}
-              onReorder={(reorderedSections) => {
-                const updatedSections = reorderedSections.map(
-                  (section, index) => ({
-                    ...section,
-                    orderIndex: index,
-                  })
-                );
-                form.setValue('sections', updatedSections);
-                setIsReorderedContent((prev) => ({ ...prev, isReorder: true }));
-              }}
-              renderItem={renderSection}
-              className="space-y-6"
-            />
-          ) : (
-            <div className="space-y-6">
-              {watchedSections.map((section, index) =>
-                renderSection(section, index)
-              )}
-            </div>
-          )}
+        <form
+          onSubmit={form.handleSubmit(handleSubmitForm)}
+          className="space-y-6"
+        >
+          <div className="space-y-6">
+            {currentMode === 'view' ? (
+              <div className="space-y-6">
+                {watchedSections.map((section, index) =>
+                  renderSection(section, index)
+                )}
+              </div>
+            ) : (
+              <DragDropReorder
+                items={watchedSections}
+                onReorder={(reorderedSections) => {
+                  const updatedSections = reorderedSections.map(
+                    (section, index) => ({
+                      ...section,
+                      orderIndex: index,
+                    })
+                  );
+                  form.setValue('sections', updatedSections);
+                  setIsReorderedContent((prev) => ({
+                    ...prev,
+                    isReorder: true,
+                  }));
+                }}
+                renderItem={renderSection}
+                className="space-y-6"
+              />
+            )}
 
-          {/* Add section button (edit mode only) */}
-          {currentMode === 'edit' && (
-            <Button type="button" variant="outline" onClick={addSection}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Section
-            </Button>
-          )}
-        </div>
+            {/* Add section button (edit mode only) */}
+            {currentMode !== 'view' && (
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addSection();
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Section
+                </Button>
+                {mode === 'create' && (
+                  <Button type="submit">Save and Review</Button>
+                )}
+              </div>
+            )}
+          </div>
+        </form>
       </Form>
     </div>
   );

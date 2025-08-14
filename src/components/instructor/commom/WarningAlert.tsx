@@ -15,7 +15,7 @@ type Props = {
   onOpenChange: Dispatch<SetStateAction<boolean>>;
   title: string;
   description?: string;
-  onClick: () => void;
+  onClick: () => Promise<void> | void;
   actionTitle: string;
 };
 
@@ -41,9 +41,14 @@ const WarningAlert = ({
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={(e) => {
+            e.stopPropagation();
+          }}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
             className="bg-destructive text-destructive-foreground"
           >
             {actionTitle}
