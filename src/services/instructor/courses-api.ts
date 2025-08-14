@@ -22,9 +22,8 @@ export const coursesInstSlice = createApi({
     // Fetch course details
     getCourseById: builder.query({
       query: (courseId) => ({
-        url: `/courses/${courseId}`,
+        url: `/instructor/courses/${courseId}`,
         method: 'GET',
-        credentials: 'include', // Include credentials if needed
       }),
       transformResponse: (response) => {
         // console.log('Course details response:', response);
@@ -176,26 +175,29 @@ export const coursesInstSlice = createApi({
     updateLesson: builder.mutation({
       query: ({ sectionId, lessonId, title, type, videoFile }) => {
         const formData = new FormData();
-
-        // Add title if provided
-        if (title) {
-          formData.append('title', title);
-        }
-
-        // Add type if provided
-        if (type) {
-          formData.append('type', type);
-        }
-
+        
         // Add video file if provided
         if (videoFile) {
           formData.append('videoFile', videoFile);
         }
 
+        // Build query parameters for title and type
+        const params = new URLSearchParams();
+        if (title) {
+          params.append('title', title);
+        }
+        if (type) {
+          params.append('type', type.toUpperCase()); // Ensure type is uppercase
+        }
+        const queryString = params.toString();
+
         return {
-          url: `/instructor/sections/${sectionId}/lessons/${lessonId}`,
+          url: `/instructor/sections/${sectionId}/lessons/${lessonId}${queryString ? `?${queryString}` : ''}`,
           method: 'PATCH',
           body: formData,
+          headers: {
+            accept: 'application/json',
+          },
         };
       },
     }),

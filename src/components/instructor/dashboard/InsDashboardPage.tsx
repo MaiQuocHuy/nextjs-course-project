@@ -77,16 +77,6 @@ export const InsDashboard = () => {
   const [ratings, setRatings] = useState(0);
   const [stats, setStats] = useState(initStats);
 
-  // Get all courses
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else {
-      const courses = getAllCourses();
-      setCourses(courses);
-    }
-  }, []);
-
   // Get published courses
   useEffect(() => {
     if (courses && courses.length > 0) {
@@ -290,8 +280,8 @@ export const InsDashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(stats).map((stat) => (
-          <Link href={stat[1].href}>
+        {Object.entries(stats).map((stat, index) => (
+          <Link href={stat[1].href} key={index}>
             <Card key={stat[1].title} className="shadow-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
