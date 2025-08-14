@@ -10,7 +10,10 @@ const baseQuery = fetchBaseQuery({
 
 // Interfaces cho Course API
 export interface Course {
-  rating: any;
+  rating: {
+    average: number;
+    totalReviews: number;
+  };
   updatedAt: string;
   id: string;
   slug: string;
@@ -66,7 +69,7 @@ export interface Lesson {
   isPreview?: boolean;
 }
 
-// Review Section - Updated to match backend DTOs
+// Review Section
 export interface UserSummary {
   id: string;
   name: string;
