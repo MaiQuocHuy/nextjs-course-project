@@ -34,6 +34,7 @@ import {
   updateQuizScore,
 } from "@/store/slices/student/learningProgressSlice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Comments } from "./Comments";
 
 interface LearningContentProps {
   currentLesson?: Lesson;
@@ -1175,25 +1176,10 @@ export function LearningContent({
 
         {/* Footer */}
         <div className="border-t border-gray-200 p-3 sm:p-4 lg:p-6 bg-white">
-          <Button
-            onClick={handleMarkComplete}
-            disabled={currentLesson.isCompleted || isCompleting}
-            className="w-full h-10 sm:h-11"
-          >
-            {isCompleting ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm sm:text-base">Completing...</span>
-              </div>
-            ) : currentLesson.isCompleted ? (
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Completed</span>
-              </div>
-            ) : (
-              <span className="text-sm sm:text-base">Mark as Complete</span>
-            )}
-          </Button>
+          <Comments
+            lesson={currentLesson}
+            onMarkComplete={handleMarkComplete}
+          />
         </div>
       </div>
     </div>

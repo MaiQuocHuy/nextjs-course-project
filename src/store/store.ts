@@ -7,8 +7,8 @@ import { studentApi } from "@/services/student/studentApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
 import { profileApi } from "@/services/common/profileApi";
 // Instructor
-import { coursesInstSlice } from '@/services/instructor/courses-api';
-import { loadingAnimaSlice } from './slices/instructor/loadingAnimaSlice';
+import { coursesInstSlice } from "@/services/instructor/courses-api";
+import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
@@ -20,7 +20,6 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
     store.dispatch(geminiApi.util.resetApiState());
-
   }
 
   return result;
@@ -29,6 +28,7 @@ import courseFilterReducer from "./slices/student/courseFilterSlice";
 import { settingsApi } from "@/services/common/settingsApi";
 import learningProgressReducer from "./slices/student/learningProgressSlice";
 import { geminiApi } from "@/services/quiz/geminiApi";
+import { commentsApi } from "@/services/commentsApi";
 
 export const makeStore = () => {
   const store = configureStore({
@@ -46,6 +46,7 @@ export const makeStore = () => {
       [profileApi.reducerPath]: profileApi.reducer,
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
+      [commentsApi.reducerPath]: commentsApi.reducer,
 
       // Instructor
       loadingAnima: loadingAnimaSlice.reducer,
@@ -60,6 +61,7 @@ export const makeStore = () => {
         profileApi.middleware,
         settingsApi.middleware,
         geminiApi.middleware,
+        commentsApi.middleware,
         clearCacheOnLogout,
 
         // Instructor
