@@ -33,8 +33,13 @@ export interface Course {
   instructor: {
     id: string;
     name: string;
-    avatar: string;
+    bio: string;
+    thumbnailUrl: string;
   };
+  overViewInstructorSummary: {
+    average: number;
+    totalCoursesByInstructor: number;
+  }
 }
 
 

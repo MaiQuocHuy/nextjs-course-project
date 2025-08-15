@@ -36,6 +36,7 @@ export function InstructorProfile({
   variant = "full",
 }: InstructorProfileProps) {
   const instructor = course.instructor;
+  const instructorOverviewInstructorSummary = course.overViewInstructorSummary;
 
   // Mock instructor stats (in real app, this would come from API)
   const instructorStats = {
@@ -67,7 +68,7 @@ export function InstructorProfile({
             <Avatar className="h-16 w-16 ring-2 ring-blue-100 dark:ring-blue-900">
               <AvatarImage
                 src={
-                  instructor.avatar ||
+                  instructor.thumbnailUrl ||
                   `https://ui-avatars.com/api/?name=${instructor.name}&background=3b82f6&color=fff`
                 }
                 alt={instructor.name}
@@ -147,7 +148,7 @@ export function InstructorProfile({
               <Avatar className="h-24 w-24 ring-4 ring-blue-100 dark:ring-blue-900 shadow-lg">
                 <AvatarImage
                   src={
-                    instructor.avatar ||
+                    instructor.thumbnailUrl ||
                     `https://ui-avatars.com/api/?name=${instructor.name}&background=3b82f6&color=fff&size=96`
                   }
                   alt={instructor.name}
@@ -187,7 +188,9 @@ export function InstructorProfile({
                 </div>
                 <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
                   <div className="text-lg font-bold text-green-600">
-                    {instructorStats.totalCourses}
+                    {
+                      instructorOverviewInstructorSummary.totalCoursesByInstructor
+                    }
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
                     Courses
@@ -195,7 +198,9 @@ export function InstructorProfile({
                 </div>
                 <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
                   <div className="text-lg font-bold text-yellow-600">
-                    {instructorStats.averageRating}
+                    {Number(
+                      instructorOverviewInstructorSummary.average?.toFixed(1)
+                    )}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
                     Rating
@@ -219,19 +224,7 @@ export function InstructorProfile({
               About {instructor.name.split(" ")[0]}
             </h4>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              With over {instructorStats.yearsExperience} years of experience in
-              software development,
-              {instructor.name} has worked with leading tech companies and has a
-              passion for teaching. They specialize in modern web technologies
-              and have helped thousands of students advance their careers in
-              technology.
-            </p>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              As a seasoned educator, they believe in practical, hands-on
-              learning and creating courses that bridge the gap between theory
-              and real-world application. Their teaching style focuses on
-              building confidence through step-by-step guidance and practical
-              projects.
+              {instructor.bio}
             </p>
           </div>
 
@@ -338,7 +331,9 @@ export function InstructorProfile({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 text-gray-600 hover:text-blue-600"
-                  onClick={() => console.log("LinkedIn profile")}
+                  onClick={() => (
+                    window.open("https://www.linkedin.com"), "_blank"
+                  )}
                 >
                   <Linkedin className="w-4 h-4" />
                 </Button>
@@ -346,7 +341,9 @@ export function InstructorProfile({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 text-gray-600 hover:text-blue-400"
-                  onClick={() => console.log("Twitter profile")}
+                  onClick={() => (
+                    window.open("https://www.twitter.com"), "_blank"
+                  )}
                 >
                   <Twitter className="w-4 h-4" />
                 </Button>
@@ -354,7 +351,9 @@ export function InstructorProfile({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 text-gray-600 hover:text-green-600"
-                  onClick={() => console.log("Website")}
+                  onClick={() => (
+                    window.open("https://www.facebook.com"), "_blank"
+                  )}
                 >
                   <Globe className="w-4 h-4" />
                 </Button>
@@ -371,7 +370,9 @@ export function InstructorProfile({
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {instructorStats.averageRating}
+                  {Number(
+                    instructorOverviewInstructorSummary.average?.toFixed(1)
+                  )}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   ({formatNumber(instructorStats.totalReviews)} reviews)
