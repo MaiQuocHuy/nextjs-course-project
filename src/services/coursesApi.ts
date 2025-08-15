@@ -24,6 +24,7 @@ export interface Course {
   thumbnailUrl: string;
   enrollCount: number;
   averageRating: number;
+  sampleVideoUrl: string;
   totalDuration: number;
   sectionCount: number;
   sections?: Section[];
