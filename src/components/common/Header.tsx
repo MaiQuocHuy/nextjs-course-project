@@ -46,6 +46,8 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
 
+  console.log("Header rendered with user:", user);
+
   // Show loading skeleton while auth state is being determined
   if (!isReady) {
     return (
@@ -185,7 +187,9 @@ export function Header() {
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-sm text-muted-foreground">{userEmail}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {userEmail}
+                    </span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -323,7 +327,9 @@ export function Header() {
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-medium">{userName}</span>
-                          <span className="text-sm text-muted-foreground">{userEmail}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {userEmail}
+                          </span>
                         </div>
                       </div>
                       <div className="space-y-2">
