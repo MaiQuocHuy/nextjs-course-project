@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
-import { CourseCreationType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
 interface DragDropReorderProps<T extends { id: string; orderIndex: number }> {
   items: T[];
@@ -116,10 +115,10 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
     e.preventDefault();
     setDraggedItem(null);
   }
-
+  
   return (
     <div className={className}>
-      {items.map((item, index) => (
+      {items.map((item, index) => (        
         <div
           key={item.id}
           className={`relative group ${
@@ -195,7 +194,10 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
                       variant="ghost"
                       size="sm"
                       className="h-6 w-8 p-0 text-xs"
-                      onClick={() => setEditingOrder(item.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingOrder(item.id);
+                      }}
                     >
                       {item.orderIndex + 1}
                     </Button>

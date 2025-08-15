@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -20,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, Upload, X, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Upload, X, CheckCircle, XCircle, FileText } from "lucide-react";
 import { useRegisterInstructorMutation, useRegisterStudentMutation } from "@/services/authApi";
 
 type RegistrationFormData = {
@@ -95,6 +93,7 @@ export default function RegisterPage() {
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [currentStep, setCurrentStep] = useState(1);
+  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({});
   const maxSteps = 2;
 
   // RTK Query mutation hook
@@ -122,6 +121,18 @@ export default function RegisterPage() {
       setCurrentStep(1);
     }
   }, [role]);
+
+  const generateFilePreview = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      } else {
+        resolve(""); // No preview for non-image files
+      }
+    });
+  };
 
   const onSubmit = async (data: RegistrationFormData) => {
     setIsSubmitting(true);
@@ -235,34 +246,170 @@ export default function RegisterPage() {
     }, 200);
   };
 
+  const FileUploadCard = ({
+    file,
+    onRemove,
+    fileType,
+    preview,
+  }: {
+    file: File;
+    onRemove: () => void;
+    fileType: string;
+    preview?: string;
+  }) => {
+    const isImage = file.type.startsWith("image/");
+    const uploadKey = `${fileType}-${file.name}`;
+    const progress = uploadProgress[uploadKey];
+    const isUploading = progress !== undefined && progress < 100;
+
+    return (
+      <div className="bg-white border-2 border-green-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-start gap-4">
+          {/* Thumbnail or File Icon */}
+          <div className="flex-shrink-0">
+            {isImage && preview ? (
+              <div className="relative">
+                <img
+                  src={preview || "/placeholder.svg"}
+                  alt="File preview"
+                  className="w-16 h-16 object-cover rounded-lg border"
+                />
+                <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                  <CheckCircle className="w-3 h-3" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center border">
+                <FileText className="w-8 h-8 text-gray-400" />
+                <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                  <CheckCircle className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* File Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{file.name}</p>
+                <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
+                {isUploading && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <span>Uploading...</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {!isUploading && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                    <span className="text-xs text-green-600 font-medium">Upload complete</span>
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onRemove}
+                className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const FileUploadZone = ({
+    id,
+    label,
+    required = false,
+    onFileSelect,
+  }: {
+    id: string;
+    label: string;
+    required?: boolean;
+    onFileSelect: (file: File) => void;
+  }) => (
+    <div className="space-y-3">
+      <Label className="text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </Label>
+      <div className="border-2 border-dashed border-indigo-300 rounded-xl p-6 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all duration-200 cursor-pointer group">
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              const error = validateFile(file);
+              if (!error) {
+                onFileSelect(file);
+              }
+            }
+          }}
+          className="hidden"
+          id={id}
+        />
+        <label htmlFor={id} className="cursor-pointer block text-center">
+          <div className="w-12 h-12 mx-auto mb-3 bg-indigo-100 rounded-full flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+            <Upload className="w-6 h-6 text-indigo-600" />
+          </div>
+          <p className="text-sm font-medium text-gray-700 mb-1">{label}</p>
+          <p className="text-xs text-gray-500">PDF, DOCX, JPG, PNG (Max 15MB)</p>
+        </label>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-xl mx-auto">
-        <CardHeader className="space-y-1 px-4 sm:px-6">
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-center">
-            Create Account
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900" />
+      <div className="absolute inset-0 bg-black/20" />
+
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/20 rounded-full animate-pulse" />
+        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-white/30 rounded-full animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-3/4 w-1.5 h-1.5 bg-white/25 rounded-full animate-pulse delay-500" />
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-white/20 rounded-full animate-pulse delay-700" />
+      </div>
+
+      <Card className="w-full max-w-2xl shadow-2xl mx-auto bg-white/95 backdrop-blur-sm border-0 relative z-10">
+        <CardHeader className="space-y-2 px-6 py-8 text-center">
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Join Our Learning Platform
           </CardTitle>
-          <CardDescription className="text-center text-base sm:text-lg">
-            Join our learning platform today
+          <CardDescription className="text-lg text-gray-600">
+            Start your educational journey today
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-            {/* Step Indicator - Always reserve space to prevent layout shift */}
+        <CardContent className="px-6 pb-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="mb-8">
               {/* Mobile Step Indicator */}
               <div className="block sm:hidden">
                 <div className="flex items-center justify-between mb-4">
                   <span
-                    className={`text-sm font-medium ${
-                      role === "INSTRUCTOR" ? "text-gray-600" : "text-transparent"
+                    className={`text-sm font-semibold ${
+                      role === "INSTRUCTOR" ? "text-indigo-600" : "text-transparent"
                     }`}
                   >
                     Step {currentStep} of {maxSteps}
                   </span>
                   <span
-                    className={`text-sm ${
-                      role === "INSTRUCTOR" ? "text-gray-500" : "text-transparent"
+                    className={`text-sm font-medium ${
+                      role === "INSTRUCTOR" ? "text-gray-600" : "text-transparent"
                     }`}
                   >
                     {currentStep === 1 ? "Basic Info" : "Instructor Info"}
@@ -270,32 +417,34 @@ export default function RegisterPage() {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      role === "INSTRUCTOR" ? "bg-blue-600" : "bg-transparent"
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      role === "INSTRUCTOR"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-500"
+                        : "bg-transparent"
                     }`}
                     style={{
                       width: role === "INSTRUCTOR" ? `${(currentStep / maxSteps) * 100}%` : "0%",
                     }}
-                  ></div>
+                  />
                 </div>
               </div>
 
               {/* Desktop Step Indicator */}
-              <div className="hidden sm:flex items-center justify-center space-x-4">
+              <div className="hidden sm:flex items-center justify-center space-x-8">
                 <div className="flex items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                       role === "INSTRUCTOR" && currentStep >= 1
-                        ? "bg-blue-600 text-white shadow-lg"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-110"
                         : role === "INSTRUCTOR"
                         ? "bg-gray-200 text-gray-600"
-                        : "bg-transparent text-transparent"
+                        : "bg-transparent text-transparent border-2 border-transparent"
                     }`}
                   >
                     {role === "INSTRUCTOR" ? (currentStep > 1 ? "✓" : "1") : "1"}
                   </div>
                   <span
-                    className={`ml-3 text-sm font-medium ${
+                    className={`ml-4 text-sm font-semibold ${
                       role === "INSTRUCTOR" ? "text-gray-700" : "text-transparent"
                     }`}
                   >
@@ -303,25 +452,27 @@ export default function RegisterPage() {
                   </span>
                 </div>
                 <div
-                  className={`w-20 h-1 rounded-full transition-all duration-300 ${
-                    role === "INSTRUCTOR" && currentStep >= 2 ? "bg-blue-600" : "bg-gray-200"
+                  className={`w-24 h-1 rounded-full transition-all duration-500 ${
+                    role === "INSTRUCTOR" && currentStep >= 2
+                      ? "bg-gradient-to-r from-indigo-500 to-purple-500"
+                      : "bg-gray-200"
                   }`}
                   style={{ opacity: role === "INSTRUCTOR" ? 1 : 0 }}
-                ></div>
+                />
                 <div className="flex items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                       role === "INSTRUCTOR" && currentStep >= 2
-                        ? "bg-blue-600 text-white shadow-lg"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-110"
                         : role === "INSTRUCTOR"
                         ? "bg-gray-200 text-gray-600"
-                        : "bg-transparent text-transparent"
+                        : "bg-transparent text-transparent border-2 border-transparent"
                     }`}
                   >
                     {role === "INSTRUCTOR" ? "2" : "2"}
                   </div>
                   <span
-                    className={`ml-3 text-sm font-medium ${
+                    className={`ml-4 text-sm font-semibold ${
                       role === "INSTRUCTOR" ? "text-gray-700" : "text-transparent"
                     }`}
                   >
@@ -333,350 +484,326 @@ export default function RegisterPage() {
 
             {(role === "STUDENT" || (role === "INSTRUCTOR" && currentStep === 1)) && (
               <>
-                {/* Name Field */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    {...register("name")}
-                    placeholder="Enter your full name"
-                    className={errors.name ? "border-red-500" : ""}
-                  />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-                </div>
-
-                {/* Email Field */}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...register("email")}
-                    placeholder="Enter your email address"
-                    className={errors.email ? "border-red-500" : ""}
-                  />
-                  {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
-                </div>
-
-                {/* Password Fields */}
-                <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
+                <div className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
+                    <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
+                      Full Name *
+                    </Label>
                     <Input
-                      id="password"
-                      type="password"
-                      {...register("password")}
-                      placeholder="Create a password"
-                      className={errors.password ? "border-red-500" : ""}
+                      id="name"
+                      {...register("name")}
+                      placeholder="Enter your full name"
+                      className={`h-12 text-base ${
+                        errors.name
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-gray-300 focus:border-indigo-500"
+                      }`}
                     />
-                    {errors.password && (
-                      <p className="text-sm text-red-500">{errors.password.message}</p>
+                    {errors.name && (
+                      <p className="text-sm text-red-500 font-medium">{errors.name.message}</p>
                     )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                    <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
+                      Email Address *
+                    </Label>
                     <Input
-                      id="confirmPassword"
-                      type="password"
-                      {...register("confirmPassword")}
-                      placeholder="Confirm your password"
-                      className={errors.confirmPassword ? "border-red-500" : ""}
+                      id="email"
+                      type="email"
+                      {...register("email")}
+                      placeholder="Enter your email address"
+                      className={`h-12 text-base ${
+                        errors.email
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-gray-300 focus:border-indigo-500"
+                      }`}
                     />
-                    {errors.confirmPassword && (
-                      <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+                    {errors.email && (
+                      <p className="text-sm text-red-500 font-medium">{errors.email.message}</p>
                     )}
                   </div>
-                </div>
 
-                {/* User Type Radio Group */}
-                <div className="space-y-3">
-                  <Label>I am a *</Label>
-                  <RadioGroup
-                    value={role}
-                    onValueChange={(value) => setValue("role", value as "STUDENT" | "INSTRUCTOR")}
-                    className="flex flex-col space-y-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="STUDENT" id="student" />
-                      <Label htmlFor="student" className="cursor-pointer">
-                        Student
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
+                        Password *
                       </Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        {...register("password")}
+                        placeholder="Create a password"
+                        className={`h-12 text-base ${
+                          errors.password
+                            ? "border-red-500 focus:border-red-500"
+                            : "border-gray-300 focus:border-indigo-500"
+                        }`}
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-red-500 font-medium">
+                          {errors.password.message}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="INSTRUCTOR" id="instructor" />
-                      <Label htmlFor="instructor" className="cursor-pointer">
-                        Instructor
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="confirmPassword"
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Confirm Password *
                       </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        {...register("confirmPassword")}
+                        placeholder="Confirm your password"
+                        className={`h-12 text-base ${
+                          errors.confirmPassword
+                            ? "border-red-500 focus:border-red-500"
+                            : "border-gray-300 focus:border-indigo-500"
+                        }`}
+                      />
+                      {errors.confirmPassword && (
+                        <p className="text-sm text-red-500 font-medium">
+                          {errors.confirmPassword.message}
+                        </p>
+                      )}
                     </div>
-                  </RadioGroup>
-                  {errors.role && <p className="text-sm text-red-500">{errors.role.message}</p>}
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="text-sm font-semibold text-gray-700">I am a *</Label>
+                    <RadioGroup
+                      value={role}
+                      onValueChange={(value) => setValue("role", value as "STUDENT" | "INSTRUCTOR")}
+                      className="flex flex-col space-y-3"
+                    >
+                      <div className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-300 transition-colors">
+                        <RadioGroupItem value="STUDENT" id="student" className="text-indigo-600" />
+                        <Label
+                          htmlFor="student"
+                          className="cursor-pointer font-medium text-gray-700 flex-1"
+                        >
+                          Student - I want to learn new skills
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-300 transition-colors">
+                        <RadioGroupItem
+                          value="INSTRUCTOR"
+                          id="instructor"
+                          className="text-indigo-600"
+                        />
+                        <Label
+                          htmlFor="instructor"
+                          className="cursor-pointer font-medium text-gray-700 flex-1"
+                        >
+                          Instructor - I want to share my knowledge
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                    {errors.role && (
+                      <p className="text-sm text-red-500 font-medium">{errors.role.message}</p>
+                    )}
+                  </div>
                 </div>
               </>
             )}
 
             {role === "INSTRUCTOR" && currentStep === 2 && (
-              <div className="space-y-6 p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="space-y-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg sm:text-xl font-semibold text-blue-900 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                  <h3 className="text-xl font-bold text-indigo-900 flex items-center gap-3">
+                    <div className="w-3 h-3 bg-indigo-600 rounded-full" />
                     Instructor Information
                   </h3>
-                  <span className="text-xs sm:text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                  <span className="text-sm font-semibold text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">
                     Step 2 of 2
                   </span>
                 </div>
 
                 {/* Portfolio URL */}
                 <div className="space-y-2">
-                  <Label htmlFor="portfolioUrl">Portfolio URL (Github/LinkedIn) *</Label>
+                  <Label htmlFor="portfolioUrl" className="text-sm font-semibold text-gray-700">
+                    Portfolio URL (Github/LinkedIn) *
+                  </Label>
                   <Input
                     id="portfolioUrl"
                     {...register("portfolioUrl")}
-                    placeholder="Github or LinkedIn"
-                    className={errors.portfolioUrl ? "border-red-500" : ""}
+                    placeholder="https://github.com/yourusername or https://linkedin.com/in/yourprofile"
+                    className={`h-12 text-base ${
+                      errors.portfolioUrl
+                        ? "border-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:border-indigo-500"
+                    }`}
                   />
                   {errors.portfolioUrl && (
-                    <p className="text-sm text-red-500">{errors.portfolioUrl.message}</p>
+                    <p className="text-sm text-red-500 font-medium">
+                      {errors.portfolioUrl.message}
+                    </p>
                   )}
-                  <p className="text-xs text-gray-500">GitHub, LinkedIn, or personal portfolio</p>
+                  <p className="text-xs text-gray-600">
+                    Share your GitHub, LinkedIn, or personal portfolio
+                  </p>
                 </div>
 
-                {/* Certificate Upload */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>Certificate *</Label>
-                    {certificateFile && (
-                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        Uploaded
-                      </span>
-                    )}
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const error = validateFile(file);
-                          if (!error) {
-                            setCertificateFile(file);
-                            setValue("certificateFile", file);
-                            simulateUpload(`cert-${file.name}`);
-                          }
-                        }
-                      }}
-                      className="hidden"
+                <div className="space-y-6">
+                  {/* Certificate Upload */}
+                  {!certificateFile ? (
+                    <FileUploadZone
                       id="certificate-upload"
-                    />
-                    <label
-                      htmlFor="certificate-upload"
-                      className="cursor-pointer block text-center"
-                    >
-                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm text-gray-600 font-medium">Upload Certificate</p>
-                      <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG (Max 15MB)</p>
-                    </label>
-                  </div>
+                      label="Upload Certificate"
+                      required
+                      onFileSelect={async (file) => {
+                        setCertificateFile(file);
+                        setValue("certificateFile", file);
+                        simulateUpload(`cert-${file.name}`);
 
-                  {certificateFile && (
-                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{certificateFile.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatFileSize(certificateFile.size)}
-                        </p>
-                        {uploadProgress[`cert-${certificateFile.name}`] !== undefined &&
-                          uploadProgress[`cert-${certificateFile.name}`] < 100 && (
-                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                              <div
-                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                style={{
-                                  width: `${uploadProgress[`cert-${certificateFile.name}`]}%`,
-                                }}
-                              ></div>
-                            </div>
-                          )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setCertificateFile(null);
-                          setValue("certificateFile", undefined);
-                        }}
-                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* CV/Resume Upload */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>CV/Resume *</Label>
-                    {cvFile && (
-                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        Uploaded
-                      </span>
-                    )}
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const error = validateFile(file);
-                          if (!error) {
-                            setCvFile(file);
-                            setValue("cvFile", file);
-                            simulateUpload(`cv-${file.name}`);
-                          }
+                        // Generate preview for images
+                        if (file.type.startsWith("image/")) {
+                          const preview = await generateFilePreview(file);
+                          setFilePreviews((prev) => ({ ...prev, [`cert-${file.name}`]: preview }));
                         }
                       }}
-                      className="hidden"
+                    />
+                  ) : (
+                    <FileUploadCard
+                      file={certificateFile}
+                      fileType="cert"
+                      preview={filePreviews[`cert-${certificateFile.name}`]}
+                      onRemove={() => {
+                        setCertificateFile(null);
+                        setValue("certificateFile", undefined);
+                        setFilePreviews((prev) => {
+                          const newPreviews = { ...prev };
+                          delete newPreviews[`cert-${certificateFile.name}`];
+                          return newPreviews;
+                        });
+                      }}
+                    />
+                  )}
+
+                  {/* CV Upload */}
+                  {!cvFile ? (
+                    <FileUploadZone
                       id="cv-upload"
-                    />
-                    <label htmlFor="cv-upload" className="cursor-pointer block text-center">
-                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm text-gray-600 font-medium">Upload CV/Resume</p>
-                      <p className="text-xs text-gray-400 mt-1">PDF, DOCX, JPG, PNG (Max 15MB)</p>
-                    </label>
-                  </div>
+                      label="Upload CV/Resume"
+                      required
+                      onFileSelect={async (file) => {
+                        setCvFile(file);
+                        setValue("cvFile", file);
+                        simulateUpload(`cv-${file.name}`);
 
-                  {cvFile && (
-                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{cvFile.name}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(cvFile.size)}</p>
-                        {uploadProgress[`cv-${cvFile.name}`] !== undefined &&
-                          uploadProgress[`cv-${cvFile.name}`] < 100 && (
-                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                              <div
-                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                style={{ width: `${uploadProgress[`cv-${cvFile.name}`]}%` }}
-                              ></div>
-                            </div>
-                          )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setCvFile(null);
-                          setValue("cvFile", undefined);
-                        }}
-                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Supporting Documents Upload (Optional) */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>
-                      Supporting Document <span className="text-gray-500 text-sm">(Optional)</span>
-                    </Label>
-                    {supportingFile && (
-                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                        Uploaded
-                      </span>
-                    )}
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 hover:border-blue-400 transition-colors">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const error = validateFile(file);
-                          if (!error) {
-                            setSupportingFile(file);
-                            setValue("supportingFile", file);
-                            simulateUpload(`support-${file.name}`);
-                          }
+                        // Generate preview for images
+                        if (file.type.startsWith("image/")) {
+                          const preview = await generateFilePreview(file);
+                          setFilePreviews((prev) => ({ ...prev, [`cv-${file.name}`]: preview }));
                         }
                       }}
-                      className="hidden"
-                      id="supporting-upload"
                     />
-                    <label htmlFor="supporting-upload" className="cursor-pointer block text-center">
-                      <Upload className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm text-gray-600 font-medium">
-                        Upload Supporting Document
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Degrees, certifications, portfolio (Max 15MB)
-                      </p>
-                    </label>
-                  </div>
+                  ) : (
+                    <FileUploadCard
+                      file={cvFile}
+                      fileType="cv"
+                      preview={filePreviews[`cv-${cvFile.name}`]}
+                      onRemove={() => {
+                        setCvFile(null);
+                        setValue("cvFile", undefined);
+                        setFilePreviews((prev) => {
+                          const newPreviews = { ...prev };
+                          delete newPreviews[`cv-${cvFile.name}`];
+                          return newPreviews;
+                        });
+                      }}
+                    />
+                  )}
 
-                  {supportingFile && (
-                    <div className="flex items-center justify-between p-3 bg-white border rounded-lg shadow-sm">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{supportingFile.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatFileSize(supportingFile.size)}
-                        </p>
-                        {uploadProgress[`support-${supportingFile.name}`] !== undefined &&
-                          uploadProgress[`support-${supportingFile.name}`] < 100 && (
-                            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                              <div
-                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                style={{
-                                  width: `${uploadProgress[`support-${supportingFile.name}`]}%`,
-                                }}
-                              ></div>
-                            </div>
-                          )}
+                  {/* Supporting Documents Upload (Optional) */}
+                  {!supportingFile ? (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Supporting Document{" "}
+                        <span className="text-gray-500 text-sm">(Optional)</span>
+                      </Label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all duration-200 cursor-pointer group">
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const error = validateFile(file);
+                              if (!error) {
+                                setSupportingFile(file);
+                                setValue("supportingFile", file);
+                                simulateUpload(`support-${file.name}`);
+
+                                // Generate preview for images
+                                if (file.type.startsWith("image/")) {
+                                  const preview = await generateFilePreview(file);
+                                  setFilePreviews((prev) => ({
+                                    ...prev,
+                                    [`support-${file.name}`]: preview,
+                                  }));
+                                }
+                              }
+                            }
+                          }}
+                          className="hidden"
+                          id="supporting-upload"
+                        />
+                        <label
+                          htmlFor="supporting-upload"
+                          className="cursor-pointer block text-center"
+                        >
+                          <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                            <Upload className="w-6 h-6 text-gray-400 group-hover:text-indigo-500" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-600 mb-1">
+                            Upload Supporting Document
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Degrees, certifications, portfolio (Max 15MB)
+                          </p>
+                        </label>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSupportingFile(null);
-                          setValue("supportingFile", undefined);
-                        }}
-                        className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
                     </div>
+                  ) : (
+                    <FileUploadCard
+                      file={supportingFile}
+                      fileType="support"
+                      preview={filePreviews[`support-${supportingFile.name}`]}
+                      onRemove={() => {
+                        setSupportingFile(null);
+                        setValue("supportingFile", undefined);
+                        setFilePreviews((prev) => {
+                          const newPreviews = { ...prev };
+                          delete newPreviews[`support-${supportingFile.name}`];
+                          return newPreviews;
+                        });
+                      }}
+                    />
                   )}
                 </div>
               </div>
             )}
 
-            {/* Navigation Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-              {/* Back Button */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-6">
               {role === "INSTRUCTOR" && currentStep === 2 && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setCurrentStep(1)}
-                  className="w-full sm:flex-1 h-12 text-base sm:text-lg font-semibold order-2 sm:order-1"
+                  className="w-full sm:flex-1 h-12 text-base font-semibold border-2 hover:bg-gray-50 order-2 sm:order-1"
                 >
                   ← Back to Basic Info
                 </Button>
               )}
 
-              {/* Next/Submit Button */}
               {role === "STUDENT" || (role === "INSTRUCTOR" && currentStep === 2) ? (
                 <Button
                   type="submit"
-                  className="w-full sm:flex-1 h-12 text-base sm:text-lg font-semibold order-1 sm:order-2"
+                  className="w-full sm:flex-1 h-12 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg order-1 sm:order-2"
                   disabled={
                     isSubmitting ||
                     (role === "INSTRUCTOR" &&
@@ -686,7 +813,7 @@ export default function RegisterPage() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Creating Account...
                     </>
                   ) : (
@@ -714,7 +841,7 @@ export default function RegisterPage() {
                       setCurrentStep(2);
                     }
                   }}
-                  className="w-full sm:flex-1 h-12 text-base sm:text-lg font-semibold"
+                  className="w-full sm:flex-1 h-12 text-base font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg"
                   disabled={
                     !watch("name")?.trim() ||
                     !watch("email")?.trim() ||
@@ -728,14 +855,13 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Login Link */}
-            <div className="text-center">
+            <div className="text-center pt-4">
               <p className="text-sm text-gray-600">
                 Already have an account?{" "}
                 <button
                   type="button"
                   onClick={() => router.push("/login")}
-                  className="font-medium text-blue-600 hover:text-blue-500 underline"
+                  className="font-semibold text-indigo-600 hover:text-indigo-500 underline underline-offset-2"
                 >
                   Sign in here
                 </button>
