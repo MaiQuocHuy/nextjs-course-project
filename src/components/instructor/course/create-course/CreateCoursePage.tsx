@@ -19,13 +19,14 @@ import {
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store/store';
 import WarningAlert from '../../commom/WarningAlert';
+// import SectionsLessonsManager from '../SectionsLessonsManager';
+import SectionsLessonsManager2 from '../SectionsLessonsManager2';
 
 export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseBasicInfo, setCourseBasicInfo] =
     useState<CourseBasicInfoType | null>();
   const [progress, setProgress] = useState(0);
-  const [sectionProgress, setSectionProgress] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const [createCourse, { isLoading: isCreatingCourse }] =
@@ -46,19 +47,9 @@ export default function CreateCoursePage() {
     };
   }, [isCreatingCourse, dispatch]);
 
-  const handleSetProgress = (progress: number) => {
-    setSectionProgress(progress);
-  };
-
   // Handle back button to go to previous step or exit
   const handleSteps = () => {
-    console.log(progress);
-
-    // if (progress > 20) {
-    //   setIsDeleteDialogOpen(true);
-    // } else {
-    //   router.push('/instructor/courses');
-    // }
+    setIsDeleteDialogOpen(true);
   };
 
   const handleExitCreateCourse = () => {
@@ -86,6 +77,7 @@ export default function CreateCoursePage() {
         setCurrentStep(2);
       }
     } catch (error) {
+      console.log(error);
       toast.error('Create course failed!');
     }
   };
@@ -150,32 +142,20 @@ export default function CreateCoursePage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Form Completion</span>
-              <span className="text-sm text-muted-foreground">
-                {sectionProgress}%
-              </span>
-            </div>
-            <Progress value={sectionProgress} className="h-2" />
-          </CardContent>
-        </Card>
-
         {/* Step 1: Create course's basic information */}
         {currentStep === 1 && (
           <CreateCourseBasicInforPage
             mode="create"
             onSubmit={handleCourseFormSubmit}
-            onGetProgress={handleSetProgress}
           />
         )}
 
         {/* Step 2: Create Lessons */}
-        {currentStep === 2 && courseBasicInfo && (
-          <CreateLessonsPage2
-            courseBasicInfo={courseBasicInfo}
-            setProgress={setProgress}
+        {currentStep === 2 && courseBasicInfo && courseBasicInfo.id && (
+          <SectionsLessonsManager2
+            courseId={courseBasicInfo.id}
+            mode="create"
+            setProgress={(progress) => setProgress(progress)}
           />
         )}
 

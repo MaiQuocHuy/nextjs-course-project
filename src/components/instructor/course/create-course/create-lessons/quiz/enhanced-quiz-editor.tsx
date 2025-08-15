@@ -11,7 +11,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '@/components/instructor/commom/Collapsible';
 import { Trash2, Plus, Edit3, ChevronRight } from 'lucide-react';
 import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';
 import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
@@ -40,7 +40,7 @@ export function EnhancedQuizEditor({
     const updatedQuestions = questions.filter((q) => q.id !== id);
     // Reorder remaining questions
     updatedQuestions.forEach((q, index) => {
-      q.order = index + 1;
+      q.orderIndex = index;
     });
     onQuestionsChange(updatedQuestions);
   };
@@ -48,11 +48,11 @@ export function EnhancedQuizEditor({
   const addNewQuestion = () => {
     const newQuestion: QuizQuestionType = {
       id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      question: '',
+      questionText: '',
       options: ['', ''],
-      correctAnswer: 0,
+      correctAnswer: '',
       explanation: '',
-      order: questions.length + 1,
+      orderIndex: questions.length,
     };
     onQuestionsChange([...questions, newQuestion]);
     setEditingId(newQuestion.id);
@@ -80,22 +80,16 @@ export function EnhancedQuizEditor({
     }
   };
 
-  const removeOption = (questionId: string, optionIndex: number) => {
+  const removeOption = (questionId: string, correctOption: string) => {
     const question = questions.find((q) => q.id === questionId);
     if (question && question.options.length > 2) {
       const newOptions = question.options.filter(
-        (_, index) => index !== optionIndex
+        (opt) => opt !== correctOption
       );
-      const correctAnswer =
-        question.correctAnswer === optionIndex
-          ? 0
-          : question.correctAnswer > optionIndex
-          ? question.correctAnswer - 1
-          : question.correctAnswer;
 
       updateQuestion(questionId, {
         options: newOptions,
-        correctAnswer,
+        correctAnswer: correctOption,
       });
     }
   };
@@ -108,10 +102,10 @@ export function EnhancedQuizEditor({
             <CardTitle className="text-base flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-                <span>Question {question.order + 1}</span>
-                {question.question && (
+                <span>Question {question.orderIndex + 1}</span>
+                {question.questionText && (
                   <span className="text-sm font-normal text-muted-foreground truncate max-w-md">
-                    - {question.question}
+                    - {question.questionText}
                   </span>
                 )}
               </div>
@@ -145,6 +139,7 @@ export function EnhancedQuizEditor({
             </CardTitle>
           </CardHeader>
         </CollapsibleTrigger>
+
         <CollapsibleContent>
           <CardContent className="space-y-4">
             {editingId === question.id ? (
@@ -152,9 +147,9 @@ export function EnhancedQuizEditor({
                 <div>
                   <Label>Question</Label>
                   <Textarea
-                    value={question.question}
+                    value={question.questionText}
                     onChange={(e) =>
-                      updateQuestion(question.id, { question: e.target.value })
+                      updateQuestion(question.id, { questionText: e.target.value })
                     }
                     placeholder="Enter question..."
                   />
@@ -182,7 +177,7 @@ export function EnhancedQuizEditor({
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              removeOption(question.id, optionIndex)
+                              removeOption(question.id, option.slice(0, 1))
                             }
                           >
                             <Trash2 className="h-4 w-4" />
@@ -210,7 +205,7 @@ export function EnhancedQuizEditor({
                     value={question.correctAnswer.toString()}
                     onValueChange={(value) =>
                       updateQuestion(question.id, {
-                        correctAnswer: Number.parseInt(value),
+                        correctAnswer: value,
                       })
                     }
                   >
@@ -246,18 +241,18 @@ export function EnhancedQuizEditor({
               </>
             ) : (
               <div className="space-y-2">
-                <p className="font-medium">{question.question}</p>
+                <p className="font-medium">{question.questionText}</p>
                 <div className="space-y-1">
                   {question.options.map((option, optionIndex) => (
                     <div
                       key={optionIndex}
                       className={`p-2 rounded text-sm ${
-                        optionIndex === question.correctAnswer
+                        question.correctAnswer === option.slice(0,1)
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                           : 'bg-muted'
                       }`}
                     >
-                      {optionIndex === question.correctAnswer && '✓ '}
+                      {question.correctAnswer === option.slice(0,1) && '✓ '}
                       {option}
                     </div>
                   ))}

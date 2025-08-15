@@ -23,7 +23,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/instructor/course/course-detail/Collapsible';
+} from '@/components/instructor/commom/Collapsible';
 import {
   Plus,
   Trash2,
@@ -76,7 +76,7 @@ const tempDes =
   'Learn HTML, CSS, JavaScript, React, Node.js and more in this comprehensive web development course. Perfect for beginners who want to become full-stack developers.';
 
 interface CreateLessonsPageProps {
-  courseBasicInfo: CourseBasicInfoType;
+  courseBasicInfo?: CourseBasicInfoType;
   setProgress: (progress: number) => void;
 }
 
@@ -101,24 +101,6 @@ export default function CreateLessonsPage({
               orderIndex: 0,
               type: 'VIDEO',
               video: {},
-              documents: [], // Multiple documents
-              questions: [],
-              isCollapsed: false,
-            },
-          ],
-        },
-        {
-          id: `section-${crypto.randomUUID()}`,
-          title: tempTitle + '2',
-          description: tempDes + '2',
-          orderIndex: 1,
-          isCollapsed: false,
-          lessons: [
-            {
-              id: `lesson-${crypto.randomUUID()}`,
-              title: 'Set up React Environment 2',
-              orderIndex: 0,
-              type: 'VIDEO',
               documents: [], // Multiple documents
               questions: [],
               isCollapsed: false,

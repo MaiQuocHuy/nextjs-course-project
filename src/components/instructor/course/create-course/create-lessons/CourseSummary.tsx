@@ -54,12 +54,14 @@ export function CourseSummary({ course }: CourseSummaryProps) {
 
           <div className="flex justify-center">
             <div className="relative w-[80%] overflow-hidden">
-              <Image
-                src={courseImage || ''}
-                alt={course.title}
-                fill
-                className="object-cover rounded-lg"
-              />
+              {courseImage && (
+                <Image
+                  src={courseImage}
+                  alt={course.title}
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              )}
             </div>
           </div>
         </div>
