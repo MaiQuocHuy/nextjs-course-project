@@ -134,11 +134,20 @@ export function CourseContent({
   };
 
   const getPreviewLessonsCount = () => {
-    return sections.reduce((total, section) => {
-      return (
-        total + section.lessons.filter((lesson) => lesson.isPreview).length
-      );
-    }, 0);
+    if (course.sampleVideoUrl) {
+      return 1;
+    }
+  };
+
+  const getPreviewLessons = () => {
+    if (course.sampleVideoUrl) {
+      return [
+        {
+          title: "Sample Preview",
+          url: course.sampleVideoUrl,
+        },
+      ];
+    }
   };
 
   // Mock data if no sections provided
@@ -290,6 +299,67 @@ export function CourseContent({
               </div>
             </CardContent>
           </Card>
+
+          {/* Preview Video Section */}
+          {course.sampleVideoUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Course Preview</span>
+                  <Badge
+                    variant="outline"
+                    className="text-blue-600 border-blue-600"
+                  >
+                    FREE
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="border-b border-gray-200 dark:border-gray-700">
+                  <div className="p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 text-sm font-semibold">
+                        0
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <PlayCircle className="w-5 h-5 text-blue-600" />
+                          Course Preview
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Watch a preview of what you'll learn in this course
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        onClick={() => {
+                          // Here you could implement video modal or player
+                          window.open(course.sampleVideoUrl, "_blank");
+                        }}
+                      >
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        Watch Preview
+                      </Button>
+                    </div>
+
+                    {/* Video Preview */}
+                    <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                      <video
+                        className="w-full h-full object-cover"
+                        controls
+                        poster={course.thumbnailUrl}
+                      >
+                        <source src={course.sampleVideoUrl} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Course Sections */}
           <Card>
