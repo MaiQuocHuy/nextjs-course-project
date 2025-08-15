@@ -24,6 +24,7 @@ export interface Course {
   thumbnailUrl: string;
   enrollCount: number;
   averageRating: number;
+  sampleVideoUrl: string;
   totalDuration: number;
   sectionCount: number;
   sections?: Section[];
@@ -32,8 +33,13 @@ export interface Course {
   instructor: {
     id: string;
     name: string;
-    avatar: string;
+    bio: string;
+    thumbnailUrl: string;
   };
+  overViewInstructorSummary: {
+    average: number;
+    totalCoursesByInstructor: number;
+  }
 }
 
 

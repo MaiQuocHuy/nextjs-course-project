@@ -128,7 +128,13 @@ export function PaymentButton({
         throw new Error(error.message || "Failed to redirect to payment");
       }
     } catch (error: any) {
-      console.error("Payment error:", error);
+      if (error instanceof Error) {
+        console.error("Payment error:", error.message, error);
+      } else if (typeof error === "object" && error !== null) {
+        console.error("Payment error:", JSON.stringify(error), error);
+      } else {
+        console.error("Payment error:", error);
+      }
 
       // Handle different error types
       let errorMessage = "Payment failed. Please try again.";
