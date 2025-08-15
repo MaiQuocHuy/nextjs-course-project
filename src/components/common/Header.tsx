@@ -30,6 +30,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth, useAuthStatus } from "@/hooks/useAuth";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
+import { getSession } from "next-auth/react";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -41,12 +42,17 @@ const navigation = [
 export function Header() {
   const { logout: authLogout, user } = useAuth();
   const { isAuthenticated: isLoggedIn, isReady } = useAuthStatus();
+  const [userRole, setUserRole] = useState<string | undefined>(undefined);
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  console.log("Header rendered with user:", user);
+  useEffect(() => {
+    getSession().then((session) => {
+      setUserRole(session?.user?.role);
+    });
+  }, []);
 
   // Show loading skeleton while auth state is being determined
   if (!isReady) {
@@ -187,9 +193,7 @@ export function Header() {
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {userEmail}
-                    </span>
+                    <span className="text-sm text-muted-foreground">{userEmail}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -204,7 +208,7 @@ export function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
-                    href="/dashboard"
+                    href={`${userRole === "STUDENT" ? "/dashboard" : "/instructor"}`}
                     className="flex items-center gap-2 cursor-pointer transition-colors hover:bg-primary/10"
                   >
                     <LayoutDashboard className="h-4 w-4" />
@@ -327,9 +331,7 @@ export function Header() {
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-medium">{userName}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {userEmail}
-                          </span>
+                          <span className="text-sm text-muted-foreground">{userEmail}</span>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -342,7 +344,7 @@ export function Header() {
                           Profile
                         </Link>
                         <Link
-                          href="/dashboard"
+                          href={`${userRole === "STUDENT" ? "/dashboard" : "/instructor"}`}
                           className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary/10 transition-colors"
                           onClick={() => setIsOpen(false)}
                         >
