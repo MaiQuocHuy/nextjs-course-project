@@ -1,5 +1,3 @@
-"use client";
-
 import { DashboardLayout } from "@/components/dashboard-student/DashboardLayout";
 import { DashboardStats } from "@/components/dashboard-student/DashboardStats";
 import { EnrolledCoursesSummary } from "@/components/dashboard-student/EnrolledCoursesSummary";

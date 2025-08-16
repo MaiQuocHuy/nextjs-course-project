@@ -23,15 +23,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import type { Comment } from "@/types/comments";
 import {
   useGetRepliesQuery,
   useCreateCommentMutation,
   useUpdateCommentMutation,
   useDeleteCommentMutation,
-} from "@/services/commentsApi";
+} from "@/services/student/studentApi";
 import { useAuth } from "@/hooks/useAuth";
+import { Comment } from "@/types/student";
 
 interface CommentItemProps {
   comment: Comment;
@@ -54,6 +64,7 @@ export function CommentItem({
   const [showReplies, setShowReplies] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [editContent, setEditContent] = useState(comment.content);
 
@@ -123,14 +134,13 @@ export function CommentItem({
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
-
     try {
       await deleteComment({
         lessonId,
         commentId: comment.id,
       }).unwrap();
 
+      setIsDeleteOpen(false);
       onDelete?.(comment.id);
     } catch (error) {
       console.error("Failed to delete comment:", error);
@@ -175,10 +185,10 @@ export function CommentItem({
       )}
     >
       <div className="group">
-        <Card className="border-0 shadow-none bg-gray-50/50">
-          <CardContent className="p-4">
+        <Card className="border-1 shadow-sm bg-gray-50/50 py-2">
+          <CardContent className="p-4 space-y-0">
             {/* Comment Header */}
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start justify-between mb-0">
               <div className="flex items-start space-x-3">
                 <Avatar className="w-8 h-8">
                   <AvatarImage
@@ -196,15 +206,15 @@ export function CommentItem({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm">
+                    <span className="font-medium text-m">
                       {comment.user.name}
                     </span>
                     {comment.isEdited && (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-s">
                         Edited
                       </Badge>
                     )}
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-s text-muted-foreground">
                       {formatTime(comment.createdAt)}
                     </span>
                   </div>
@@ -215,11 +225,7 @@ export function CommentItem({
               {isOwner && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -232,7 +238,7 @@ export function CommentItem({
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={handleDelete}
+                      onClick={() => setIsDeleteOpen(true)}
                       disabled={isDeleting}
                       className="text-red-600"
                     >
@@ -250,8 +256,21 @@ export function CommentItem({
                 <Textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
+                  onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
+                    const ta = e.currentTarget as HTMLTextAreaElement;
+                    ta.style.height = "auto";
+                    ta.style.height = `${ta.scrollHeight}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!isCreating && editContent.trim()) {
+                        handleEdit();
+                      }
+                    }
+                  }}
                   placeholder="Edit your comment..."
-                  className="min-h-[80px] resize-none"
+                  className="w-full min-h-[80px] max-h-[300px] resize-none overflow-auto break-words whitespace-pre-wrap"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -274,14 +293,14 @@ export function CommentItem({
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <div className="text-m text-gray-700 leading-relaxed whitespace-pre-wrap break-words ml-11">
                 {comment.content}
               </div>
             )}
 
             {/* Comment Actions */}
             {!showEditForm && (
-              <div className="flex items-center gap-4 mt-3 pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-2 border-t border-gray-100 ml-9 mt-3">
                 {canReply && (
                   <Button
                     variant="ghost"
@@ -323,8 +342,21 @@ export function CommentItem({
                 <Textarea
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
+                  onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
+                    const ta = e.currentTarget as HTMLTextAreaElement;
+                    ta.style.height = "auto";
+                    ta.style.height = `${ta.scrollHeight}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!isCreating && replyContent.trim()) {
+                        handleReply();
+                      }
+                    }
+                  }}
                   placeholder="Write a reply..."
-                  className="min-h-[80px] resize-none"
+                  className="w-full min-h-[80px] max-h-[300px] resize-none overflow-auto break-words whitespace-pre-wrap"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -368,6 +400,24 @@ export function CommentItem({
           </div>
         )}
       </div>
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete comment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this comment? This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

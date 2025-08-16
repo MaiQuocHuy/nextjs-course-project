@@ -28,7 +28,6 @@ import courseFilterReducer from "./slices/student/courseFilterSlice";
 import { settingsApi } from "@/services/common/settingsApi";
 import learningProgressReducer from "./slices/student/learningProgressSlice";
 import { geminiApi } from "@/services/quiz/geminiApi";
-import { commentsApi } from "@/services/commentsApi";
 
 export const makeStore = () => {
   const store = configureStore({
@@ -46,7 +45,6 @@ export const makeStore = () => {
       [profileApi.reducerPath]: profileApi.reducer,
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
-      [commentsApi.reducerPath]: commentsApi.reducer,
 
       // Instructor
       loadingAnima: loadingAnimaSlice.reducer,
@@ -61,7 +59,6 @@ export const makeStore = () => {
         profileApi.middleware,
         settingsApi.middleware,
         geminiApi.middleware,
-        commentsApi.middleware,
         clearCacheOnLogout,
 
         // Instructor

@@ -11,7 +11,7 @@ import {
   useGetRootCommentsQuery,
   useGetCommentCountQuery,
   useCreateCommentMutation,
-} from "@/services/commentsApi";
+} from "@/services/student/studentApi";
 import {
   CustomPagination,
   usePagination,
@@ -105,9 +105,10 @@ export function Comments({ lesson, onMarkComplete }: CommentsProps) {
               <Button
                 variant="outline"
                 size="sm"
+                className="px-4"
                 onClick={() => setShowComments(!showComments)}
               >
-                {showComments ? "Hide Comments" : "Show Comments"}
+                {showComments ? "Hide" : "Show"}
               </Button>
             )}
           </div>
@@ -117,7 +118,7 @@ export function Comments({ lesson, onMarkComplete }: CommentsProps) {
           {/* New Comment Form */}
           {user && (
             <div className="space-y-3">
-              <div className="flex items-start space-x-3">
+              <div className="flex items-start space-x-3 px-3 py-5  border-1 shadow-sm rounded-2xl">
                 <Avatar className="w-8 h-8">
                   <AvatarImage
                     src={user.thumbnailUrl}
@@ -136,8 +137,17 @@ export function Comments({ lesson, onMarkComplete }: CommentsProps) {
                   <Textarea
                     value={newCommentContent}
                     onChange={(e) => setNewCommentContent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!isCreating && newCommentContent.trim()) {
+                          handleCreateComment();
+                        }
+                      }
+                    }}
                     placeholder="Share your thoughts about this lesson..."
-                    className="min-h-[100px] resize-none"
+                    wrap="hard"
+                    className="min-h-[100px] resize-none break-all"
                   />
 
                   <div className="flex justify-between items-center">
@@ -244,42 +254,13 @@ export function Comments({ lesson, onMarkComplete }: CommentsProps) {
               <Button
                 variant="ghost"
                 onClick={() => setShowComments(true)}
-                className="text-sm"
+                className="text-sm border shadow-sm rounded-xl hover:bg-gray-200 hover:text-foreground"
               >
                 View all {commentCount}{" "}
                 {commentCount === 1 ? "comment" : "comments"}
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Mark Complete Section */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold mb-1">Ready to continue?</h3>
-              <p className="text-sm text-muted-foreground">
-                Mark this lesson as complete to track your progress
-              </p>
-            </div>
-
-            <Button
-              onClick={handleMarkComplete}
-              disabled={lesson.isCompleted}
-              size="lg"
-            >
-              {lesson.isCompleted ? (
-                <>
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Completed
-                </>
-              ) : (
-                "Mark as Complete"
-              )}
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
