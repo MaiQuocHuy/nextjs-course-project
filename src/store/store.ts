@@ -7,8 +7,8 @@ import { studentApi } from "@/services/student/studentApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
 import { profileApi } from "@/services/common/profileApi";
 // Instructor
-import { coursesInstSlice } from '@/services/instructor/courses-api';
-import { loadingAnimaSlice } from './slices/instructor/loadingAnimaSlice';
+import { coursesInstSlice } from "@/services/instructor/courses-api";
+import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
@@ -20,7 +20,6 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
     store.dispatch(geminiApi.util.resetApiState());
-
   }
 
   return result;

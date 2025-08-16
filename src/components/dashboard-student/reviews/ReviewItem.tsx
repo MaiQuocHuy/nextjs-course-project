@@ -24,6 +24,7 @@ import { useUpdateReviewMutation } from "@/services/student/studentApi";
 import { Review } from "@/types/student";
 import { Star, Edit, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { formatDate } from "@/utils/student";
 
 interface ReviewItemProps {
   review: Review;
@@ -53,14 +54,6 @@ export function ReviewItem({ review }: ReviewItemProps) {
       let errorMessage = "Failed to update review. Please try again.";
       toast.error(errorMessage);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
   };
 
   const renderStars = (rating: number) => {
