@@ -1,18 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
-// import SectionsLessonsManager, {
-// } from '../SectionsLessonsManager';
 import SectionsLessonsManager2 from '../SectionsLessonsManager2';
-import { useGetSectionsQuery } from '@/services/instructor/courses-api';
+import { useGetSectionsQuery } from '@/services/instructor/courses/sections-api';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
-import { Section } from '@/types/student';
 import { SectionDetail } from '@/types/instructor/courses';
 import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
 import { SectionType } from '@/utils/instructor/create-course-validations/lessons-validations';
-import { set } from 'zod';
+import { Button } from '@/components/ui/button';
 
 interface CourseContentProps {
   courseBasicInfo: CourseBasicInfoType;
@@ -27,6 +24,8 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
 
   const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
   const [isSettingUp, setIsSettingUp] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
+  const [createContent, setCreateContent] = useState(false);
 
   const dispatch: AppDispatch = useDispatch();
 
@@ -42,7 +41,7 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
     };
   }, [isFetchingSections, isSettingUp]);
 
-  // Add video file creation
+  // Normalize data
   useEffect(() => {
     const fetchFiles = async () => {
       if (sections && sections.length > 0) {
@@ -53,14 +52,39 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
             lessons: await Promise.all(
               section.lessons.map(async (lesson) => ({
                 ...lesson,
+                // Add video file creation
                 video: lesson.video && {
-                  ...lesson.video,
-                  file: await createFileFromUrl(lesson.video.url, lesson.video.title),
+                  // ...lesson.video,
+                  file: await createFileFromUrl(
+                    lesson.video.url,
+                    lesson.video.title
+                  ),
                 },
+                // Add orderIndex
                 orderIndex: lesson.order,
+                quiz: lesson.quiz &&
+                  lesson.quiz.questions &&
+                  lesson.quiz.questions.length > 0 && {
+                    ...lesson.quiz,
+                    questions: lesson.quiz.questions.map((q, index) => ({
+                      ...q,
+                      // Add quiz question orderIndex
+                      orderIndex: index,
+                      // Format quiz questions structure
+                      options: q.options
+                        ? (() => {
+                            const optionObj: Record<string, string> = {};
+                            q.options.forEach((opt) => {
+                              const [letter, ...rest] = opt.split('.');
+                              optionObj[letter.trim()] = rest.join('.').trim();
+                            });
+                            return optionObj;
+                          })()
+                        : {},
+                    })),
+                  },
               }))
             ),
-            
           }))
         );
         setUpdatedSections(updatedSections);
@@ -70,35 +94,89 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
     fetchFiles();
   }, [sections]);
 
+  useEffect(() => {
+    if (updatedSections && updatedSections.length > 0) {
+      setHasContent(true);
+    }
+  }, [updatedSections]);
+
   if (isFetchingSections || isSettingUp) {
     return <></>;
   }
 
+  if (isError) {
+    return <p>Error fetching course content!</p>;
+  }
+
   return (
     <>
-      {isError || (updatedSections && updatedSections.length === 0) ? (
-        <p>Error</p>
+      {hasContent ? (
+        courseBasicInfo &&
+        courseBasicInfo.id && (
+          <CreateCourseContentForm
+            courseId={courseBasicInfo.id}
+            sections={updatedSections}
+            mode="view"
+          />
+        )
       ) : (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {courseBasicInfo.id && (
-                <SectionsLessonsManager2
-                  courseId={courseBasicInfo.id}
-                  mode="view"
-                  sections={updatedSections}
-                  canEditContent={true}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <>
+          {createContent ? (
+            courseBasicInfo &&
+            courseBasicInfo.id && (
+              <CreateCourseContentForm
+                courseId={courseBasicInfo.id}
+                mode="create"
+              />
+            )
+          ) : (
+            <>
+              <div className="text-center space-y-4">
+                <p>No content available</p>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setCreateContent(true);
+                    setHasContent(false);
+                  }}
+                >
+                  Create Content
+                </Button>
+              </div>
+            </>
+          )}
+        </>
       )}
     </>
   );
 };
 
 export default CourseContent;
+
+const CreateCourseContentForm = ({
+  courseId,
+  sections,
+  mode,
+}: {
+  courseId: string;
+  sections?: SectionType[];
+  mode: 'create' | 'view';
+}) => {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Course Content</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionsLessonsManager2
+            courseId={courseId}
+            mode={mode}
+            sections={sections}
+            canEditContent={true}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

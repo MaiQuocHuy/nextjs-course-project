@@ -45,15 +45,20 @@ export const videoSchema = z.object({
     )
     .refine((file) => file.size <= 100 * 1024 * 1024, {
       message: 'Video size must not exceed 100MB',
-    }),
+    })
+    .nullish(),
 });
 
 export const quizQuestionSchema = z.object({
   id: z.string(),
   questionText: z.string().min(1, 'Question cannot be empty'),
-  options: z.array(z.string()).min(2, 'Must have at least 2 options'),
-  // correctAnswer: z.number().min(0, 'Must select correct answer'),
-  correctAnswer: z.string(),
+  options: z.object({
+    A: z.string().min(1, 'Option A cannot be empty'),
+    B: z.string().min(1, 'Option B cannot be empty'),
+    C: z.string().min(1, 'Option C cannot be empty'),
+    D: z.string().min(1, 'Option D cannot be empty'),
+  }),
+  correctAnswer: z.enum(['A', 'B', 'C', 'D']),
   explanation: z.string().optional(),
   orderIndex: z.number().min(0),
 });
@@ -69,7 +74,7 @@ export const lessonSchema = z
     title: z.string().min(1, 'Lesson title cannot be empty'),
     orderIndex: z.number().min(0),
     type: z.enum(['VIDEO', 'QUIZ']).default('VIDEO'),
-    video: videoSchema.optional(),
+    video: videoSchema.nullish(),
     quiz: quizSchema.nullish(),
     quizType: z.enum(['ai', 'upload']).optional(),
     quizFile: z.instanceof(File).optional(),
@@ -78,12 +83,11 @@ export const lessonSchema = z
   .refine(
     (data) => {
       if (data.type === 'VIDEO') {
-        return data.video !== undefined;
+        return data.video && data.video.file;
       }
       if (data.type === 'QUIZ') {
         return data.quiz && data.quiz.questions.length > 0;
       }
-      return true;
     },
     {
       message:
