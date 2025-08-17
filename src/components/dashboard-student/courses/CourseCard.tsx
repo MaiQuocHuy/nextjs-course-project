@@ -13,7 +13,7 @@ interface CourseCardProps {
 
 export function CourseCard({ course }: CourseCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 gap-1">
       <CardHeader className="p-0">
         <div className="aspect-video relative">
           <Image
@@ -37,7 +37,7 @@ export function CourseCard({ course }: CourseCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="p-4">
+      <CardContent className="p-4 pt-0">
         <div className="space-y-3">
           {/* Course Title and Status */}
           <div className="space-y-2">

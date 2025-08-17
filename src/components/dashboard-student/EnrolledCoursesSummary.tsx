@@ -76,7 +76,7 @@ export function EnrolledCoursesSummary() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex flex-col items-start justify-between gap-2">
-                    <CardTitle className="text-lg line-clamp-2 flex-1">
+                    <CardTitle className="text-lg line-clamp-1 flex-1">
                       {enrollment.title}
                     </CardTitle>
                     <CourseStatus status={enrollment.completionStatus} />
