@@ -19,7 +19,22 @@ export interface QuizQuestion {
   questionText: string;
   options: string[];
   correctAnswer: string;
-  explanation: string;
+  explanation?: string;
+}
+
+export interface Quiz {
+  id?: string;
+  questions: {
+    questionText: string;
+    options: {
+      A: string;
+      B: string;
+      C: string;
+      D: string;
+    };
+    correctAnswer: 'A' | 'B' | 'C' | 'D';
+    explanation: string;
+  }[];
 }
 
 export interface LessonOverview {
@@ -35,7 +50,9 @@ export interface LessonDetail extends LessonOverview {
   order: number;
   orderIndex: number;
   video?: VideoContent;
-  quiz?: QuizQuestion[];
+  quiz?: {
+    questions: QuizQuestion[];
+  };
   isCompleted: boolean;
   completedAt: string;
 }

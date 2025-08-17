@@ -114,8 +114,8 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
   const handleDragEnd = (e: React.DragEvent) => {
     e.preventDefault();
     setDraggedItem(null);
-  }
-  
+  };
+
   return (
     <div className={className}>
       {items.map((item, index) => (        

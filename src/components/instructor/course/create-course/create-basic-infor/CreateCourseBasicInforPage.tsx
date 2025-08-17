@@ -27,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import {
   Form,
   FormControl,
@@ -53,9 +52,10 @@ import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import {
-  useDeleteCourseMutation,
+  useCreateCourseMutation,
   useUpdateCourseMutation,
-} from '@/services/instructor/courses-api';
+  useDeleteCourseMutation,
+} from '@/services/instructor/courses/courses-api';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
@@ -93,9 +93,11 @@ export function CreateCourseBasicInforPage({
   const [courseStatus, setCourseStatus] = useState<
     'published' | 'unpublished' | 'pending'
   >('published');
-  const [updateCourse, { isLoading: isUpdatingCourse }] =
-    useUpdateCourseMutation();
+
+  const [createCourse] = useCreateCourseMutation();
+  const [updateCourse] = useUpdateCourseMutation();
   const [deleteCourse] = useDeleteCourseMutation();
+
   const dispatch: AppDispatch = useDispatch();
   const router = useRouter();
 
@@ -112,25 +114,13 @@ export function CreateCourseBasicInforPage({
         },
     mode: 'onChange', // Enable real-time validation
   });
-  
+
   const {
     watch,
     formState: { errors, isValid, isDirty },
   } = form;
 
   const watchThumbnail = watch('file');
-
-  // Loading animation
-  useEffect(() => {
-    if (isUpdatingCourse) {
-      loadingAnimation(true, dispatch);
-    } else {
-      loadingAnimation(false, dispatch);
-    }
-    return () => {
-      loadingAnimation(false, dispatch);
-    };
-  }, [isUpdatingCourse]);
 
   // Clear thumbnail if file is invalid
   useEffect(() => {
@@ -194,7 +184,7 @@ export function CreateCourseBasicInforPage({
     if (mode === 'edit') {
       handleUpdateCourse(data);
     } else {
-      onSubmit?.(data);
+      handleCreateCourse(data);
     }
   };
 
@@ -218,28 +208,48 @@ export function CreateCourseBasicInforPage({
     );
   };
 
+  const handleCreateCourse = async (data: CourseBasicInfoType) => {
+    loadingAnimation(true, dispatch, 'Creating course. Please wait...');
+    try {
+      const result = await createCourse(data).unwrap();
+      if (result.statusCode === 201) {
+        const courseData = {
+          ...data,
+          id: result.data.id,
+        };
+        loadingAnimation(false, dispatch);
+        if (onSubmit) {
+          onSubmit(courseData);
+        }
+      }
+    } catch (error: any) {
+      // console.error('Create course error:', error);
+      loadingAnimation(false, dispatch);
+      toast.error(error.message);
+    }
+  };
+
   const handleUpdateCourse = async (data: CourseBasicInfoType) => {
     // console.log(data);
+    loadingAnimation(true, dispatch, 'Course is being updated. Please wait...');
     if (courseInfor) {
       const dataWithCourseId = { ...data, id: courseInfor.id };
       try {
-        loadingAnimation(
-          true,
-          dispatch,
-          'Course is being updated. Please wait...'
-        );
         const res = await updateCourse(dataWithCourseId).unwrap();
-        // console.log(res);
-        if ('statusCode' in res && res.statusCode === 200) {
+        if (res.statusCode === 200) {
           loadingAnimation(false, dispatch);
           form.reset(data);
           toast.success(res.message);
         }
-      } catch (error) {
+      } catch (error: any) {
         // console.log(error);
         loadingAnimation(false, dispatch);
-        toast.error('Update course failed!');
+        toast.error(error.message);
       }
+    } else {
+      // Handle case where courseInfor is not available
+      loadingAnimation(false, dispatch);
+      toast.error('Course information is not available.');
     }
   };
 
@@ -254,15 +264,13 @@ export function CreateCourseBasicInforPage({
   };
 
   const handleDeleteCourse = async () => {
+    loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
     try {
-      loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
-      if (courseInfor?.id) {
-        const res = await deleteCourse(courseInfor?.id);
-        if (res) {
-          loadingAnimation(false, dispatch);
-          toast.error('Delete course successfully!');
-          router.push('/instructor/courses');
-        }
+      const res = await deleteCourse(courseInfor?.id).unwrap();
+      if (res.statusCode === 200) {
+        loadingAnimation(false, dispatch);
+        toast.error('Delete course successfully!');
+        router.push('/instructor/courses');
       }
     } catch (error) {
       loadingAnimation(false, dispatch);
@@ -301,13 +309,15 @@ export function CreateCourseBasicInforPage({
                 )}
 
                 {/* Delete course */}
-                <Button
-                  variant="destructive"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
+                {courseInfor.id && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
               </div>
             </CardHeader>
           </Card>

@@ -1,15 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 
 import {
   useGetCourseByIdQuery,
-  useGetCoursesQuery,
-} from '@/services/instructor/courses-api';
-import { Course } from '@/types/instructor/courses';
-import { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+} from '@/services/instructor/courses/courses-api';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { AppDispatch } from '@/store/store';
 import CourseNavigation from './CourseNavigation';
@@ -19,12 +16,6 @@ import CourseContent from './CourseContent';
 interface CourseDetailsPageProps {
   isEditCourse?: boolean;
 }
-
-const coursesParams = {
-  page: 0,
-  size: 12,
-  sort: 'createdAt,DESC',
-};
 
 export default function CourseDetailsPage({
   isEditCourse,
@@ -37,7 +28,7 @@ export default function CourseDetailsPage({
     data: courseData,
     isLoading,
     isError,
-  } = useGetCourseByIdQuery(params.id);
+  } = useGetCourseByIdQuery(params.id, {skip: !params.id});
 
   const dispatch: AppDispatch = useDispatch();
 

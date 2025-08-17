@@ -11,7 +11,7 @@ import type { CourseBasicInfoType } from '@/utils/instructor/create-course-valid
 import { CreateCourseBasicInforPage } from '@/components/instructor/course/create-course/create-basic-infor/CreateCourseBasicInforPage';
 import { useRouter } from 'next/navigation';
 import CreateLessonsPage2 from '@/components/instructor/course/create-course/create-lessons/create-lessons2';
-import { useCreateCourseMutation } from '@/services/instructor/courses-api';
+import { useCreateCourseMutation } from '@/services/instructor/courses/courses-api';
 import {
   startLoading,
   stopLoading,
@@ -19,7 +19,6 @@ import {
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store/store';
 import WarningAlert from '../../commom/WarningAlert';
-// import SectionsLessonsManager from '../SectionsLessonsManager';
 import SectionsLessonsManager2 from '../SectionsLessonsManager2';
 
 export default function CreateCoursePage() {
@@ -56,30 +55,12 @@ export default function CreateCoursePage() {
     router.push('/instructor/courses');
   };
 
-  // Get basic course info
+  // Create new course into database
   const handleCourseFormSubmit = async (data: CourseBasicInfoType) => {
     // console.log(data);
-
-    // Create new course into database
-    try {
-      const res = await createCourse(data);
-      // console.log(res);
-      if ('data' in res && res.data.statusCode === 201) {
-        const courseData: CourseBasicInfoType = {
-          ...data,
-          id: res.data.data.id,
-        };
-        // console.log(courseData);
-
-        // Save course basic info and proceed to next step
-        setCourseBasicInfo(courseData);
-        setProgress(50); // Update progress to 50% after course info is saved
-        setCurrentStep(2);
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error('Create course failed!');
-    }
+    setCourseBasicInfo(data);
+    setProgress(50); // Update progress to 50% after course info is saved
+    setCurrentStep(2);
   };
 
   if (isCreatingCourse) {
@@ -150,7 +131,7 @@ export default function CreateCoursePage() {
           />
         )}
 
-        {/* Step 2: Create Lessons */}
+        {/* Step 2: Create Sections and Lessons */}
         {currentStep === 2 && courseBasicInfo && courseBasicInfo.id && (
           <SectionsLessonsManager2
             courseId={courseBasicInfo.id}
@@ -158,6 +139,14 @@ export default function CreateCoursePage() {
             setProgress={(progress) => setProgress(progress)}
           />
         )}
+
+        {/* {currentStep === 1 && (
+          <SectionsLessonsManager2
+            courseId='abc'
+            mode="create"
+            setProgress={(progress) => setProgress(progress)}
+          />
+        )} */}
 
         <WarningAlert
           open={isDeleteDialogOpen}

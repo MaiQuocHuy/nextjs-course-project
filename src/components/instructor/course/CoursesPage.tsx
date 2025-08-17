@@ -45,7 +45,7 @@ import { cn } from '@/lib/utils';
 import {
   useDeleteCourseMutation,
   useGetCoursesQuery,
-} from '@/services/instructor/courses-api';
+} from '@/services/instructor/courses/courses-api';
 import { Course } from '@/types/instructor/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
@@ -267,13 +267,10 @@ export const CoursesPage = () => {
     try {
       setIsDeleteDialogOpen(false);
       loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
-      const res = await deleteCourse(id);
-      if (res) {
-        setTimeout(() => {
-          loadingAnimation(false, dispatch);
-          toast.error('Delete course successfully!');
-          window.location.reload();
-        }, 3000);
+      const res = await deleteCourse(id).unwrap();
+      if (res.statusCode === 200) {
+        loadingAnimation(false, dispatch);
+        toast.error('Delete course successfully!');
       }
     } catch (error) {
       loadingAnimation(false, dispatch);
