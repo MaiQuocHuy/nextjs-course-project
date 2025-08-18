@@ -280,8 +280,9 @@ export function CourseHeader({
                 </div>
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
-                  <span>{course.sectionCount} sections</span>
+                  <span>{course.sections?.length} sections</span>
                 </div>
+                {/* TODO: Implement duration calculation */}
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
                   <span>{getDurationInHours()}h total</span>
