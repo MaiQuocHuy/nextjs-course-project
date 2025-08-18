@@ -25,6 +25,11 @@ import {
   getPaymentMethodDisplay,
   getPaymentStatusBadge,
 } from "@/utils/student";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PaymentTableRowProps {
   payment: Payment;
@@ -174,9 +179,17 @@ export function PaymentTableRow({ payment }: PaymentTableRowProps) {
                             Session ID
                           </span>
                         </div>
-                        <p className="text-sm text-gray-900 font-mono break-all">
-                          {paymentDetail.stripeSessionId}
-                        </p>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-sm text-gray-900 font-mono overflow-hidden text-ellipsis">
+                              {paymentDetail.stripeSessionId}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {paymentDetail.stripeSessionId}
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     )}
 
