@@ -746,11 +746,13 @@ const QuizContent = ({
   section,
   courseId,
   onMarkComplete,
+  onRefetchCourse,
 }: {
   lesson: Lesson;
   section: Section;
   courseId: string;
   onMarkComplete?: () => void;
+  onRefetchCourse?: () => void;
 }) => {
   const [quizState, setQuizState] = useState<QuizState>({
     answers: {},
@@ -813,6 +815,11 @@ const QuizContent = ({
       // Mark lesson as complete after successful quiz submission
       if (onMarkComplete) {
         onMarkComplete();
+      }
+
+      // Refresh dashboard data to update activity feed
+      if (onRefetchCourse) {
+        onRefetchCourse();
       }
     } catch (error) {
       console.error("Failed to submit quiz:", error);
@@ -882,64 +889,135 @@ const QuizContent = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-2 sm:space-y-3">
-                {(Array.isArray(question.options) ? question.options : []).map(
-                  (option) => {
-                    const optionLetter = option.charAt(0);
-                    const isSelected =
-                      quizState.answers[question.id] === optionLetter;
-                    const isCorrect = optionLetter === question.correctAnswer;
-                    const showResult = quizState.showResults;
+                {(() => {
+                  // Handle object format: { "A": "Option text", "B": "Option text" }
+                  const options = question.options;
+                  if (!options) return [];
 
-                    return (
-                      <button
-                        key={option}
-                        onClick={() =>
-                          handleAnswerSelect(question.id, optionLetter)
-                        }
-                        className={cn(
-                          "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
-                          !quizState.submitted && "hover:border-blue-300",
-                          isSelected &&
-                            !showResult &&
-                            "border-blue-500 bg-blue-50",
-                          showResult &&
-                            isCorrect &&
-                            "border-green-500 bg-green-50",
-                          showResult &&
+                  if (typeof options === "object" && !Array.isArray(options)) {
+                    // Object format like { "A": "Database management", "B": "Building user interfaces" }
+                    return Object.entries(options).map(([key, value]) => {
+                      const optionLetter = key;
+                      const optionText = value as string;
+                      const isSelected =
+                        quizState.answers[question.id] === optionLetter;
+                      const isCorrect = optionLetter === question.correctAnswer;
+                      const showResult = quizState.showResults;
+
+                      return (
+                        <button
+                          key={key}
+                          onClick={() =>
+                            handleAnswerSelect(question.id, optionLetter)
+                          }
+                          className={cn(
+                            "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                            !quizState.submitted && "hover:border-blue-300",
                             isSelected &&
-                            !isCorrect &&
-                            "border-red-500 bg-red-50",
-                          !showResult && !isSelected && "border-gray-200"
-                        )}
-                        disabled={quizState.submitted}
-                      >
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <div
-                            className={cn(
-                              "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                              !showResult &&
+                              "border-blue-500 bg-blue-50",
+                            showResult &&
+                              isCorrect &&
+                              "border-green-500 bg-green-50",
+                            showResult &&
                               isSelected &&
-                                !showResult &&
-                                "border-blue-500 bg-blue-500 text-white",
-                              showResult &&
-                                isCorrect &&
-                                "border-green-500 bg-green-500 text-white",
-                              showResult &&
+                              !isCorrect &&
+                              "border-red-500 bg-red-50",
+                            !showResult && !isSelected && "border-gray-200"
+                          )}
+                          disabled={quizState.submitted}
+                        >
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div
+                              className={cn(
+                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
                                 isSelected &&
-                                !isCorrect &&
-                                "border-red-500 bg-red-500 text-white",
-                              !showResult && !isSelected && "border-gray-300"
-                            )}
-                          >
-                            {optionLetter}
+                                  !showResult &&
+                                  "border-blue-500 bg-blue-500 text-white",
+                                showResult &&
+                                  isCorrect &&
+                                  "border-green-500 bg-green-500 text-white",
+                                showResult &&
+                                  isSelected &&
+                                  !isCorrect &&
+                                  "border-red-500 bg-red-500 text-white",
+                                !showResult && !isSelected && "border-gray-300"
+                              )}
+                            >
+                              {optionLetter}
+                            </div>
+                            <span className="leading-relaxed">
+                              {optionText}
+                            </span>
                           </div>
-                          <span className="leading-relaxed">
-                            {option.substring(3)}
-                          </span>
-                        </div>
-                      </button>
-                    );
+                        </button>
+                      );
+                    });
                   }
-                )}
+
+                  // Fallback for array format
+                  if (Array.isArray(options)) {
+                    return options.map((option) => {
+                      const optionLetter = option.charAt(0);
+                      const optionText = option.substring(3);
+                      const isSelected =
+                        quizState.answers[question.id] === optionLetter;
+                      const isCorrect = optionLetter === question.correctAnswer;
+                      const showResult = quizState.showResults;
+
+                      return (
+                        <button
+                          key={option}
+                          onClick={() =>
+                            handleAnswerSelect(question.id, optionLetter)
+                          }
+                          className={cn(
+                            "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                            !quizState.submitted && "hover:border-blue-300",
+                            isSelected &&
+                              !showResult &&
+                              "border-blue-500 bg-blue-50",
+                            showResult &&
+                              isCorrect &&
+                              "border-green-500 bg-green-50",
+                            showResult &&
+                              isSelected &&
+                              !isCorrect &&
+                              "border-red-500 bg-red-50",
+                            !showResult && !isSelected && "border-gray-200"
+                          )}
+                          disabled={quizState.submitted}
+                        >
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div
+                              className={cn(
+                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                isSelected &&
+                                  !showResult &&
+                                  "border-blue-500 bg-blue-500 text-white",
+                                showResult &&
+                                  isCorrect &&
+                                  "border-green-500 bg-green-500 text-white",
+                                showResult &&
+                                  isSelected &&
+                                  !isCorrect &&
+                                  "border-red-500 bg-red-500 text-white",
+                                !showResult && !isSelected && "border-gray-300"
+                              )}
+                            >
+                              {optionLetter}
+                            </div>
+                            <span className="leading-relaxed">
+                              {optionText}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    });
+                  }
+
+                  return [];
+                })()}
               </div>
 
               {quizState.showResults && (
@@ -1169,6 +1247,7 @@ export function LearningContent({
               section={section}
               courseId={courseId}
               onMarkComplete={handleAutoComplete}
+              onRefetchCourse={onRefetchCourse}
             />
           )}
           {currentLesson.type === "TEXT" && (
