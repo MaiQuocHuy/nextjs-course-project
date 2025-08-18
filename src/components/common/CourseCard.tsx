@@ -105,7 +105,8 @@ export function CourseCard({
                   <div className="relative">
                     <Image
                       src={
-                        course.instructor?.avatar || "/placeholder-avatar.jpg"
+                        course.instructor?.thumbnailUrl ||
+                        "/placeholder-avatar.jpg"
                       }
                       alt={course.instructor?.name || "Instructor"}
                       width={32}
