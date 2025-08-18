@@ -333,7 +333,7 @@ export function CourseCard({
           </div>
 
           {/* Course Stats */}
-          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
                 <BookOpen className="w-4 h-4" />
@@ -343,14 +343,14 @@ export function CourseCard({
               </p>
             </div>
 
-            <div className="text-center">
+            {/* <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
                 <Clock className="w-4 h-4" />
               </div>
               <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
                 {getDurationInHours()}h Total
               </p>
-            </div>
+            </div> */}
 
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
