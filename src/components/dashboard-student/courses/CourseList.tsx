@@ -15,11 +15,18 @@ import {
   CourseFilterStatus,
   CourseSortBy,
 } from "@/store/slices/student/courseFilterSlice";
-import { CustomPagination, usePagination } from "@/components/ui/custom-pagination";
+import {
+  CustomPagination,
+  usePagination,
+} from "@/components/ui/custom-pagination";
 
 const COURSES_PER_PAGE = 8;
 
-export function CourseList() {
+type CourseListProps = {
+  cols?: number;
+};
+
+export function CourseList({ cols }: CourseListProps) {
   const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
   const dispatch = useAppDispatch();
   const {
@@ -135,7 +142,9 @@ export function CourseList() {
         />
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={`grid gap-6 md:grid-cols-2 lg:grid-cols-${cols || 4}`}
+          >
             {paginatedCourses.map((course) => (
               <CourseCard key={course.courseId} course={course} />
             ))}
