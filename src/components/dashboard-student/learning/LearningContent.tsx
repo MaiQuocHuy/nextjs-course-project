@@ -882,62 +882,64 @@ const QuizContent = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-2 sm:space-y-3">
-                {question.options.map((option) => {
-                  const optionLetter = option.charAt(0);
-                  const isSelected =
-                    quizState.answers[question.id] === optionLetter;
-                  const isCorrect = optionLetter === question.correctAnswer;
-                  const showResult = quizState.showResults;
+                {(Array.isArray(question.options) ? question.options : []).map(
+                  (option) => {
+                    const optionLetter = option.charAt(0);
+                    const isSelected =
+                      quizState.answers[question.id] === optionLetter;
+                    const isCorrect = optionLetter === question.correctAnswer;
+                    const showResult = quizState.showResults;
 
-                  return (
-                    <button
-                      key={option}
-                      onClick={() =>
-                        handleAnswerSelect(question.id, optionLetter)
-                      }
-                      className={cn(
-                        "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
-                        !quizState.submitted && "hover:border-blue-300",
-                        isSelected &&
-                          !showResult &&
-                          "border-blue-500 bg-blue-50",
-                        showResult &&
-                          isCorrect &&
-                          "border-green-500 bg-green-50",
-                        showResult &&
+                    return (
+                      <button
+                        key={option}
+                        onClick={() =>
+                          handleAnswerSelect(question.id, optionLetter)
+                        }
+                        className={cn(
+                          "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                          !quizState.submitted && "hover:border-blue-300",
                           isSelected &&
-                          !isCorrect &&
-                          "border-red-500 bg-red-50",
-                        !showResult && !isSelected && "border-gray-200"
-                      )}
-                      disabled={quizState.submitted}
-                    >
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        <div
-                          className={cn(
-                            "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                            !showResult &&
+                            "border-blue-500 bg-blue-50",
+                          showResult &&
+                            isCorrect &&
+                            "border-green-500 bg-green-50",
+                          showResult &&
                             isSelected &&
-                              !showResult &&
-                              "border-blue-500 bg-blue-500 text-white",
-                            showResult &&
-                              isCorrect &&
-                              "border-green-500 bg-green-500 text-white",
-                            showResult &&
+                            !isCorrect &&
+                            "border-red-500 bg-red-50",
+                          !showResult && !isSelected && "border-gray-200"
+                        )}
+                        disabled={quizState.submitted}
+                      >
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div
+                            className={cn(
+                              "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
                               isSelected &&
-                              !isCorrect &&
-                              "border-red-500 bg-red-500 text-white",
-                            !showResult && !isSelected && "border-gray-300"
-                          )}
-                        >
-                          {optionLetter}
+                                !showResult &&
+                                "border-blue-500 bg-blue-500 text-white",
+                              showResult &&
+                                isCorrect &&
+                                "border-green-500 bg-green-500 text-white",
+                              showResult &&
+                                isSelected &&
+                                !isCorrect &&
+                                "border-red-500 bg-red-500 text-white",
+                              !showResult && !isSelected && "border-gray-300"
+                            )}
+                          >
+                            {optionLetter}
+                          </div>
+                          <span className="leading-relaxed">
+                            {option.substring(3)}
+                          </span>
                         </div>
-                        <span className="leading-relaxed">
-                          {option.substring(3)}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  }
+                )}
               </div>
 
               {quizState.showResults && (
