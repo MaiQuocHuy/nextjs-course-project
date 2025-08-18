@@ -7,6 +7,7 @@ import {
   BookOpen,
   CreditCard,
   Receipt,
+  MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -435,13 +436,60 @@ export function QuizResultError({ onRetry }: { onRetry?: () => void }) {
   );
 }
 
-export function CourseContentError({ onRetry }: { onRetry?: () => void }) {
+// Comments error loading
+export function CommentsError({ onRetry }: { onRetry?: () => void }) {
   return (
-    <LoadingError
-      variant="alert"
-      message="Failed to load course content. Please check your connection and try again."
-      onRetry={onRetry}
-      retryText="Reload Content"
-    />
+    <Card className="w-full">
+      <CardContent className="py-8">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/10">
+            <MessageCircle className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="text-center space-y-2 max-w-md">
+            <h3 className="text-lg font-semibold text-foreground">
+              Failed to Load Comments
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Unable to load comments for this lesson. Please try again.
+            </p>
+          </div>
+          {onRetry && (
+            <Button variant="outline" onClick={onRetry} size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reload Comments
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Replies error loading
+export function RepliesError({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <Card className="w-full">
+      <CardContent className="py-8">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/10">
+            <MessageCircle className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="text-center space-y-2 max-w-md">
+            <h3 className="text-lg font-semibold text-foreground">
+              Failed to Load Replies
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Unable to load replies for this comment. Please try again.
+            </p>
+          </div>
+          {onRetry && (
+            <Button variant="outline" onClick={onRetry} size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reload Replies
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

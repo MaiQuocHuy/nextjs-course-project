@@ -4,6 +4,8 @@ export {
   CoursesLoadingSkeleton,
   StatsLoadingSkeleton,
   ActivityFeedLoadingSkeleton,
+  CommentsLoadingSkeleton,
+  RepliesLoadingSkeleton,
 } from "./Loading";
 
 // Error components
@@ -14,6 +16,7 @@ export {
   ActivityFeedError,
   ReviewsError,
   PaymentsError,
-  CourseContentError,
   LearningPageError,
+  CommentsError,
+  RepliesError,
 } from "./LoadingError";
