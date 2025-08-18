@@ -314,3 +314,49 @@ export function QuizResultsLoadingSkeleton() {
     </div>
   );
 }
+
+// Comments loading skeleton
+export function CommentsLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} className="p-4">
+          <CardHeader className="flex items-center space-x-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-3 w-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Replies loading skeleton
+export function RepliesLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <Card key={i} className="p-4">
+          <CardHeader className="flex items-center space-x-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-3 w-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}

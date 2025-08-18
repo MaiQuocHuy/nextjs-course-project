@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/custom-pagination";
 import { useAuth } from "@/hooks/useAuth";
 import type { Lesson } from "@/types/student";
+import { CommentsLoadingSkeleton } from "../ui/Loading";
+import { CommentsError } from "../ui/LoadingError";
 
 interface CommentsProps {
   lesson: Lesson;
@@ -84,6 +86,14 @@ export function Comments({ lesson, onMarkComplete }: CommentsProps) {
   const handleMarkComplete = () => {
     onMarkComplete?.(lesson.id);
   };
+
+  if (isLoadingComments) {
+    return <CommentsLoadingSkeleton />;
+  }
+
+  if (commentsError) {
+    return <CommentsError onRetry={refetchRootComments} />;
+  }
 
   return (
     <div className="space-y-6">
