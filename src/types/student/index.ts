@@ -45,7 +45,9 @@ export interface Video {
 export interface QuizQuestion {
   id: string; // ID câu hỏi
   questionText: string; // Nội dung câu hỏi
-  options: string[]; // Danh sách đáp án
+  options: {
+    [key: string]: string; // Danh sách đáp án
+  };
   correctAnswer: string; // Đáp án đúng
   explanation: string; // Giải thích đáp án
 }

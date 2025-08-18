@@ -185,65 +185,141 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
                 <div className="space-y-3">
                   {/* Answer Options - Mobile Optimized */}
                   <div className="space-y-2">
-                    {question.options.map((option, optionIndex) => {
-                      const optionLetter = String.fromCharCode(
-                        65 + optionIndex
-                      ); // A, B, C, D
-                      const isStudentAnswer =
-                        question.studentAnswer === optionLetter;
-                      const isCorrectAnswer =
-                        question.correctAnswer === optionLetter;
+                    {(() => {
+                      // Handle object format: { "A": "Option text", "B": "Option text" }
+                      const options = question.options;
+                      if (!options) return [];
 
-                      return (
-                        <div
-                          key={optionIndex}
-                          className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
-                            isCorrectAnswer
-                              ? "border-green-500 bg-green-50 text-green-800"
-                              : isStudentAnswer && !isCorrectAnswer
-                              ? "border-red-500 bg-red-50 text-red-800"
-                              : "border-gray-200 bg-gray-50"
-                          }`}
-                        >
-                          <div
-                            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
-                              isCorrectAnswer
-                                ? "bg-green-600 text-white"
-                                : isStudentAnswer && !isCorrectAnswer
-                                ? "bg-red-600 text-white"
-                                : "bg-gray-300 text-gray-600"
-                            }`}
-                          >
-                            {optionLetter}
-                          </div>
-                          <span className="flex-1 leading-relaxed">
-                            {option}
-                          </span>
-                          <div className="flex flex-col gap-1 flex-shrink-0">
-                            {isCorrectAnswer && (
-                              <Badge
-                                variant="secondary"
-                                className="bg-green-100 text-green-800 text-xs px-1 py-0"
-                              >
-                                ✓
-                              </Badge>
-                            )}
-                            {isStudentAnswer && (
-                              <Badge
-                                variant="secondary"
-                                className={`text-xs px-1 py-0 ${
+                      if (
+                        typeof options === "object" &&
+                        !Array.isArray(options)
+                      ) {
+                        // Object format like { "A": "Database management", "B": "Building user interfaces" }
+                        return Object.entries(options).map(([key, value]) => {
+                          const optionLetter = key;
+                          const optionText = value as string;
+                          const isStudentAnswer =
+                            question.studentAnswer === optionLetter;
+                          const isCorrectAnswer =
+                            question.correctAnswer === optionLetter;
+
+                          return (
+                            <div
+                              key={key}
+                              className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
+                                isCorrectAnswer
+                                  ? "border-green-500 bg-green-50 text-green-800"
+                                  : isStudentAnswer && !isCorrectAnswer
+                                  ? "border-red-500 bg-red-50 text-red-800"
+                                  : "border-gray-200 bg-gray-50"
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
                                   isCorrectAnswer
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-red-100 text-red-800"
+                                    ? "bg-green-600 text-white"
+                                    : isStudentAnswer && !isCorrectAnswer
+                                    ? "bg-red-600 text-white"
+                                    : "bg-gray-300 text-gray-600"
                                 }`}
                               >
-                                You
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                                {optionLetter}
+                              </div>
+                              <span className="flex-1 leading-relaxed">
+                                {optionText}
+                              </span>
+                              <div className="flex-shrink-0 flex items-center gap-1 ml-2">
+                                {isCorrectAnswer && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-green-100 text-green-800 text-xs px-1 py-0"
+                                  >
+                                    Correct
+                                  </Badge>
+                                )}
+                                {isStudentAnswer && (
+                                  <Badge
+                                    variant="secondary"
+                                    className={`text-xs px-1 py-0 ${
+                                      isCorrectAnswer
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    You
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        });
+                      }
+
+                      // Fallback for array format
+                      if (Array.isArray(options)) {
+                        return options.map((option, optionIndex) => {
+                          const optionLetter = String.fromCharCode(
+                            65 + optionIndex
+                          ); // A, B, C, D
+                          const isStudentAnswer =
+                            question.studentAnswer === optionLetter;
+                          const isCorrectAnswer =
+                            question.correctAnswer === optionLetter;
+
+                          return (
+                            <div
+                              key={optionIndex}
+                              className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
+                                isCorrectAnswer
+                                  ? "border-green-500 bg-green-50 text-green-800"
+                                  : isStudentAnswer && !isCorrectAnswer
+                                  ? "border-red-500 bg-red-50 text-red-800"
+                                  : "border-gray-200 bg-gray-50"
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
+                                  isCorrectAnswer
+                                    ? "bg-green-600 text-white"
+                                    : isStudentAnswer && !isCorrectAnswer
+                                    ? "bg-red-600 text-white"
+                                    : "bg-gray-300 text-gray-600"
+                                }`}
+                              >
+                                {optionLetter}
+                              </div>
+                              <span className="flex-1 leading-relaxed">
+                                {option}
+                              </span>
+                              <div className="flex-shrink-0 flex items-center gap-1 ml-2">
+                                {isCorrectAnswer && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-green-100 text-green-800 text-xs px-1 py-0"
+                                  >
+                                    Correct
+                                  </Badge>
+                                )}
+                                {isStudentAnswer && (
+                                  <Badge
+                                    variant="secondary"
+                                    className={`text-xs px-1 py-0 ${
+                                      isCorrectAnswer
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    You
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        });
+                      }
+
+                      return [];
+                    })()}
                   </div>
 
                   {/* Explanation - Mobile Optimized */}
