@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -33,7 +34,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
 import {
   useGetRepliesQuery,
   useCreateCommentMutation,
@@ -42,6 +42,7 @@ import {
 } from "@/services/student/studentApi";
 import { useAuth } from "@/hooks/useAuth";
 import { Comment } from "@/types/student";
+import { RepliesError, RepliesLoadingSkeleton } from "../ui";
 
 interface CommentItemProps {
   comment: Comment;
@@ -68,11 +69,17 @@ export function CommentItem({
   const [replyContent, setReplyContent] = useState("");
   const [editContent, setEditContent] = useState(comment.content);
 
-  const { data: replies = [] } = useGetRepliesQuery(
+  const {
+    data: replies = [],
+    isLoading: isLoadingReplies,
+    error: errorReplies,
+    refetch: refetchReplies,
+  } = useGetRepliesQuery(
     { lessonId, commentId: comment.id },
-    // Always fetch replies when this item is rendered if the comment reports
-    // having replies. We still control render visibility with showReplies.
-    { skip: !comment.hasReplies }
+    // Fetch replies when the user opens the replies panel or when the
+    // server already reported this comment has replies. This ensures newly
+    // created replies are fetched and rendered immediately.
+    { skip: !showReplies && !comment.hasReplies }
   );
 
   // Ensure we only render immediate children. Some APIs return descendants
@@ -107,6 +114,14 @@ export function CommentItem({
       // Tell parent we added a reply so they can optimistically update or
       // trigger a refetch. Also ensure replies are visible.
       setShowReplies(true);
+      // Refetch replies for this comment so the new reply appears
+      // immediately in the UI without waiting for global invalidation.
+      try {
+        await refetchReplies?.();
+      } catch (e) {
+        /* ignore */
+      }
+
       onReply?.(comment.id, replyContent.trim());
     } catch (error) {
       console.error("Failed to create reply:", error);
@@ -176,6 +191,14 @@ export function CommentItem({
       return "Unknown time";
     }
   };
+
+  if (isLoadingReplies) {
+    return <RepliesLoadingSkeleton />;
+  }
+
+  if (errorReplies) {
+    return <RepliesError onRetry={refetchReplies} />;
+  }
 
   return (
     <div
