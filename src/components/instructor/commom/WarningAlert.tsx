@@ -12,7 +12,7 @@ import {
 
 type Props = {
   open: boolean;
-  onOpenChange: Dispatch<SetStateAction<boolean>>;
+  onOpenChange?: Dispatch<SetStateAction<boolean>>;
   title: string;
   description?: string;
   onClick: () => Promise<void> | void;

@@ -8,6 +8,7 @@ import {
   type CourseBasicInfoType,
   getWordCount,
   getCharacterCount,
+  imageFileSchema,
   fullCourseSchema,
 } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
 import { Button } from '@/components/ui/button';
@@ -87,6 +88,7 @@ export function CreateCourseBasicInforPage({
 }: CourseFormProps) {
   const { data: categories } = useGetCategoriesQuery();
   const [courseThumb, setCourseThumb] = useState<Thumbnail | null>(null);
+  const [isCourseThumbUpdated, setIsCourseThumbUpdated] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -111,47 +113,47 @@ export function CreateCourseBasicInforPage({
           price: 0,
           categoryIds: [],
           level: 'BEGINNER',
+          file: undefined,
         },
     mode: 'onChange', // Enable real-time validation
   });
 
   const {
     watch,
-    formState: { errors, isValid, isDirty },
+    formState: { errors, isValid, isDirty, dirtyFields },
   } = form;
 
   const watchThumbnail = watch('file');
 
-  // Clear thumbnail if file is invalid
-  useEffect(() => {
-    if (errors.file !== undefined) {
-      setCourseThumb(null);
-    }
-  }, [errors.file]);
-
   // Set thumbnail only if file is valid
   useEffect(() => {
-    // Only set thumbnail if file exists and is valid
-    if (
-      watchThumbnail &&
-      watchThumbnail.size > 0 &&
-      errors.file === undefined
-    ) {
-      const handleCourseThumb = async (file: File) => {
-        const preview = await createFilePreview(file);
+    const validateAndSetThumbnail = async () => {
+      // Clear thumbnail first if there's no file
+      if (!watchThumbnail || watchThumbnail.size === 0) {
+        setCourseThumb(null);
+        return;
+      }
+
+      try {
+        // Validate the file using the schema directly
+        await imageFileSchema.parseAsync({ file: watchThumbnail });
+        
+        // Only create preview if validation passes
+        const preview = await createFilePreview(watchThumbnail);
         const courseThumb: Thumbnail = {
           id: crypto.randomUUID(),
-          file,
+          file: watchThumbnail,
           preview,
         };
         setCourseThumb(courseThumb);
-      };
-      handleCourseThumb(watchThumbnail);
-    } else {
-      // Clear thumbnail if file is invalid or removed
-      setCourseThumb(null);
-    }
-  }, [watchThumbnail, errors.file]);
+      } catch (error) {
+        // If validation fails, clear the thumbnail
+        setCourseThumb(null);
+      }
+    };
+
+    validateAndSetThumbnail();
+  }, [watchThumbnail]);
 
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -233,9 +235,19 @@ export function CreateCourseBasicInforPage({
     // console.log(data);
     loadingAnimation(true, dispatch, 'Course is being updated. Please wait...');
     if (courseInfor) {
-      const dataWithCourseId = { ...data, id: courseInfor.id };
+      const keys = Object.keys(dirtyFields) as (keyof CourseBasicInfoType)[];
+      const updatedData: Partial<CourseBasicInfoType> = { 
+        id: courseInfor.id,
+      };
+      for (const key of keys) {
+        updatedData[key] = data[key];
+      }
+      if (isCourseThumbUpdated) {
+        updatedData.file = data.file;
+      }
+
       try {
-        const res = await updateCourse(dataWithCourseId).unwrap();
+        const res = await updateCourse(updatedData).unwrap();
         if (res.statusCode === 200) {
           loadingAnimation(false, dispatch);
           form.reset(data);
@@ -279,7 +291,7 @@ export function CreateCourseBasicInforPage({
   };
 
   const handleRequestApproval = () => {};
-
+  
   return (
     <div className={cn('space-y-6')}>
       {/* Course actions */}
@@ -639,11 +651,14 @@ export function CreateCourseBasicInforPage({
                                 ref={fileInputRef}
                                 accept={accept}
                                 className="hidden"
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.files && e.target.files[0]
-                                  )
-                                }
+                                onChange={(e) => {
+                                  if (e.target.files) {
+                                    field.onChange(e.target.files[0]);
+                                  }
+                                  if (mode === 'edit') {
+                                    setIsCourseThumbUpdated(true);
+                                  }
+                                }}
                               />
 
                               <div className="space-y-4">
@@ -774,7 +789,7 @@ export function CreateCourseBasicInforPage({
               </Button>
             )}
 
-            {mode === 'edit' && isValid && isDirty && (
+            {mode === 'edit' && isValid && (isDirty || isCourseThumbUpdated) && (
               <Button type="submit">Save changes</Button>
             )}
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,7 @@ import {
 import { Trash2, Plus, Edit3, ChevronRight } from 'lucide-react';
 import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';
 import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
+import WarningAlert from '@/components/instructor/commom/WarningAlert';
 
 interface EnhancedQuizEditorProps {
   canEdit: boolean;
@@ -28,11 +29,20 @@ export function EnhancedQuizEditor({
   onQuestionsChange,
 }: EnhancedQuizEditorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedQuestion, setSelectedQuestion] =
+    useState<QuizQuestionType | null>(null);
+  const [isDeleteQuizDialogOpen, setDeleteQuizDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (selectedQuestion) {
+      setDeleteQuizDialogOpen(true);
+    }
+  }, [selectedQuestion]);
 
   const updateQuestion = (id: string, updates: Partial<QuizQuestionType>) => {
     const updatedQuestions = questions.map((q) =>
       q.id === id ? { ...q, ...updates } : q
-    );  
+    );
     onQuestionsChange(updatedQuestions);
   };
 
@@ -47,7 +57,9 @@ export function EnhancedQuizEditor({
 
   const addNewQuestion = () => {
     const newQuestion: QuizQuestionType = {
-      id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `new-question-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`,
       questionText: '',
       options: {
         A: '',
@@ -63,45 +75,13 @@ export function EnhancedQuizEditor({
     setEditingId(newQuestion.id);
   };
 
-  // const addOption = (questionId: string) => {
-  //   const question = questions.find((q) => q.id === questionId);
-  //   if (question && Object.keys(question.options).length < 4) {
-  //     updateQuestion(questionId, {
-  //       options: {
-  //         ...question.options,
-  //         [String.fromCharCode(65 + Object.keys(question.options).length)]: '',
-  //       },
-  //     });
-  //   }
-  // };
-
-  const updateOption = (
-    questionId: string,
-    option: string,
-    answer: string,
-  ) => {
+  const updateOption = (questionId: string, option: string, answer: string) => {
     const question = questions.find((q) => q.id === questionId);
     if (question) {
-      const newOptions = { ...question.options, [option]: answer };      
+      const newOptions = { ...question.options, [option]: answer };
       updateQuestion(questionId, { options: newOptions });
     }
   };
-
-  // const removeOption = (questionId: string, optionLetter: string) => {
-  //   const question = questions.find((q) => q.id === questionId);
-  //   if (question) {
-  //     const newOptions = question.options;
-  //     delete newOptions[optionLetter];
-
-  //     updateQuestion(questionId, {
-  //       options: newOptions,
-  //       correctAnswer:
-  //         question.correctAnswer === optionLetter
-  //           ? newOptions.A // Reset to first option if deleted
-  //           : question.correctAnswer,
-  //     });
-  //   }
-  // };
 
   const renderQuestion = (question: QuizQuestionType, index: number) => (
     <Collapsible key={question.id} defaultOpen={index === 0}>
@@ -141,7 +121,13 @@ export function EnhancedQuizEditor({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteQuestion(question.id)}
+                    onClick={() => {
+                      if (!question.id.includes('new-question')) {
+                        setSelectedQuestion(question);
+                      } else {
+                        deleteQuestion(question.id);
+                      }
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -183,7 +169,11 @@ export function EnhancedQuizEditor({
                             <Input
                               value={optionText}
                               onChange={(e) =>
-                                updateOption(question.id, String.fromCharCode(65 + optionIndex), e.target.value)
+                                updateOption(
+                                  question.id,
+                                  String.fromCharCode(65 + optionIndex),
+                                  e.target.value
+                                )
                               }
                               placeholder={`Option ${String.fromCharCode(
                                 65 + optionIndex
@@ -245,8 +235,7 @@ export function EnhancedQuizEditor({
                             id={`${question.id}-${optionIndex}`}
                           />
                           <Label htmlFor={`${question.id}-${optionIndex}`}>
-                            {optionText[0] ||
-                              `Option ${String.fromCharCode(65 + optionIndex)}`}
+                            {`Option ${String.fromCharCode(65 + optionIndex)}`}
                           </Label>
                         </div>
                       )
@@ -272,22 +261,26 @@ export function EnhancedQuizEditor({
               <div className="space-y-2">
                 <p className="font-medium">{question.questionText}</p>
                 <div className="space-y-1">
-                  {Object.values(question.options).map((optionText: string, optionIndex: number) => {
-                    const optionLetter = String.fromCharCode(65 + optionIndex);
-                    return (
-                      <div
-                        key={optionIndex}
-                        className={`p-2 rounded text-sm ${
-                          question.correctAnswer === optionLetter
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        {question.correctAnswer === optionLetter && '✓ '}
-                        {optionLetter}: {optionText}
-                      </div>
-                    );
-                  })}
+                  {Object.values(question.options).map(
+                    (optionText: string, optionIndex: number) => {
+                      const optionLetter = String.fromCharCode(
+                        65 + optionIndex
+                      );
+                      return (
+                        <div
+                          key={optionIndex}
+                          className={`p-2 rounded text-sm ${
+                            question.correctAnswer === optionLetter
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {question.correctAnswer === optionLetter && '✓ '}
+                          {optionLetter}: {optionText}
+                        </div>
+                      );
+                    }
+                  )}
                 </div>
                 {question.explanation && (
                   <p className="text-sm text-muted-foreground">
@@ -301,7 +294,7 @@ export function EnhancedQuizEditor({
       </Card>
     </Collapsible>
   );
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -316,7 +309,7 @@ export function EnhancedQuizEditor({
 
       {questions.length > 0 ? (
         <DragDropReorder
-          items={questions} 
+          items={questions}
           onReorder={
             canEdit
               ? (reorderedQuestions) => {
@@ -338,6 +331,24 @@ export function EnhancedQuizEditor({
         <Card className="p-8 text-center text-muted-foreground">
           <p>No questions yet. Click "Add Question" to get started.</p>
         </Card>
+      )}
+
+      {selectedQuestion && (
+        <WarningAlert
+          open={isDeleteQuizDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteQuizDialogOpen(open);
+            if (!open) {
+              setSelectedQuestion(null);
+            }
+          }}
+          title="Are you sure you want to delete this question?"
+          onClick={() => {
+            deleteQuestion(selectedQuestion.id);
+            setSelectedQuestion(null);
+          }}
+          actionTitle="Delete Question"
+        />
       )}
     </div>
   );

@@ -93,15 +93,23 @@ export const coursesInstSlice = createApi({
       query: (courseData) => {
         const formData = new FormData();
         formData.append('id', courseData.id);
-        formData.append('title', courseData.title);
-        formData.append('description', courseData.description);
-        formData.append('price', courseData.price.toString());
+        if (courseData.title) {
+          formData.append('title', courseData.title);
+        }
+        if (courseData.description) {
+          formData.append('description', courseData.description);
+        }
+        if (courseData.price) {
+          formData.append('price', courseData.price.toString());
+        }
         if (courseData.categoryIds) {
           courseData.categoryIds.forEach((id: string) => {
             formData.append('categoryIds', id);
           });
         }
-        formData.append('level', courseData.level);
+        if (courseData.level) {
+          formData.append('level', courseData.level);
+        }
         if (courseData.file) {
           formData.append('thumbnail', courseData.file);
         }

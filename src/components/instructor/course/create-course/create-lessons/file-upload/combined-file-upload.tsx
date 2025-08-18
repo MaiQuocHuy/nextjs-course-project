@@ -205,63 +205,63 @@ export function CombinedFileUpload({
     );
   };
 
-  const renderVideoPreview = () => {
-    if (!videoFile || !videoPreviewUrl) return null;
+  // const renderVideoPreview = () => {
+  //   if (!videoFile || !videoPreviewUrl) return null;
 
-    return (
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </Button>
-        </DialogTrigger>
-        <DialogContent
-          style={{
-            width: '90vw',
-            maxWidth: '900px',
-            maxHeight: '95vh',
-            padding: '15px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Video Preview</DialogTitle>
-          </DialogHeader>
-          <div
-            style={{
-              width: '100%',
-              height: '70vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: '#000',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            }}
-          >
-            <video
-              src={videoPreviewUrl}
-              controls
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                background: '#000',
-                borderRadius: '12px',
-              }}
-              preload="metadata"
-            >
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
+  //   return (
+  //     <Dialog>
+  //       <DialogTrigger asChild>
+  //         <Button variant="ghost" size="sm">
+  //           <Eye className="h-4 w-4 mr-2" />
+  //           Preview
+  //         </Button>
+  //       </DialogTrigger>
+  //       <DialogContent
+  //         style={{
+  //           width: '90vw',
+  //           maxWidth: '900px',
+  //           maxHeight: '95vh',
+  //           padding: '15px',
+  //           display: 'flex',
+  //           flexDirection: 'column',
+  //           alignItems: 'center',
+  //           justifyContent: 'center',
+  //         }}
+  //       >
+  //         <DialogHeader>
+  //           <DialogTitle>Video Preview</DialogTitle>
+  //         </DialogHeader>
+  //         <div
+  //           style={{
+  //             width: '100%',
+  //             height: '70vh',
+  //             display: 'flex',
+  //             alignItems: 'center',
+  //             justifyContent: 'center',
+  //             background: '#000',
+  //             borderRadius: '12px',
+  //             overflow: 'hidden',
+  //           }}
+  //         >
+  //           <video
+  //             src={videoPreviewUrl}
+  //             controls
+  //             style={{
+  //               width: '100%',
+  //               height: '100%',
+  //               objectFit: 'contain',
+  //               background: '#000',
+  //               borderRadius: '12px',
+  //             }}
+  //             preload="metadata"
+  //           >
+  //             Your browser does not support the video tag.
+  //           </video>
+  //         </div>
+  //       </DialogContent>
+  //     </Dialog>
+  //   );
+  // };
 
   return (
     <div className="space-y-3">

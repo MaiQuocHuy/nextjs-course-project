@@ -70,17 +70,6 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
                       ...q,
                       // Add quiz question orderIndex
                       orderIndex: index,
-                      // Format quiz questions structure
-                      options: q.options
-                        ? (() => {
-                            const optionObj: Record<string, string> = {};
-                            q.options.forEach((opt) => {
-                              const [letter, ...rest] = opt.split('.');
-                              optionObj[letter.trim()] = rest.join('.').trim();
-                            });
-                            return optionObj;
-                          })()
-                        : {},
                     })),
                   },
               }))
@@ -94,12 +83,6 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
     fetchFiles();
   }, [sections]);
 
-  useEffect(() => {
-    if (updatedSections && updatedSections.length > 0) {
-      setHasContent(true);
-    }
-  }, [updatedSections]);
-
   if (isFetchingSections || isSettingUp) {
     return <></>;
   }
@@ -110,7 +93,7 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
 
   return (
     <>
-      {hasContent ? (
+      {updatedSections && updatedSections.length > 0 ? (
         courseBasicInfo &&
         courseBasicInfo.id && (
           <CreateCourseContentForm
