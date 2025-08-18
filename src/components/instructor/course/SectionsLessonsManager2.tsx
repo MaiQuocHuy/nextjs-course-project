@@ -82,6 +82,7 @@ import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import { useGenerateQuestionsMutation } from '@/services/instructor/courses/quizzes-api';
+import WarningAlert from '@/components/instructor/commom/WarningAlert';
 
 interface SectionsLessonsManagerProps {
   courseId: string;
@@ -125,7 +126,20 @@ export default function SectionsLessonsManager2({
     sectionId: '',
     lessonId: '',
   });
+  const [selectedSection, setSelectedSection] = useState<{
+    index: number;
+  } | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<{
+    sectionIndex: number;
+    lessonIndex: number;
+  } | null>(null);
+  const [isDeleteSectionDialogOpen, setIsDeleteSectionDialogOpen] =
+    useState(false);
+  const [isDeleteLessonDialogOpen, setIsDeleteLessonDialogOpen] =
+    useState(false);
+
   const dispatch: AppDispatch = useDispatch();
+
   const [updatedSections] = useUpdateSectionMutation();
   const [createSection] = useCreateSectionMutation();
   const [deleteSection] = useDeleteSectionMutation();
@@ -182,7 +196,7 @@ export default function SectionsLessonsManager2({
     // console.log('Form Data:', formData);
     if (!validationResult.success) {
       setIsValidInput(false);
-      console.log('Validation Errors:', validationResult.error.issues);
+      // console.log('Validation Errors:', validationResult.error.issues);
     } else {
       setIsValidInput(true);
     }
@@ -247,7 +261,7 @@ export default function SectionsLessonsManager2({
           courseId,
           sectionId: deletedSection.id,
         };
-        const res = await deleteSection(data).unwrap();        
+        const res = await deleteSection(data).unwrap();
         if (res) {
           if (res.statusCode !== 200) {
             isDeleteSuccess = false;
@@ -353,7 +367,6 @@ export default function SectionsLessonsManager2({
     );
     if (file) {
       try {
-        loadingAnimation(true, dispatch, 'Generating quizzes...');
         const mammoth = (await import('mammoth')).default;
         const arrayBuffer = await file.arrayBuffer();
         const { value } = await mammoth.extractRawText({ arrayBuffer });
@@ -369,7 +382,6 @@ export default function SectionsLessonsManager2({
         // Kiểm tra xem data có phải array không
         if (!Array.isArray(data)) {
           console.error('Data is not an array:', data);
-          loadingAnimation(false, dispatch);
           toast.error('Generate failed');
           throw new Error(
             'Invalid response format: expected array of questions'
@@ -421,7 +433,6 @@ export default function SectionsLessonsManager2({
           generatedQuizzes
         );
 
-        loadingAnimation(false, dispatch);
         toast.success('Generate quiz successfully!');
       } catch (err: any) {
         console.error('Generate error:', err);
@@ -430,7 +441,6 @@ export default function SectionsLessonsManager2({
           stack: err.stack,
           originalError: err,
         });
-        loadingAnimation(false, dispatch);
         toast.error(err?.data?.message || err?.message || 'Generate failed');
       }
     }
@@ -489,6 +499,54 @@ export default function SectionsLessonsManager2({
     setCurrentMode(currentMode === 'view' ? 'edit' : 'view');
   };
 
+  // const handleReorderLesson = async (
+  //   sectionIndex: number,
+  //   index1: number,
+  //   index2: number
+  // ) => {
+  //   // loadingAnimation(true, dispatch, 'Reordering lessons...');
+
+  //   try {
+  //     const currentLessons = watchedSections[sectionIndex].lessons;
+  //     // Create new lesson in database before conduct reorder lessons
+  //     if (
+  //       (currentLessons[index1].id.includes('new-lesson') &&
+  //         !currentLessons[index2].id.includes('new-lesson')) ||
+  //       (!currentLessons[index1].id.includes('new-lesson') &&
+  //         currentLessons[index2].id.includes('new-lesson'))
+  //     ) {
+  //       let response = null;
+  //       const section = watchedSections[sectionIndex];
+  //       let lesson: LessonType = {
+  //         id: '',
+  //         title: '',
+  //         orderIndex: 0,
+  //         type: 'VIDEO',
+  //       };
+  //       if (currentLessons[index1].id.includes('new-lesson')) {
+  //         lesson = section.lessons[index1];
+  //       } else {
+  //         lesson = section.lessons[index2];
+  //       }
+  //       response = await createNewLesson(section, lesson);
+  //       if (response) {
+  //         // const [movedLesson] = currentLessons.splice(index1, 1);
+  //         // currentLessons.splice(index2, 0, movedLesson);
+  //         // form.setValue(`sections.${sectionIndex}.lessons`, currentLessons);
+  //         // loadingAnimation(false, dispatch);
+  //         // toast.success('Reorder lessons succesfully!');
+  //       } else {
+  //         loadingAnimation(false, dispatch);
+  //         toast.error('Reorder lessons failed!');
+  //       }
+  //     }
+  //     // Perform reorder these two lessons
+  //   } catch (error) {
+  //     loadingAnimation(false, dispatch);
+  //     toast.error('Reorder lessons failed!');
+  //   }
+  // };
+
   const renderLesson = (
     sectionIndex: number,
     lesson: LessonType,
@@ -545,8 +603,16 @@ export default function SectionsLessonsManager2({
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
-                          removeLesson(sectionIndex, lessonIndex);
+                          console.log(lesson.id);
+
+                          if (lesson.id.includes('new-lesson')) {
+                            removeLesson(sectionIndex, lessonIndex);
+                          } else {
+                            setSelectedLesson({ sectionIndex, lessonIndex });
+                            setIsDeleteLessonDialogOpen(true);
+                          }
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -779,7 +845,9 @@ export default function SectionsLessonsManager2({
                                   }
                                   disabled={isGeneratingQuizs}
                                 >
-                                  Generate Questions with AI
+                                  {isGeneratingQuizs
+                                    ? 'Generating quizzes...'
+                                    : 'Generate Questions with AI'}
                                 </Button>
                               )}
                             </div>
@@ -874,10 +942,6 @@ export default function SectionsLessonsManager2({
                                       `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`
                                     )}
                                     onQuestionsChange={(questions) => {
-                                      // form.setValue(
-                                      //   `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
-                                      //   questions
-                                      // );
                                       field.onChange(questions);
                                     }}
                                   />
@@ -927,21 +991,28 @@ export default function SectionsLessonsManager2({
                 </div>
 
                 {/* Button remove section */}
-                <div
-                  className="flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {currentMode === 'edit' && watchedSections.length > 1 && (
+                {currentMode === 'edit' && watchedSections.length > 1 && (
+                  <div
+                    className="flex gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeSection(sectionIndex)}
+                      onClick={() => {
+                        if (section.id.includes('new-section')) {
+                          removeSection(sectionIndex);
+                        } else {
+                          setSelectedSection({ index: sectionIndex });
+                          setIsDeleteSectionDialogOpen(true);
+                        }
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
@@ -1090,6 +1161,9 @@ export default function SectionsLessonsManager2({
                         sectionId: watchedSections[sectionIndex].id || '',
                       }));
                     }}
+                    // onReorder2={(index1, index2) =>
+                    //   handleReorderLesson(sectionIndex, index1, index2)
+                    // }
                     renderItem={(lesson, lessonIndex) =>
                       renderLesson(sectionIndex, lesson, lessonIndex)
                     }
@@ -1097,7 +1171,7 @@ export default function SectionsLessonsManager2({
                   />
 
                   {/* Add new lesson button */}
-                  {currentMode === 'edit' && (
+                  {currentMode !== 'view' && (
                     <Button
                       type="button"
                       variant="outline"
@@ -1159,20 +1233,20 @@ export default function SectionsLessonsManager2({
 
       // Assign id to lesson
       if (response && response.statusCode === 201 && response.data) {
-        // console.log(createLesRes);
+        // console.log(response);
         if (currentMode === 'edit') {
-          if (section.orderIndex) {
-            const lessonId = response.data.id;
-            const lessonIndex = response.data.orderIndex;
-            form.setValue(
-              `sections.${section.orderIndex}.lessons.${lessonIndex}.id`,
-              lessonId
-            );
-            form.setValue(
-              `sections.${section.orderIndex}.lessons.${lessonIndex}.orderIndex`,
-              lessonIndex
-            );
-          }
+          const lessonId = response.data.id;
+          const lessonIndex = response.data.orderIndex;
+          console.log(lessonId, lessonIndex);
+
+          form.setValue(
+            `sections.${section.orderIndex}.lessons.${lessonIndex}.id`,
+            lessonId
+          );
+          form.setValue(
+            `sections.${section.orderIndex}.lessons.${lessonIndex}.orderIndex`,
+            lessonIndex
+          );
         }
         result = true;
       }
@@ -1259,7 +1333,7 @@ export default function SectionsLessonsManager2({
       loadingAnimation(
         true,
         dispatch,
-        'Section(s) and lesson(s) is being updated'
+        'Section(s) and lesson(s) are being updated...'
       );
 
       // const sections = formData.sections;
@@ -1636,6 +1710,55 @@ export default function SectionsLessonsManager2({
           </div>
         </form>
       </Form>
+
+      {/* Warning Alert for Section Deletion */}
+      {selectedSection && (
+        <WarningAlert
+          open={isDeleteSectionDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteSectionDialogOpen(open);
+            if (!open) {
+              setSelectedSection(null);
+            }
+          }}
+          title="Are you sure you want to delete this section?"
+          description="This action cannot be undone. This will permanently delete the section and all its lessons."
+          onClick={() => {
+            if (selectedSection) {
+              removeSection(selectedSection.index);
+              setIsDeleteSectionDialogOpen(false);
+              setSelectedSection(null);
+            }
+          }}
+          actionTitle="Delete Section"
+        />
+      )}
+
+      {/* Warning Alert for Lesson Deletion */}
+      {selectedLesson && (
+        <WarningAlert
+          open={isDeleteLessonDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteLessonDialogOpen(open);
+            if (!open) {
+              setSelectedLesson(null);
+            }
+          }}
+          title="Are you sure you want to delete this lesson?"
+          description="This action cannot be undone. This will permanently delete the lesson and all its content."
+          onClick={() => {
+            if (selectedLesson) {
+              removeLesson(
+                selectedLesson.sectionIndex,
+                selectedLesson.lessonIndex
+              );
+              setIsDeleteLessonDialogOpen(false);
+              setSelectedLesson(null);
+            }
+          }}
+          actionTitle="Delete Lesson"
+        />
+      )}
     </div>
   );
 }

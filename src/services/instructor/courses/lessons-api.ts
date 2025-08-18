@@ -97,7 +97,7 @@ export const lessonsInstSlice = createApi({
           url: `/instructor/sections/${sectionId}/lessons/quiz${
             queryString ? `?${queryString}` : ''
           }`,
-          method: 'PATCH',
+          method: 'PUT',
           body: { questions },
           headers: {
             accept: 'application/json',
