@@ -596,7 +596,7 @@ export default function SectionsLessonsManager2({
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Remove lesson */}
-                  {currentMode === 'edit' &&
+                  {currentMode !== 'view' &&
                     watchedSections[sectionIndex]?.lessons.length > 1 && (
                       <Button
                         type="button"
@@ -760,168 +760,170 @@ export default function SectionsLessonsManager2({
                     `sections.${sectionIndex}.lessons.${lessonIndex}.type`
                   ) === 'QUIZ' && (
                     <div className="space-y-3">
-                      {(lesson.quiz === null || currentMode === 'create') && (
-                        <div className="space-y-4">
-                          {/* Quiz method */}
-                          <FormField
-                            control={form.control}
-                            name={`sections.${sectionIndex}.lessons.${lessonIndex}.quizType`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Quiz Creation Method</FormLabel>
-                                <FormControl>
-                                  <RadioGroup
-                                    onValueChange={field.onChange}
-                                    value={field.value}
-                                    className="flex gap-6"
-                                  >
-                                    {/* Generate with AI */}
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem
-                                        value="ai"
-                                        id={`ai-${sectionIndex}-${lessonIndex}`}
-                                      />
-                                      <Label
-                                        htmlFor={`ai-${sectionIndex}-${lessonIndex}`}
-                                      >
-                                        <Brain className="h-4 w-4 inline mr-2" />
-                                        Generate with AI
-                                      </Label>
-                                    </div>
+                      {(currentMode === 'create' ||
+                        lesson.quiz === undefined) && (
+                          <div className="space-y-4">
+                            {/* Quiz method */}
+                            <FormField
+                              control={form.control}
+                              name={`sections.${sectionIndex}.lessons.${lessonIndex}.quizType`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Quiz Creation Method</FormLabel>
+                                  <FormControl>
+                                    <RadioGroup
+                                      onValueChange={field.onChange}
+                                      value={field.value}
+                                      className="flex gap-6"
+                                    >
+                                      {/* Generate with AI */}
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem
+                                          value="ai"
+                                          id={`ai-${sectionIndex}-${lessonIndex}`}
+                                        />
+                                        <Label
+                                          htmlFor={`ai-${sectionIndex}-${lessonIndex}`}
+                                        >
+                                          <Brain className="h-4 w-4 inline mr-2" />
+                                          Generate with AI
+                                        </Label>
+                                      </div>
 
-                                    {/* Upload Excel File */}
-                                    <div className="flex items-center space-x-2">
-                                      <RadioGroupItem
-                                        value="upload"
-                                        id={`upload-${sectionIndex}-${lessonIndex}`}
-                                      />
-                                      <Label
-                                        htmlFor={`upload-${sectionIndex}-${lessonIndex}`}
-                                      >
-                                        <Upload className="h-4 w-4 inline mr-2" />
-                                        Upload Excel File
-                                      </Label>
-                                    </div>
-                                  </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                                      {/* Upload Excel File */}
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem
+                                          value="upload"
+                                          id={`upload-${sectionIndex}-${lessonIndex}`}
+                                        />
+                                        <Label
+                                          htmlFor={`upload-${sectionIndex}-${lessonIndex}`}
+                                        >
+                                          <Upload className="h-4 w-4 inline mr-2" />
+                                          Upload Excel File
+                                        </Label>
+                                      </div>
+                                    </RadioGroup>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                          {/* Generated quiz with AI */}
-                          {form.watch(
-                            `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
-                          ) === 'ai' && (
-                            <div className="space-y-2">
-                              {/* Multiple Documents Upload */}
-                              <CombinedFileUpload
-                                documents={
+                            {/* Generated quiz with AI */}
+                            {form.watch(
+                              `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
+                            ) === 'ai' && (
+                              <div className="space-y-2">
+                                {/* Multiple Documents Upload */}
+                                <CombinedFileUpload
+                                  documents={
+                                    form.watch(
+                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
+                                    ) || []
+                                  }
+                                  onDocumentsChange={(documents) => {
+                                    form.setValue(
+                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`,
+                                      documents
+                                    );
+                                  }}
+                                />
+
+                                {/* Generated Quiz Button */}
+                                {Boolean(
                                   form.watch(
                                     `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
-                                  ) || []
-                                }
-                                onDocumentsChange={(documents) => {
-                                  form.setValue(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`,
-                                    documents
-                                  );
-                                }}
-                              />
+                                  )?.length
+                                ) && (
+                                  <Button
+                                    type="button"
+                                    onClick={() =>
+                                      generateQuizWithAI(
+                                        sectionIndex,
+                                        lessonIndex
+                                      )
+                                    }
+                                    disabled={isGeneratingQuizs}
+                                  >
+                                    {isGeneratingQuizs
+                                      ? 'Generating quizzes...'
+                                      : 'Generate Questions with AI'}
+                                  </Button>
+                                )}
+                              </div>
+                            )}
 
-                              {/* Generated Quiz Button */}
-                              {Boolean(
-                                form.watch(
-                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
-                                )?.length
-                              ) && (
-                                <Button
-                                  type="button"
-                                  onClick={() =>
-                                    generateQuizWithAI(
+                            {/* Generated quiz by excel file upload */}
+                            {form.watch(
+                              `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
+                            ) === 'upload' && (
+                              <div className="space-y-4">
+                                <Alert>
+                                  <FileSpreadsheet className="h-4 w-4" />
+                                  <AlertDescription>
+                                    <strong>
+                                      Excel File Format Instructions:
+                                    </strong>
+                                    <br />
+                                    Your Excel file should have the following
+                                    columns:
+                                    <br />• Column A: Question
+                                    <br />• Column B: Option 1
+                                    <br />• Column C: Option 2
+                                    <br />• Column D: Option 3 (optional)
+                                    <br />• Column E: Option 4 (optional)
+                                    <br />• Column F: Option 5 (optional)
+                                    <br />• Column G: Option 6 (optional)
+                                    <br />• Column H: Correct Answer (number
+                                    1-6)
+                                    <br />• Column I: Explanation (optional)
+                                  </AlertDescription>
+                                </Alert>
+
+                                <EnhancedFileUpload
+                                  accept={{
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                                      ['.xlsx'],
+                                    'application/vnd.ms-excel': ['.xls'],
+                                  }}
+                                  maxSize={5 * 1024 * 1024}
+                                  onFileSelect={(file) =>
+                                    handleExcelUpload(
+                                      file,
                                       sectionIndex,
                                       lessonIndex
                                     )
                                   }
-                                  disabled={isGeneratingQuizs}
-                                >
-                                  {isGeneratingQuizs
-                                    ? 'Generating quizzes...'
-                                    : 'Generate Questions with AI'}
-                                </Button>
-                              )}
-                            </div>
-                          )}
+                                  onFileRemove={() => {
+                                    form.setValue(
+                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`,
+                                      undefined
+                                    );
+                                    form.setValue(
+                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
+                                      []
+                                    );
+                                  }}
+                                  selectedFile={form.watch(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`
+                                  )}
+                                  label="Upload Quiz File (Excel)"
+                                  type="document"
+                                />
 
-                          {/* Generated quiz by excel file upload */}
-                          {form.watch(
-                            `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
-                          ) === 'upload' && (
-                            <div className="space-y-4">
-                              <Alert>
-                                <FileSpreadsheet className="h-4 w-4" />
-                                <AlertDescription>
-                                  <strong>
-                                    Excel File Format Instructions:
-                                  </strong>
-                                  <br />
-                                  Your Excel file should have the following
-                                  columns:
-                                  <br />• Column A: Question
-                                  <br />• Column B: Option 1
-                                  <br />• Column C: Option 2
-                                  <br />• Column D: Option 3 (optional)
-                                  <br />• Column E: Option 4 (optional)
-                                  <br />• Column F: Option 5 (optional)
-                                  <br />• Column G: Option 6 (optional)
-                                  <br />• Column H: Correct Answer (number 1-6)
-                                  <br />• Column I: Explanation (optional)
-                                </AlertDescription>
-                              </Alert>
-
-                              <EnhancedFileUpload
-                                accept={{
-                                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                                    ['.xlsx'],
-                                  'application/vnd.ms-excel': ['.xls'],
-                                }}
-                                maxSize={5 * 1024 * 1024}
-                                onFileSelect={(file) =>
-                                  handleExcelUpload(
-                                    file,
-                                    sectionIndex,
-                                    lessonIndex
-                                  )
-                                }
-                                onFileRemove={() => {
-                                  form.setValue(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`,
-                                    undefined
-                                  );
-                                  form.setValue(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
-                                    []
-                                  );
-                                }}
-                                selectedFile={form.watch(
-                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`
+                                {isParsingExcel && (
+                                  <Alert>
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription>
+                                      Parsing Excel file...
+                                    </AlertDescription>
+                                  </Alert>
                                 )}
-                                label="Upload Quiz File (Excel)"
-                                type="document"
-                              />
-
-                              {isParsingExcel && (
-                                <Alert>
-                                  <AlertCircle className="h-4 w-4" />
-                                  <AlertDescription>
-                                    Parsing Excel file...
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                       {/* List of generated questions */}
                       {form.watch(
