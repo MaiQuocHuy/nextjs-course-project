@@ -162,6 +162,25 @@ export interface PaymentDetail extends Payment {
 }
 
 // ==============================
+// Refund types
+// ==============================
+export interface RefundRequest {
+  reason: string; // Lý do hoàn tiền
+}
+
+export interface RefundResponse {
+  id: string; // ID yêu cầu hoàn tiền
+  course: {
+    id: string; // ID khóa học
+    title: string; // Tên khóa học
+  };
+  reason: string; // Lý do hoàn tiền
+  status: "PENDING" | "APPROVED" | "REJECTED"; // Trạng thái yêu cầu
+  amount: number; // Số tiền hoàn lại
+  requestedAt: string | null; // Ngày yêu cầu hoàn tiền
+}
+
+// ==============================
 // Review types
 // ==============================
 export interface ReviewCourse {
