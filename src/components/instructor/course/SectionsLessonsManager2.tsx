@@ -83,6 +83,9 @@ import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import { useGenerateQuestionsMutation } from '@/services/instructor/courses/quizzes-api';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { useUpdateCourseStatusMutation } from '@/services/instructor/courses/courses-api';
 
 interface SectionsLessonsManagerProps {
   courseId: string;
@@ -137,8 +140,13 @@ export default function SectionsLessonsManager2({
     useState(false);
   const [isDeleteLessonDialogOpen, setIsDeleteLessonDialogOpen] =
     useState(false);
+  const [courseStatus, setCourseStatus] = useState<'draft' | 'published'>(
+    'draft'
+  );
 
   const dispatch: AppDispatch = useDispatch();
+
+  const [updateCourseStatus] = useUpdateCourseStatusMutation();
 
   const [updatedSections] = useUpdateSectionMutation();
   const [createSection] = useCreateSectionMutation();
@@ -162,15 +170,15 @@ export default function SectionsLessonsManager2({
         ? initialSections
         : [
             {
-              id: `section-${crypto.randomUUID()}`,
+              id: `new-section-${crypto.randomUUID()}`,
               title: '',
               description: '',
               orderIndex: 0,
               isCollapsed: false,
               lessons: [
                 {
-                  id: `lesson-${crypto.randomUUID()}`,
-                  title: 'Set up React Environment',
+                  id: `new-lesson-${crypto.randomUUID()}`,
+                  title: '',
                   orderIndex: 0,
                   type: 'VIDEO',
                   isCollapsed: false,
@@ -762,168 +770,167 @@ export default function SectionsLessonsManager2({
                     <div className="space-y-3">
                       {(currentMode === 'create' ||
                         lesson.quiz === undefined) && (
-                          <div className="space-y-4">
-                            {/* Quiz method */}
-                            <FormField
-                              control={form.control}
-                              name={`sections.${sectionIndex}.lessons.${lessonIndex}.quizType`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Quiz Creation Method</FormLabel>
-                                  <FormControl>
-                                    <RadioGroup
-                                      onValueChange={field.onChange}
-                                      value={field.value}
-                                      className="flex gap-6"
-                                    >
-                                      {/* Generate with AI */}
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem
-                                          value="ai"
-                                          id={`ai-${sectionIndex}-${lessonIndex}`}
-                                        />
-                                        <Label
-                                          htmlFor={`ai-${sectionIndex}-${lessonIndex}`}
-                                        >
-                                          <Brain className="h-4 w-4 inline mr-2" />
-                                          Generate with AI
-                                        </Label>
-                                      </div>
+                        <div className="space-y-4">
+                          {/* Quiz method */}
+                          <FormField
+                            control={form.control}
+                            name={`sections.${sectionIndex}.lessons.${lessonIndex}.quizType`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Quiz Creation Method</FormLabel>
+                                <FormControl>
+                                  <RadioGroup
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                    className="flex gap-6"
+                                  >
+                                    {/* Generate with AI */}
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem
+                                        value="ai"
+                                        id={`ai-${sectionIndex}-${lessonIndex}`}
+                                      />
+                                      <Label
+                                        htmlFor={`ai-${sectionIndex}-${lessonIndex}`}
+                                      >
+                                        <Brain className="h-4 w-4 inline mr-2" />
+                                        Generate with AI
+                                      </Label>
+                                    </div>
 
-                                      {/* Upload Excel File */}
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem
-                                          value="upload"
-                                          id={`upload-${sectionIndex}-${lessonIndex}`}
-                                        />
-                                        <Label
-                                          htmlFor={`upload-${sectionIndex}-${lessonIndex}`}
-                                        >
-                                          <Upload className="h-4 w-4 inline mr-2" />
-                                          Upload Excel File
-                                        </Label>
-                                      </div>
-                                    </RadioGroup>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                                    {/* Upload Excel File */}
+                                    <div className="flex items-center space-x-2">
+                                      <RadioGroupItem
+                                        value="upload"
+                                        id={`upload-${sectionIndex}-${lessonIndex}`}
+                                      />
+                                      <Label
+                                        htmlFor={`upload-${sectionIndex}-${lessonIndex}`}
+                                      >
+                                        <Upload className="h-4 w-4 inline mr-2" />
+                                        Upload Excel File
+                                      </Label>
+                                    </div>
+                                  </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                            {/* Generated quiz with AI */}
-                            {form.watch(
-                              `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
-                            ) === 'ai' && (
-                              <div className="space-y-2">
-                                {/* Multiple Documents Upload */}
-                                <CombinedFileUpload
-                                  documents={
-                                    form.watch(
-                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
-                                    ) || []
-                                  }
-                                  onDocumentsChange={(documents) => {
-                                    form.setValue(
-                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`,
-                                      documents
-                                    );
-                                  }}
-                                />
-
-                                {/* Generated Quiz Button */}
-                                {Boolean(
+                          {/* Generated quiz with AI */}
+                          {form.watch(
+                            `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
+                          ) === 'ai' && (
+                            <div className="space-y-2">
+                              {/* Multiple Documents Upload */}
+                              <CombinedFileUpload
+                                documents={
                                   form.watch(
                                     `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
-                                  )?.length
-                                ) && (
-                                  <Button
-                                    type="button"
-                                    onClick={() =>
-                                      generateQuizWithAI(
-                                        sectionIndex,
-                                        lessonIndex
-                                      )
-                                    }
-                                    disabled={isGeneratingQuizs}
-                                  >
-                                    {isGeneratingQuizs
-                                      ? 'Generating quizzes...'
-                                      : 'Generate Questions with AI'}
-                                  </Button>
-                                )}
-                              </div>
-                            )}
+                                  ) || []
+                                }
+                                onDocumentsChange={(documents) => {
+                                  form.setValue(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`,
+                                    documents
+                                  );
+                                }}
+                              />
 
-                            {/* Generated quiz by excel file upload */}
-                            {form.watch(
-                              `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
-                            ) === 'upload' && (
-                              <div className="space-y-4">
-                                <Alert>
-                                  <FileSpreadsheet className="h-4 w-4" />
-                                  <AlertDescription>
-                                    <strong>
-                                      Excel File Format Instructions:
-                                    </strong>
-                                    <br />
-                                    Your Excel file should have the following
-                                    columns:
-                                    <br />• Column A: Question
-                                    <br />• Column B: Option 1
-                                    <br />• Column C: Option 2
-                                    <br />• Column D: Option 3 (optional)
-                                    <br />• Column E: Option 4 (optional)
-                                    <br />• Column F: Option 5 (optional)
-                                    <br />• Column G: Option 6 (optional)
-                                    <br />• Column H: Correct Answer (number
-                                    1-6)
-                                    <br />• Column I: Explanation (optional)
-                                  </AlertDescription>
-                                </Alert>
-
-                                <EnhancedFileUpload
-                                  accept={{
-                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                                      ['.xlsx'],
-                                    'application/vnd.ms-excel': ['.xls'],
-                                  }}
-                                  maxSize={5 * 1024 * 1024}
-                                  onFileSelect={(file) =>
-                                    handleExcelUpload(
-                                      file,
+                              {/* Generated Quiz Button */}
+                              {Boolean(
+                                form.watch(
+                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
+                                )?.length
+                              ) && (
+                                <Button
+                                  type="button"
+                                  onClick={() =>
+                                    generateQuizWithAI(
                                       sectionIndex,
                                       lessonIndex
                                     )
                                   }
-                                  onFileRemove={() => {
-                                    form.setValue(
-                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`,
-                                      undefined
-                                    );
-                                    form.setValue(
-                                      `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
-                                      []
-                                    );
-                                  }}
-                                  selectedFile={form.watch(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`
-                                  )}
-                                  label="Upload Quiz File (Excel)"
-                                  type="document"
-                                />
+                                  disabled={isGeneratingQuizs}
+                                >
+                                  {isGeneratingQuizs
+                                    ? 'Generating quizzes...'
+                                    : 'Generate Questions with AI'}
+                                </Button>
+                              )}
+                            </div>
+                          )}
 
-                                {isParsingExcel && (
-                                  <Alert>
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertDescription>
-                                      Parsing Excel file...
-                                    </AlertDescription>
-                                  </Alert>
+                          {/* Generated quiz by excel file upload */}
+                          {form.watch(
+                            `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
+                          ) === 'upload' && (
+                            <div className="space-y-4">
+                              <Alert>
+                                <FileSpreadsheet className="h-4 w-4" />
+                                <AlertDescription>
+                                  <strong>
+                                    Excel File Format Instructions:
+                                  </strong>
+                                  <br />
+                                  Your Excel file should have the following
+                                  columns:
+                                  <br />• Column A: Question
+                                  <br />• Column B: Option 1
+                                  <br />• Column C: Option 2
+                                  <br />• Column D: Option 3 (optional)
+                                  <br />• Column E: Option 4 (optional)
+                                  <br />• Column F: Option 5 (optional)
+                                  <br />• Column G: Option 6 (optional)
+                                  <br />• Column H: Correct Answer (number 1-6)
+                                  <br />• Column I: Explanation (optional)
+                                </AlertDescription>
+                              </Alert>
+
+                              <EnhancedFileUpload
+                                accept={{
+                                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                                    ['.xlsx'],
+                                  'application/vnd.ms-excel': ['.xls'],
+                                }}
+                                maxSize={5 * 1024 * 1024}
+                                onFileSelect={(file) =>
+                                  handleExcelUpload(
+                                    file,
+                                    sectionIndex,
+                                    lessonIndex
+                                  )
+                                }
+                                onFileRemove={() => {
+                                  form.setValue(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`,
+                                    undefined
+                                  );
+                                  form.setValue(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
+                                    []
+                                  );
+                                }}
+                                selectedFile={form.watch(
+                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`
                                 )}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                                label="Upload Quiz File (Excel)"
+                                type="document"
+                              />
+
+                              {isParsingExcel && (
+                                <Alert>
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertDescription>
+                                    Parsing Excel file...
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* List of generated questions */}
                       {form.watch(
@@ -1474,6 +1481,7 @@ export default function SectionsLessonsManager2({
     let isCreateSuccess = false;
     if (lessonsData) {
       try {
+        // Create section(s) and lesson(s)
         for (const section of lessonsData.sections) {
           const data = await createNewSection(section);
           // Create each lesson in the section
@@ -1489,6 +1497,17 @@ export default function SectionsLessonsManager2({
             }
           }
         }
+
+        // Update course status
+        if (courseStatus === 'published') {
+          const res = await updateCourseStatus({
+            courseId,
+            status: courseStatus.toUpperCase(),
+          }).unwrap();
+          if (!res || res.statusCode !== 200) {
+            isCreateSuccess = false;
+          }
+        }
       } catch (error) {
         console.error('Create error:', error);
       }
@@ -1502,6 +1521,10 @@ export default function SectionsLessonsManager2({
       loadingAnimation(false, dispatch);
       toast.error('Create section(s) and lesson(s) failed!');
     }
+  };
+
+  const handlePublishCourseToggle = (checked: boolean) => {
+    setCourseStatus(checked ? 'published' : 'draft');
   };
 
   if (step === 'success') {
@@ -1537,50 +1560,70 @@ export default function SectionsLessonsManager2({
           <CardHeader>
             <CardTitle>Review Course Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {formData.sections.map((section) => (
-              <div key={section.id} className="space-y-4">
-                <h3 className="text-lg font-semibold">
-                  Section {section.orderIndex + 1}: {section.title}
-                </h3>
+          <CardContent className="space-y-4">
+            <div className="space-x-2">
+              <span
+                className={`ml-2 font-semibold px-3 py-1.5 rounded-md ${
+                  courseStatus === 'published'
+                    ? 'text-green-600 bg-green-100'
+                    : 'text-amber-600 bg-amber-100'
+                }`}
+              >
+                {courseStatus === 'published' ? 'Published' : 'Draft'}
+              </span>
 
-                {section.lessons.map((lesson) => (
-                  <Card key={lesson.id} className="ml-4">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        {lesson.type === 'VIDEO' ? (
-                          <Video className="h-4 w-4" />
-                        ) : (
-                          <Brain className="h-4 w-4" />
-                        )}
-                        <span className="font-medium">
-                          Lesson {lesson.orderIndex + 1}: {lesson.title}
-                        </span>
-                        <Badge
-                          variant={
-                            lesson.type === 'VIDEO' ? 'default' : 'secondary'
-                          }
-                        >
-                          {lesson.type === 'VIDEO' ? 'VIDEO' : 'QUIZ'}
-                        </Badge>
-                      </div>
+              <span className="text-sm text-muted-foreground">
+                {courseStatus === 'published'
+                  ? 'Your course will be submitted for approval by administrators before becoming visible to students.'
+                  : "Your course will be saved as a draft and won't be visible to students until published."}
+              </span>
+            </div>
 
-                      {lesson.quiz &&
-                        lesson.quiz.questions &&
-                        lesson.quiz.questions.length > 0 && (
-                          <div className="text-sm text-muted-foreground">
-                            Quiz: {lesson.quiz.questions.length} questions
-                          </div>
-                        )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ))}
+            <div className="space-y-5">
+              {formData.sections.map((section) => (
+                <div key={section.id} className="space-y-5">
+                  <h3 className="text-lg font-semibold">
+                    Section {section.orderIndex + 1}: {section.title}
+                  </h3>
+
+                  {section.lessons.map((lesson) => (
+                    <Card key={lesson.id} className="ml-4">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          {lesson.type === 'VIDEO' ? (
+                            <Video className="h-4 w-4" />
+                          ) : (
+                            <Brain className="h-4 w-4" />
+                          )}
+                          <span className="font-medium">
+                            Lesson {lesson.orderIndex + 1}: {lesson.title}
+                          </span>
+                          <Badge
+                            variant={
+                              lesson.type === 'VIDEO' ? 'default' : 'secondary'
+                            }
+                          >
+                            {lesson.type === 'VIDEO' ? 'VIDEO' : 'QUIZ'}
+                          </Badge>
+                        </div>
+
+                        {lesson.quiz &&
+                          lesson.quiz.questions &&
+                          lesson.quiz.questions.length > 0 && (
+                            <div className="text-sm text-muted-foreground">
+                              Quiz: {lesson.quiz.questions.length} questions
+                            </div>
+                          )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ))}
+            </div>
 
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-amber-400 text-base">
+              <AlertDescription className="text-amber-600 text-base">
                 Please review all information before submitting. After
                 submitting, you must wait for the administrator to approve the
                 course.
@@ -1602,114 +1645,156 @@ export default function SectionsLessonsManager2({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">
-            {currentMode === 'view'
-              ? 'View Course Content'
-              : currentMode === 'create'
-              ? 'Create Course Content'
-              : 'Edit Course Content'}
-          </h2>
-          <p className="text-muted-foreground">
-            {currentMode === 'view'
-              ? 'View the content of your course'
-              : currentMode === 'create'
-              ? 'Create your course sections and lessons'
-              : 'Manage your course sections and lessons'}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          {currentMode === 'edit' && (
-            <>
-              {/* Cancel edit button */}
-              <Button
-                variant="outline"
-                onClick={handleModeToggle}
-                disabled={isLoading}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-
-              {/* Save changes button */}
-              {isValidInputs &&
-                (dirtyFields.sections || isReorderedContent.isReorder) && (
-                  <Button onClick={handleSave} disabled={isLoading}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {isLoading ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                )}
-            </>
-          )}
-
-          {currentMode === 'view' && canEditContent && (
-            <Button onClick={handleModeToggle} disabled={isLoading}>
-              <Edit3 className="h-4 w-4 mr-2" />
-              Edit Content
-            </Button>
-          )}
-        </div>
-      </div>
-
+    <div>
       {/* Content */}
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(handleSubmitForm)}
           className="space-y-6"
         >
-          <div className="space-y-6">
-            {currentMode === 'view' ? (
-              <div className="space-y-6">
-                {watchedSections.map((section, index) =>
-                  renderSection(section, index)
-                )}
-              </div>
-            ) : (
-              <DragDropReorder
-                items={watchedSections}
-                onReorder={(reorderedSections) => {
-                  const updatedSections = reorderedSections.map(
-                    (section, index) => ({
-                      ...section,
-                      orderIndex: index,
-                    })
-                  );
-                  form.setValue('sections', updatedSections);
-                  setIsReorderedContent((prev) => ({
-                    ...prev,
-                    isReorder: true,
-                  }));
-                }}
-                renderItem={renderSection}
-                className="space-y-6"
-              />
-            )}
+          <Card>
+            <CardHeader>
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    {currentMode === 'view'
+                      ? 'View Course Content'
+                      : currentMode === 'create'
+                      ? 'Create Course Content'
+                      : 'Edit Course Content'}
+                  </h2>
+                  <p className="text-muted-foreground">
+                    {currentMode === 'view'
+                      ? 'View the content of your course'
+                      : currentMode === 'create'
+                      ? 'Create your course sections and lessons'
+                      : 'Manage your course sections and lessons'}
+                  </p>
+                </div>
 
-            {/* Add section button (edit mode only) */}
-            {currentMode !== 'view' && (
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addSection();
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Section
-                </Button>
-                {mode === 'create' && (
-                  <Button type="submit">Save and Review</Button>
+                {/* Actions */}
+                <div className="flex gap-2">
+                  {currentMode === 'edit' && (
+                    <>
+                      {/* Cancel edit button */}
+                      <Button
+                        variant="outline"
+                        onClick={handleModeToggle}
+                        disabled={isLoading}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel
+                      </Button>
+
+                      {/* Save changes button */}
+                      {isValidInputs &&
+                        (dirtyFields.sections ||
+                          isReorderedContent.isReorder) && (
+                          <Button onClick={handleSave} disabled={isLoading}>
+                            <Save className="h-4 w-4 mr-2" />
+                            {isLoading ? 'Saving...' : 'Save Changes'}
+                          </Button>
+                        )}
+                    </>
+                  )}
+
+                  {currentMode === 'view' && canEditContent && (
+                    <Button onClick={handleModeToggle} disabled={isLoading}>
+                      <Edit3 className="h-4 w-4 mr-2" />
+                      Edit Content
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="space-y-6">
+                {currentMode === 'view' ? (
+                  <div className="space-y-6">
+                    {watchedSections.map((section, index) =>
+                      renderSection(section, index)
+                    )}
+                  </div>
+                ) : (
+                  <DragDropReorder
+                    items={watchedSections}
+                    onReorder={(reorderedSections) => {
+                      const updatedSections = reorderedSections.map(
+                        (section, index) => ({
+                          ...section,
+                          orderIndex: index,
+                        })
+                      );
+                      form.setValue('sections', updatedSections);
+                      setIsReorderedContent((prev) => ({
+                        ...prev,
+                        isReorder: true,
+                      }));
+                    }}
+                    renderItem={renderSection}
+                    className="space-y-6"
+                  />
+                )}
+
+                {/* Add section button (edit mode only) */}
+                {currentMode !== 'view' && (
+                  <div className="flex gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        addSection();
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Section
+                    </Button>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
+
+          {mode === 'create' && (
+            <>
+              {/* Publish course status */}
+              <Card className="gap-0">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      onCheckedChange={handlePublishCourseToggle}
+                      defaultChecked={courseStatus === 'published'}
+                    />
+                    <div className="space-x-2">
+                      <span
+                        className={`ml-2 font-semibold px-3 py-1.5 rounded-md ${
+                          courseStatus === 'published'
+                            ? 'text-green-600 bg-green-100'
+                            : 'text-amber-600 bg-amber-100'
+                        }`}
+                      >
+                        {courseStatus === 'published' ? 'Published' : 'Draft'}
+                      </span>
+
+                      <span className="text-sm text-muted-foreground">
+                        {courseStatus === 'published'
+                          ? 'Your course will be submitted for approval by administrators before becoming visible to students.'
+                          : "Your course will be saved as a draft and won't be visible to students until published."}
+                      </span>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Save and Review button */}
+              <div className="flex justify-end">
+                <Button type="submit">Save and Review</Button>
+              </div>
+            </>
+          )}
         </form>
       </Form>
 

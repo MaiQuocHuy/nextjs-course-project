@@ -5,22 +5,21 @@ import { useGetSectionsQuery } from '@/services/instructor/courses/sections-api'
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
-import { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
 import { SectionDetail } from '@/types/instructor/courses';
 import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
 import { SectionType } from '@/utils/instructor/create-course-validations/lessons-validations';
 import { Button } from '@/components/ui/button';
 
 interface CourseContentProps {
-  courseBasicInfo: CourseBasicInfoType;
+  courseId: string;
 }
 
-const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
+const CourseContent = ({ courseId }: CourseContentProps) => {
   const {
     data: sections,
     isLoading: isFetchingSections,
     isError,
-  } = useGetSectionsQuery(courseBasicInfo.id);
+  } = useGetSectionsQuery(courseId);
 
   const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
   const [isSettingUp, setIsSettingUp] = useState(false);
@@ -94,10 +93,9 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
   return (
     <>
       {updatedSections && updatedSections.length > 0 ? (
-        courseBasicInfo &&
-        courseBasicInfo.id && (
+        courseId && (
           <CreateCourseContentForm
-            courseId={courseBasicInfo.id}
+            courseId={courseId}
             sections={updatedSections}
             mode="view"
           />
@@ -105,12 +103,8 @@ const CourseContent = ({ courseBasicInfo }: CourseContentProps) => {
       ) : (
         <>
           {createContent ? (
-            courseBasicInfo &&
-            courseBasicInfo.id && (
-              <CreateCourseContentForm
-                courseId={courseBasicInfo.id}
-                mode="create"
-              />
+            courseId && (
+              <CreateCourseContentForm courseId={courseId} mode="create" />
             )
           ) : (
             <>

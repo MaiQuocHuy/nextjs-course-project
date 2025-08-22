@@ -1,16 +1,17 @@
 export const getStatusColor = (status: string) => {
+  if (status) status = status.toLowerCase();
   switch (status) {
-    case 'PUBLISHED':
-      return 'bg-green-100 text-green-800';
-    case 'PENDING':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'DENIED':
-      return 'bg-red-100 text-red-800';
-    case 'RESUBMITTED':
-      return 'bg-blue-100 text-blue-800';
-    // Unpublished
+    case 'approved':
+      return 'text-green-700 bg-green-100 px-5 py-1 rounded-lg font-medium';
+    case 'pending':
+      return 'text-yellow-700 bg-yellow-100 px-5 py-1 rounded-lg font-medium';
+    case 'denied':
+      return 'text-red-700 bg-red-100 px-5 py-1 rounded-lg font-medium';
+    case 'resubmitted':
+      return 'text-purple-700 bg-purple-100 px-5 py-1 rounded-lg font-medium';
     default:
-      return 'bg-gray-100 text-gray-800';
+      // Draft
+      return 'text-blue-700 bg-blue-100 px-5 py-1 rounded-lg font-medium';
   }
 };
 

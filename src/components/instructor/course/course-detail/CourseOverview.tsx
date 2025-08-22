@@ -5,20 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Edit, BookOpen, Calendar, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CreateCourseBasicInforPage } from '../create-course/create-basic-infor/CreateCourseBasicInforPage';
-import { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
-import { createFilePreview } from '@/utils/instructor/create-file-preview';
 import { useRouter } from 'next/navigation';
 import { CourseDetail } from '@/types/instructor/courses';
-import { get } from 'http';
 import { calculateTotalDuration } from '@/utils/instructor/course/cal-total-duration';
 import {
-  getCourseStatus,
   getStatusColor,
 } from '@/utils/instructor/course/handle-course-status';
-import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
 
 export interface CourseHeaderProps {
   isEditCourse?: boolean;
@@ -26,65 +18,25 @@ export interface CourseHeaderProps {
 }
 
 const CourseOverview = ({ courseData, isEditCourse }: CourseHeaderProps) => {
-  const [courseBasicInfo, setCourseBasicInfo] =
-    useState<CourseBasicInfoType | null>(null);
-  const [isSettingUp, setIsSettingUp] = useState(false);
-
-  const dispatch: AppDispatch = useDispatch();
+  const [courseInfo, setCourseInfo] = useState<CourseDetail | null>(null);
   const router = useRouter();
 
-  // Loading animation
-  useEffect(() => {
-    if (isSettingUp) {
-      loadingAnimation(true, dispatch);
-    } else {
-      loadingAnimation(false, dispatch);
-    }
-
-    return () => {
-      loadingAnimation(false, dispatch);
-    };
-  }, [isSettingUp]);
-
-  // Add field categoryIds and create image file
   useEffect(() => {
     if (courseData) {
-      setIsSettingUp(true);
-      const setUpData = async () => {
-        const courseBasicInfor: CourseBasicInfoType = {
-          ...courseData,
-          file: undefined,
-          categoryIds: [],
-        };
-        if (courseData.categories) {
-          courseBasicInfor.categoryIds = courseData.categories.map(
-            (cat) => cat.id
-          );
-        }
-        if (courseData.thumbnailUrl) {
-          courseBasicInfor.file = await createFileFromUrl(
-            courseData.thumbnailUrl,
-            courseData.title
-          );
-        }
-        setCourseBasicInfo(courseBasicInfor);
-        setIsSettingUp(false);
+      const courseInfo: CourseDetail = {
+        ...courseData,
       };
-      setUpData();
+      setCourseInfo(courseInfo);
     }
   }, [courseData]);
-
-  if (isSettingUp) {
-    return <></>;
-  }
 
   return (
     <>
       {isEditCourse ? (
-        courseBasicInfo ? (
+        courseInfo ? (
           <CreateCourseBasicInforPage
             mode="edit"
-            courseInfor={courseBasicInfo}
+            courseInfor={courseInfo}
             onCancel={() => router.push(`/instructor/courses/${courseData.id}`)}
           />
         ) : (
@@ -142,12 +94,8 @@ const CourseOverview = ({ courseData, isEditCourse }: CourseHeaderProps) => {
                   {calculateTotalDuration(courseData.sections)}
                 </Badge>
                 {/* Course Status */}
-                <Badge
-                  className={`${getStatusColor(
-                    getCourseStatus(courseData.statusReview)
-                  )}`}
-                >
-                  {getCourseStatus(courseData.statusReview)}
+                <Badge className={`${getStatusColor(courseData.statusReview)}`}>
+                  {courseData.statusReview ? courseData.statusReview : "Draft"}
                 </Badge>
               </div>
 

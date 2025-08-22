@@ -47,6 +47,7 @@ import {
   Upload,
   Trash2,
   Send,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
@@ -56,16 +57,31 @@ import {
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  useUpdateCourseStatusMutation,
 } from '@/services/instructor/courses/courses-api';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
+import { CourseDetail } from '@/types/instructor/courses';
+import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
+import { isDirty, isValid, set } from 'zod/v3';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+} from '@/components/ui/dialog';
+import {
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@radix-ui/react-dialog';
 
 interface CourseFormProps {
   mode: 'create' | 'edit';
-  courseInfor?: CourseBasicInfoType;
+  courseInfor?: CourseDetail;
   onCancel?: () => void;
   onSubmit?: (data: CourseBasicInfoType) => void;
 }
@@ -92,12 +108,13 @@ export function CreateCourseBasicInforPage({
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [courseStatus, setCourseStatus] = useState<
-    'published' | 'unpublished' | 'pending'
-  >('published');
+  const [courseStatus, setCourseStatus] = useState<'published' | 'unpublished'>(
+    'published'
+  );
 
   const [createCourse] = useCreateCourseMutation();
   const [updateCourse] = useUpdateCourseMutation();
+  const [updateCourseStatus] = useUpdateCourseStatusMutation();
   const [deleteCourse] = useDeleteCourseMutation();
 
   const dispatch: AppDispatch = useDispatch();
@@ -105,16 +122,14 @@ export function CreateCourseBasicInforPage({
 
   const form = useForm<CourseBasicInfoType>({
     resolver: zodResolver(fullCourseSchema),
-    defaultValues: courseInfor
-      ? courseInfor
-      : {
-          title: '',
-          description: '',
-          price: 0,
-          categoryIds: [],
-          level: 'BEGINNER',
-          file: undefined,
-        },
+    defaultValues: {
+      title: '',
+      description: '',
+      price: 0,
+      categoryIds: [],
+      level: 'BEGINNER',
+      file: undefined,
+    },
     mode: 'onChange', // Enable real-time validation
   });
 
@@ -122,6 +137,38 @@ export function CreateCourseBasicInforPage({
     watch,
     formState: { errors, isValid, isDirty, dirtyFields },
   } = form;
+  // console.log(courseInfor);
+
+  // Set up data for edit mode
+  useEffect(() => {
+    if (courseInfor) {
+      const setUpData = async () => {
+        const courseBasicInfo: CourseBasicInfoType = {
+          title: courseInfor.title ? courseInfor.title : '',
+          description: courseInfor.description ? courseInfor.description : '',
+          price: courseInfor.price ? courseInfor.price : 0,
+          categoryIds: [],
+          level: courseInfor.level,
+          file: undefined,
+        };
+        if (courseInfor.categories) {
+          courseBasicInfo.categoryIds = courseInfor.categories.map(
+            (cat) => cat.id
+          );
+        }
+        if (courseInfor.thumbnailUrl) {
+          courseBasicInfo.file = await createFileFromUrl(
+            courseInfor.thumbnailUrl,
+            courseInfor.title
+          );
+        }
+        form.reset(courseBasicInfo);
+
+        setCourseStatus(courseInfor.isPublished ? 'published' : 'unpublished');
+      };
+      setUpData();
+    }
+  }, [courseInfor]);
 
   const watchThumbnail = watch('file');
 
@@ -137,7 +184,7 @@ export function CreateCourseBasicInforPage({
       try {
         // Validate the file using the schema directly
         await imageFileSchema.parseAsync({ file: watchThumbnail });
-        
+
         // Only create preview if validation passes
         const preview = await createFilePreview(watchThumbnail);
         const courseThumb: Thumbnail = {
@@ -154,6 +201,23 @@ export function CreateCourseBasicInforPage({
 
     validateAndSetThumbnail();
   }, [watchThumbnail]);
+
+  const getStatusReviewColor = (status: string) => {
+    if (status) status = status.toLowerCase();
+    switch (status) {
+      case 'approved':
+        return 'text-green-700 bg-green-100 px-5 py-1 rounded-lg font-medium';
+      case 'pending':
+        return 'text-yellow-700 bg-yellow-100 px-5 py-1 rounded-lg font-medium';
+      case 'denied':
+        return 'text-red-700 bg-red-100 px-5 py-1 rounded-lg font-medium';
+      case 'resubmitted':
+        return 'text-purple-700 bg-purple-100 px-5 py-1 rounded-lg font-medium';
+      default:
+        // Draft
+        return 'text-blue-700 bg-blue-100 px-5 py-1 rounded-lg font-medium';
+    }
+  };
 
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -236,7 +300,7 @@ export function CreateCourseBasicInforPage({
     loadingAnimation(true, dispatch, 'Course is being updated. Please wait...');
     if (courseInfor) {
       const keys = Object.keys(dirtyFields) as (keyof CourseBasicInfoType)[];
-      const updatedData: Partial<CourseBasicInfoType> = { 
+      const updatedData: Partial<CourseBasicInfoType> = {
         id: courseInfor.id,
       };
       for (const key of keys) {
@@ -265,14 +329,41 @@ export function CreateCourseBasicInforPage({
     }
   };
 
-  const handlePublishCourseToggle = () => {
-    setCourseStatus((prev) => {
-      if (prev === 'published') {
-        return 'unpublished';
-      } else {
-        return 'published';
+  const handlePublishCourseToggle = async () => {
+    loadingAnimation(true, dispatch, 'Updating course status. Please wait...');
+    let isUpdateStatusSuccess = false;
+    if (courseInfor && courseInfor.id) {
+      try {
+        const updateStatus =
+          courseStatus === 'published' ? 'unpublished' : 'published';
+        const res = await updateCourseStatus({
+          courseId: courseInfor.id,
+          status: updateStatus.toUpperCase(),
+        }).unwrap();
+
+        if (res && res.statusCode === 200) {
+          isUpdateStatusSuccess = true;
+        }
+      } catch (error: any) {
+        loadingAnimation(false, dispatch);
+        toast.error(error.message);
       }
-    });
+    }
+
+    if (isUpdateStatusSuccess) {
+      loadingAnimation(false, dispatch);
+      toast.success('Course status updated successfully!');
+      setCourseStatus((prev) => {
+        if (prev === 'published') {
+          return 'unpublished';
+        } else {
+          return 'published';
+        }
+      });
+    } else {
+      loadingAnimation(false, dispatch);
+      toast.error('Course status update failed!');
+    }
   };
 
   const handleDeleteCourse = async () => {
@@ -290,8 +381,6 @@ export function CreateCourseBasicInforPage({
     }
   };
 
-  const handleRequestApproval = () => {};
-  
   return (
     <div className={cn('space-y-6')}>
       {/* Course actions */}
@@ -299,26 +388,67 @@ export function CreateCourseBasicInforPage({
         <div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Course Actions</CardTitle>
-              <div className="flex items-center gap-4">
-                {courseStatus !== 'pending' ? (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={courseStatus === 'published'}
-                      onCheckedChange={handlePublishCourseToggle}
-                    />
-                    <span>
-                      {courseStatus === 'published'
-                        ? 'Published'
-                        : 'Unpublished'}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-4">
+                  <span
+                    className={getStatusReviewColor(courseInfor.statusReview)}
+                  >
+                    {courseInfor.statusReview
+                      ? courseInfor.statusReview
+                      : 'Draft'}
+                  </span>
+
+                  {courseInfor.statusReview === null && (
+                    <span className="text-sm text-muted-foreground">
+                      Switch to publish mode to be able to submit for review
                     </span>
-                  </div>
-                ) : (
-                  <Button onClick={handleRequestApproval}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Request Approval
-                  </Button>
-                )}
+                  )}
+
+                  {courseInfor.statusReview === 'DENIED' && (
+                    <>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                          >
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            View Denied Reason
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="text-red-600">
+                              Course Rejection Reason
+                            </DialogTitle>
+                            <DialogDescription>
+                              Your course was denied for the following reason:
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="border-l-4 border-red-400 bg-red-50 p-4 my-2 rounded-r">
+                            <p className="text-red-700">
+                              {courseInfor.reason ||
+                                'No specific reason provided.'}
+                            </p>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={courseStatus === 'published'}
+                    onCheckedChange={handlePublishCourseToggle}
+                  />
+                  <span>
+                    {courseStatus === 'published' ? 'Published' : 'Unpublished'}
+                  </span>
+                </div>
 
                 {/* Delete course */}
                 {courseInfor.id && (
@@ -789,9 +919,11 @@ export function CreateCourseBasicInforPage({
               </Button>
             )}
 
-            {mode === 'edit' && isValid && (isDirty || isCourseThumbUpdated) && (
-              <Button type="submit">Save changes</Button>
-            )}
+            {mode === 'edit' &&
+              isValid &&
+              (isDirty || isCourseThumbUpdated) && (
+                <Button type="submit">Save changes</Button>
+              )}
           </div>
         </form>
       </Form>

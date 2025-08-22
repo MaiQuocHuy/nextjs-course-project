@@ -54,10 +54,7 @@ import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import WarningAlert from '../commom/WarningAlert';
-import {
-  getCourseStatus,
-  getStatusColor,
-} from '@/utils/instructor/course/handle-course-status';
+import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 
 const coursesParams = {
   page: 0,
@@ -545,10 +542,10 @@ export const CoursesPage = () => {
                   />
                   <span
                     className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                      getCourseStatus(course.statusReview)
+                      course.statusReview
                     )}`}
                   >
-                    {getCourseStatus(course.statusReview)}
+                    {course.statusReview ? course.statusReview : 'Draft'}
                   </span>
 
                   {/* Actions */}

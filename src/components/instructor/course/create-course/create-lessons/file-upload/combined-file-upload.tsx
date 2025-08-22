@@ -22,10 +22,8 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import type { DocumentType } from '@/utils/instructor/create-course-validations/lessons-validations';
-import { vi } from 'zod/v4/locales';
 
 interface CombinedFileUploadProps {
   documents?: DocumentType[];
