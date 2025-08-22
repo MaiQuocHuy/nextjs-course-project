@@ -9,6 +9,8 @@ import type {
   Course,
   Payment,
   PaymentDetail,
+  RefundRequest,
+  RefundResponse,
   PaginatedReviews,
   UpdateReviewRequest,
   UpdateReviewResponse,
@@ -208,6 +210,27 @@ export const studentApi = createApi({
       },
     }),
 
+    // Request refund for a course
+    requestRefund: builder.mutation<
+      RefundResponse,
+      { courseId: string; data: RefundRequest }
+    >({
+      query: ({ courseId, data }) => ({
+        url: `/student/courses/${courseId}/refund-request`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Payment"],
+      transformResponse: (response: {
+        statusCode: number;
+        message: string;
+        data: RefundResponse;
+        timestamp: string;
+      }) => {
+        return response.data;
+      },
+    }),
+
     // Get student reviews
     getStudentReviews: builder.query<PaginatedReviews, void>({
       query: () => ({
@@ -393,6 +416,7 @@ export const {
   useCompleteLessonMutation,
   useGetPaymentsQuery,
   useGetPaymentDetailQuery,
+  useRequestRefundMutation,
   useGetStudentReviewsQuery,
   useUpdateReviewMutation,
   useGetQuizResultsQuery,
