@@ -113,11 +113,11 @@ export const authApi = createApi({
         formData.append("password", password);
         formData.append("role", role);
         formData.append("portfolio", portfolioUrl);
-        formData.append("certificate", certificateFile);
-        formData.append("cv", cvFile);
+        formData.append("certificate", certificateFile, certificateFile.name);
+        formData.append("cv", cvFile, cvFile.name);
 
         if (supportingFile) {
-          formData.append("other", supportingFile);
+          formData.append("other", supportingFile, supportingFile.name);
         }
 
         return {
