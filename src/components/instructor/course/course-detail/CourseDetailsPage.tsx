@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 
-import {
-  useGetCourseByIdQuery,
-} from '@/services/instructor/courses/courses-api';
+import { useGetCourseByIdQuery } from '@/services/instructor/courses/courses-api';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { AppDispatch } from '@/store/store';
 import CourseNavigation from './CourseNavigation';
@@ -23,12 +21,14 @@ export default function CourseDetailsPage({
   const [activeSection, setActiveSection] = useState<
     'overview' | 'content' | 'reviews'
   >('overview');
+
   const params = useParams<{ id: string }>();
+
   const {
     data: courseData,
     isLoading,
     isError,
-  } = useGetCourseByIdQuery(params.id, {skip: !params.id});
+  } = useGetCourseByIdQuery(params.id, { skip: !params.id });
 
   const dispatch: AppDispatch = useDispatch();
 
@@ -61,7 +61,7 @@ export default function CourseDetailsPage({
         />
 
         <main className="container py-6 space-y-6">
-          {activeSection === 'overview' && (
+          {activeSection === 'overview' && courseData && (
             <CourseOverview
               courseData={courseData}
               isEditCourse={isEditCourse ? isEditCourse : false}
@@ -69,7 +69,7 @@ export default function CourseDetailsPage({
           )}
 
           {activeSection === 'content' && courseData && (
-            <CourseContent courseBasicInfo={courseData} />
+            <CourseContent courseId={courseData.id} />
           )}
 
           {/* {activeSection === 'reviews' && params && (

@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
-import type { Course } from '@/types/instructor/courses';
+import type { Course, CourseDetail } from '@/types/instructor/courses';
 import { ApiResponse, PaginatedData } from '@/types/apiResponse';
 import { CoursesFilter } from '@/services/coursesApi';
 
@@ -48,17 +48,18 @@ export const coursesInstSlice = createApi({
     }),
 
     // Fetch course details
-    getCourseById: builder.query({
+    getCourseById: builder.query<CourseDetail, string>({
       query: (courseId) => ({
         url: `/instructor/courses/${courseId}`,
         method: 'GET',
       }),
-      transformResponse: (response) => {
+      transformResponse: (response: any) => {
         // console.log('Course details response:', response.data);
         return response.data;
       },
-      providesTags: (result) =>
-        result ? [{ type: 'Courses', id: result.id }] : [],
+      providesTags: (result) => {
+        return result ? [{ type: 'Courses', id: result.id }] : [];
+      },
     }),
 
     // Create a new course
@@ -138,6 +139,21 @@ export const coursesInstSlice = createApi({
         { type: 'Courses', id: courseId },
       ],
     }),
+
+    // Update course status
+    updateCourseStatus: builder.mutation({
+      query: ({ courseId, status }) => ({
+        url: `/instructor/courses/${courseId}/status`,
+        method: 'PATCH',
+        body: { status: status.toUpperCase() },
+      }),
+      transformErrorResponse: (response: { status: number; data: any }) =>
+        errorsHandler(response),
+      invalidatesTags: (result, error, data) => [
+        { type: 'Courses', id: 'LIST' },
+        { type: 'Courses', id: data.courseId },
+      ],
+    }),
   }),
 });
 
@@ -147,4 +163,5 @@ export const {
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  useUpdateCourseStatusMutation,
 } = coursesInstSlice;

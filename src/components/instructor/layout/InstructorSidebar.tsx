@@ -8,8 +8,6 @@ import {
   Users,
   DollarSign,
   Bell,
-  MessageSquare,
-  Mail,
   Settings,
   LogOut,
   GraduationCap,
@@ -28,8 +26,6 @@ const navigation = [
   { name: 'Dashboard', href: '/instructor', icon: LayoutDashboard },
   { name: 'Courses', href: '/instructor/courses', icon: BookOpen },
   { name: 'Students', href: '/instructor/students', icon: Users },
-  { name: 'Messages', href: '/instructor/messages', icon: MessageSquare },
-  { name: 'Email', href: '/instructor/email', icon: Mail },
   { name: 'Earnings', href: '/instructor/earnings', icon: DollarSign },
   { name: 'Notifications', href: '/instructor/notifications', icon: Bell },
 ];

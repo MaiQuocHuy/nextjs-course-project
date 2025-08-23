@@ -121,6 +121,9 @@ export interface Course {
 }
 
 export interface CourseDetail extends Course {
+  isPublished: boolean;
+  enrollmentCount: number;
+  ratingCount: number;
   sections: SectionOverview[];
 }
 

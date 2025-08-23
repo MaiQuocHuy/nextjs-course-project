@@ -14,10 +14,12 @@ import { sectionsInstSlice } from "@/services/instructor/courses/sections-api";
 import { lessonsInstSlice } from "@/services/instructor/courses/lessons-api";
 import { quizzesInstSlice } from "@/services/instructor/courses/quizzes-api";
 
+
 import courseFilterReducer from "./slices/student/courseFilterSlice";
 import { settingsApi } from "@/services/common/settingsApi";
 import learningProgressReducer from "./slices/student/learningProgressSlice";
 import { geminiApi } from "@/services/quiz/geminiApi";
+import { earningsInstSlice } from "@/services/instructor/earnings/earnings-ins-api";
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
@@ -55,6 +57,7 @@ export const makeStore = () => {
       [sectionsInstSlice.reducerPath]: sectionsInstSlice.reducer,
       [lessonsInstSlice.reducerPath]: lessonsInstSlice.reducer,
       [quizzesInstSlice.reducerPath]: quizzesInstSlice.reducer,
+      [earningsInstSlice.reducerPath]: earningsInstSlice.reducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -71,7 +74,8 @@ export const makeStore = () => {
         coursesInstSlice.middleware,
         sectionsInstSlice.middleware,
         lessonsInstSlice.middleware,
-        quizzesInstSlice.middleware
+        quizzesInstSlice.middleware,
+        earningsInstSlice.middleware,
       ),
   });
 

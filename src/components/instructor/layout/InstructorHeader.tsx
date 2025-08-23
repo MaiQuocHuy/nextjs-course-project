@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Menu } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 interface InstructorHeaderProps {
   onMenuClick: () => void;
@@ -17,6 +19,19 @@ interface InstructorHeaderProps {
 
 export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
   const unreadCount = 0;
+  const { logout: authLogout, user } = useAuth();
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await authLogout('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force redirect if logout fails
+      router.push('/login');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-card/95 backdrop-blur px-6 shadow-card">
@@ -66,9 +81,10 @@ export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
