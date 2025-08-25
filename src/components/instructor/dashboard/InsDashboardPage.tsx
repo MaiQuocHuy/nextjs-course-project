@@ -21,10 +21,8 @@ import Link from 'next/link';
 import { Course } from '@/app/data/courses';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { useRouter } from 'next/navigation';
 import { mockInstructorDashboardData } from '@/types/instructor/dashboard';
+import { useAuth } from '@/hooks/useAuth';
 
 // Initialize stats with icons from mock data
 const initStats = {
@@ -63,6 +61,8 @@ export const InsDashboard = () => {
   const [students, setStudents] = useState(
     mockInstructorDashboardData.students
   );
+
+  const {user} = useAuth();  
 
   // Single useEffect to initialize the component with mock data
   useEffect(() => {
@@ -107,15 +107,15 @@ export const InsDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Welcome back, {mockInstructorDashboardData.instructorName}!
+              Welcome back, {user && user.name ? user.name : 'Instructor'}!
             </h1>
             <p className="text-muted-foreground mt-1">
               Here's what's happening with your courses today.
             </p>
           </div>
           <div className="flex gap-3">
-            <Link href="/instructor/courses/create">
-              <Button className="bg-gradient-primary shadow-elegant">
+            <Link href="/instructor/courses/create-course">
+              <Button className="shadow-elegant">
                 <BookOpen className="mr-2 h-4 w-4" />
                 Create Course
               </Button>
