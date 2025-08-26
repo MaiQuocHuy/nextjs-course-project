@@ -34,7 +34,7 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col bg-sidebar-primary">
+    <div className="flex h-full flex-col bg-background border-r">
       {/* Logo */}
       <Link
         href="/instructor"
@@ -44,11 +44,11 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
       >
         <div className="flex items-center space-x-3">
           <div className="rounded-lg bg-white/20 p-2">
-            <GraduationCap className="h-6 w-6 text-white" />
+            <GraduationCap className="h-6 w-6 " />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">Sybau</h1>
-            <p className="text-xs text-white/80">Instructor Panel</p>
+            <h1 className="text-lg font-semibold ">Sybau</h1>
+            <p className="text-xs /80">Instructor Panel</p>
           </div>
         </div>
       </Link>
@@ -67,8 +67,8 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
                 <Button
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start h-11 px-4 text-white/80 cursor-pointer hover:text-white hover:bg-white/10',
-                    isActive && 'bg-white/20 text-white font-medium'
+                    'w-full justify-start h-11 px-4 /80 cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isActive && 'bg-accent text-accent-foreground'
                   )}
                 >
                   <item.icon className="mr-3 h-4 w-4" />
@@ -85,7 +85,7 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
         <Button
           disabled={isLoading}
           variant="ghost"
-          className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+          className="w-full justify-start /80 hover: hover:bg-white/10"
         >
           <Settings className="mr-3 h-4 w-4" />
           Settings
@@ -93,7 +93,7 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
         <Button
           disabled={isLoading}
           variant="ghost"
-          className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10"
+          className="w-full justify-start /80 hover: hover:bg-white/10"
         >
           <LogOut className="mr-3 h-4 w-4" />
           Logout
