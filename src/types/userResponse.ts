@@ -8,9 +8,17 @@ export interface User {
   isActive?: boolean;
 }
 
-export type UserResponse = {
+export interface ApplicationDetailResponse {
+  id: number;
+  status: string;
+  documents: string;
+  submittedAt: string;
+  rejectionReason?: string;
+}
+
+export interface apiResponse<T> {
     statusCode: number;
     message: string;
-    data: User;
+    data: T;
     timestamp: string;
 }
