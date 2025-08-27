@@ -14,6 +14,7 @@ export interface ApplicationDetailResponse {
   documents: string;
   submittedAt: string;
   rejectionReason?: string;
+  submitAttemptRemain?: number;
 }
 
 export interface apiResponse<T> {

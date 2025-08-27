@@ -1,5 +1,5 @@
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
-import { apiResponse, ApplicationDetailResponse, ReSubmitAppplicationRequest } from '@/types';
+import { apiResponse, ApplicationDetailResponse, ReSubmitAppplicationRequest, ReSubmitAppplicationResponse } from '@/types';
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 
@@ -82,10 +82,10 @@ export const settingsApi = createApi({
       providesTags: ['InstructorApplication'],
     }),
 
-    reSubmitApplication: builder.mutation<void, ReSubmitAppplicationRequest>({
+    reSubmitApplication: builder.mutation<apiResponse<ReSubmitAppplicationResponse>, ReSubmitAppplicationRequest>({
       query: (data) => {
         const formData = new FormData();
-        
+
         formData.append('portfolio', data.portfolio);
 
         formData.append('certificate', data.certificate);
