@@ -675,8 +675,7 @@ const VideoContent = ({
                   Video Lesson
                 </h3>
                 <p className="text-gray-600 text-xs sm:text-sm">
-                  Duration: {Math.floor((lesson.video?.duration || 0) / 60)}{" "}
-                  minutes
+                  Duration: {Math.floor(lesson.video?.duration || 0)} seconds
                 </p>
               </div>
             </div>
