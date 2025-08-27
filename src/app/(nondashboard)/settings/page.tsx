@@ -1,6 +1,6 @@
 "use client";
-
 import { DialogTrigger } from "@/components/ui/dialog";
+import { ReSubmitApplicationForm } from "@/components/settings/ReSubmitApplicationForm";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,6 +24,7 @@ import {
   Award,
   Paperclip,
   FileUser,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import {
 import { useGetProfileQuery } from "@/services/common/profileApi";
 import { useAuth } from "@/hooks/useAuth";
 import { FileDisplay } from "@/components/settings/FileDisplay";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // Avatar constraints
 const MAX_AVATAR_SIZE = 10 * 1024 * 1024; // 10MB
@@ -166,13 +168,23 @@ const EditableField = React.memo(
 EditableField.displayName = "EditableField";
 
 export default function SettingsPage() {
+  // API import
   const { refreshSession, user } = useAuth();
   const userRole = user?.role;
   const userId = user?.id;
-  const [activeTab, setActiveTab] = useState("personal");
   const { data: profileResponse } = useGetProfileQuery();
   const { data: applicationResponse, isLoading: isLoadingApplication } =
     useGetApplicationDetailQuery(userId as string);
+
+  // manage tab
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const defaultTab = searchParams.get("tab") || "personal";
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   // API Mutations
   const [updateProfile, { isLoading: isUpdatingProfile }] = useUpdateProfileMutation();
@@ -195,6 +207,9 @@ export default function SettingsPage() {
   // Password State
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
+
+  // ReSubmit Application State
+  const [showReSubmitDialog, setShowReSubmitDialog] = useState(false);
 
   // Forms
   const personalForm = useForm<PersonalInfoForm>({
@@ -342,6 +357,11 @@ export default function SettingsPage() {
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    router.replace(`?tab=${tab}`, { scroll: false });
+  };
+
   return (
     <div className="min-h-screen bg-[#e5ecff]">
       <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -361,7 +381,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm border p-2">
@@ -617,17 +637,19 @@ export default function SettingsPage() {
                                 <h3 className="font-semibold text-gray-900 mb-2">
                                   Application Status
                                 </h3>
-                                <span
-                                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    applicationResponse.data.status === "APPROVED"
-                                      ? "bg-green-100 text-green-700"
-                                      : applicationResponse.data.status === "PENDING"
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : "bg-red-100 text-red-700"
-                                  }`}
-                                >
-                                  {applicationResponse.data.status}
-                                </span>
+                                <div className="flex flex-col gap-3">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-sm font-medium w-fit ${
+                                      applicationResponse.data.status === "APPROVED"
+                                        ? "bg-green-100 text-green-700"
+                                        : applicationResponse.data.status === "PENDING"
+                                        ? "bg-yellow-100 text-yellow-700"
+                                        : "bg-red-100 text-red-700"
+                                    }`}
+                                  >
+                                    {applicationResponse.data.status}
+                                  </span>
+                                </div>
                               </div>
                               {applicationResponse.data.submittedAt && (
                                 <div className="text-sm text-gray-600">
@@ -657,6 +679,58 @@ export default function SettingsPage() {
                                   </p>
                                 </div>
                               )}
+
+                            {/* Re-Submit Button Section - Outside rejection reason */}
+                            {applicationResponse.data.status === "REJECTED" && (
+                              <>
+                                {applicationResponse.data.submitAttemptRemain === 0 ? (
+                                  /* No attempts remaining - show contact admin notification */
+                                  <div className="p-4 border border-orange-200 rounded-lg bg-orange-50">
+                                    <div className="flex items-start gap-3">
+                                      <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1">
+                                        <h4 className="font-semibold text-orange-900 mb-1">
+                                          No Attempts Remaining
+                                        </h4>
+                                        <p className="text-sm text-orange-800 mb-3">
+                                          You have used all available submission attempts for your
+                                          instructor application.
+                                        </p>
+                                        <p className="text-sm text-orange-700">
+                                          <strong>Need help?</strong> Please contact our support
+                                          team or an administrator for assistance with your
+                                          application.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Attempts remaining - show button with counter */
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-gray-200 rounded-lg bg-blue-50/30">
+                                    {/* Attempts remaining on the left */}
+                                    <div className="flex items-center">
+                                      {applicationResponse.data.submitAttemptRemain !==
+                                        undefined && (
+                                        <span className="text-sm text-gray-700 bg-white px-3 py-2 rounded-lg font-medium border">
+                                          {applicationResponse.data.submitAttemptRemain} attempt(s)
+                                          remaining
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Re-Submit button on the right */}
+                                    <div className="flex items-center">
+                                      <Button
+                                        onClick={() => setShowReSubmitDialog(true)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 text-sm font-medium"
+                                      >
+                                        Re-Submit Application
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
 
                             {/* Documents Section */}
                             <div className="space-y-6">
@@ -830,6 +904,21 @@ export default function SettingsPage() {
             <div className="flex justify-center mt-4">
               <Button onClick={() => setShowPasswordSuccess(false)}>Close</Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Re-Submit Application Dialog */}
+        <Dialog open={showReSubmitDialog} onOpenChange={setShowReSubmitDialog}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Re-Submit Application</DialogTitle>
+            </DialogHeader>
+            <ReSubmitApplicationForm
+              onSuccess={() => {
+                setShowReSubmitDialog(false);
+              }}
+              onCancel={() => setShowReSubmitDialog(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>
