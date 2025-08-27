@@ -1,4 +1,5 @@
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
+import { apiResponse, ApplicationDetailResponse, ReSubmitAppplicationRequest } from '@/types';
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 
@@ -25,7 +26,7 @@ interface UpdateThumbnailRequest {
 export const settingsApi = createApi({
   reducerPath: 'settingsApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Settings'],
+  tagTypes: ['Settings' , 'InstructorApplication'],
   endpoints: (builder) => ({
     resetPassword: builder.mutation<void, ResetPasswordRequest>({
       query: (body) => ({
@@ -41,11 +42,7 @@ export const settingsApi = createApi({
 
         const formData = new FormData();
 
-        if (name && name.trim()) {
-          formData.append('name', name.trim());
-        } else {
-          throw new Error('Name is required');
-        }
+        formData.append('name', name?.trim() || '');
         
         formData.append('bio', bio || '');
         
@@ -76,11 +73,42 @@ export const settingsApi = createApi({
       },
       invalidatesTags: ['Settings'],
     }),
+
+    getApplicationDetail: builder.query<apiResponse<ApplicationDetailResponse>, string>({
+      query: (id) => ({
+        url: `/instructor-applications/${id}`,
+        method: 'GET',
+      }),
+      providesTags: ['InstructorApplication'],
+    }),
+
+    reSubmitApplication: builder.mutation<void, ReSubmitAppplicationRequest>({
+      query: (data) => {
+        const formData = new FormData();
+        
+        formData.append('portfolio', data.portfolio);
+
+        formData.append('certificate', data.certificate);
+        formData.append('cv', data.cv);
+        
+        if (data.other) {
+          formData.append('other', data.other);
+        }
+        return {
+          url: `/instructor-applications/documents/upload`,
+          method: 'POST',
+          body: formData,
+        };
+      },
+      invalidatesTags: ['InstructorApplication'],  
+    }),
   }),
 });
 
 export const { 
   useResetPasswordMutation, 
   useUpdateProfileMutation,
-  useUpdateThumbnailMutation 
+  useUpdateThumbnailMutation,
+  useGetApplicationDetailQuery,
+  useReSubmitApplicationMutation,
 } = settingsApi;
