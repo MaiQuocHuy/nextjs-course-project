@@ -1,2 +1,3 @@
 export * from "./apiResponse";
-export * from "./instructor/courses";
+export * from "./register";
+export * from "./userResponse";

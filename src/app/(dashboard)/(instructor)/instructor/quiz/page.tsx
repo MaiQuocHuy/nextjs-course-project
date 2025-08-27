@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import {
   useGenerateQuestionsMutation,
   useSaveQuestionsMutation,
-} from "@/services/quiz/geminiApi";
-import type { QuestionType } from "@/services/quiz/geminiApi";
+} from '@/services/quiz/geminiApi';
+import type { QuestionType } from '@/services/quiz/geminiApi';
 
 export default function QuizPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [extractPreview, setExtractPreview] = useState("");
+  const [extractPreview, setExtractPreview] = useState('');
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [sectionId, setSectionId] = useState("001");
-  const [lessonId, setLessonId] = useState("001");
+  const [sectionId, setSectionId] = useState('section-001');
+  const [lessonId, setLessonId] = useState('lesson-002');
   const [error, setError] = useState<string | null>(null);
 
   const [generateQuestions, { isLoading: generating }] =
@@ -29,13 +29,13 @@ export default function QuizPage() {
 
   const handleGenerate = async () => {
     if (!file) {
-      alert("Please select a .docx file first.");
+      alert('Please select a .docx file first.');
       return;
     }
     setError(null);
 
     try {
-      const mammoth = (await import("mammoth")).default;
+      const mammoth = (await import('mammoth')).default;
       const arrayBuffer = await file.arrayBuffer();
       const { value } = await mammoth.extractRawText({ arrayBuffer });
       const cleanedText = value.trim();
@@ -48,19 +48,19 @@ export default function QuizPage() {
         numQuestions: 5,
       }).unwrap();
 
-      console.log("Generated questions data:", data);
+      console.log('Generated questions data:', data);
 
       // Kiểm tra xem data có phải array không
       if (!Array.isArray(data)) {
-        console.error("Data is not an array:", data);
-        throw new Error("Invalid response format: expected array of questions");
+        console.error('Data is not an array:', data);
+        throw new Error('Invalid response format: expected array of questions');
       }
 
       const normalized: QuestionType[] = data.map((q: any, idx: number) => {
         // Chuyển đổi options thành format A, B, C, D
         const originalOptions = q.options ?? {};
         const standardOptions: Record<string, string> = {};
-        const optionLabels = ["A", "B", "C", "D", "E", "F"];
+        const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
 
         let labelIndex = 0;
         Object.entries(originalOptions).forEach(([key, value]) => {
@@ -71,7 +71,7 @@ export default function QuizPage() {
         });
 
         // Tìm correct answer key mới
-        let newCorrectAnswer = q.correctAnswer ?? "";
+        let newCorrectAnswer = q.correctAnswer ?? '';
         if (originalOptions[newCorrectAnswer]) {
           const originalKeys = Object.keys(originalOptions);
           const originalIndex = originalKeys.indexOf(newCorrectAnswer);
@@ -82,42 +82,42 @@ export default function QuizPage() {
 
         return {
           id: q.id || uuidv4(),
-          questionText: q.questionText ?? q.question ?? "",
+          questionText: q.questionText ?? q.question ?? '',
           options: standardOptions,
           correctAnswer: newCorrectAnswer,
-          explanation: q.explanation ?? "",
+          explanation: q.explanation ?? '',
         };
       });
 
       setQuestions(normalized);
     } catch (err: any) {
-      console.error("Generate error:", err);
-      console.error("Error details:", {
+      console.error('Generate error:', err);
+      console.error('Error details:', {
         message: err.message,
         stack: err.stack,
         originalError: err,
       });
-      setError(err?.data?.message || err?.message || "Generate failed");
+      setError(err?.data?.message || err?.message || 'Generate failed');
     }
   };
 
   const acceptAll = async () => {
     if (!sectionId || !lessonId) {
-      alert("Missing sectionId or lessonId.");
+      alert('Missing sectionId or lessonId.');
       return;
     }
     if (questions.length === 0) {
-      alert("No questions to save.");
+      alert('No questions to save.');
       return;
     }
     setError(null);
 
     try {
       await saveQuestions({ sectionId, lessonId, questions }).unwrap();
-      alert("Saved successfully!");
+      alert('Saved successfully!');
     } catch (err: any) {
-      console.error("Save error:", err);
-      setError(err.message || "Save failed");
+      console.error('Save error:', err);
+      setError(err.message || 'Save failed');
     }
   };
 
@@ -133,12 +133,12 @@ export default function QuizPage() {
   const addNewOption = (qIndex: number) => {
     const copy = [...questions];
     const currentOptions = copy[qIndex].options;
-    const optionLabels = ["A", "B", "C", "D", "E", "F"];
+    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
     const usedLabels = Object.keys(currentOptions);
     const nextLabel = optionLabels.find((label) => !usedLabels.includes(label));
 
     if (nextLabel) {
-      copy[qIndex].options[nextLabel] = "";
+      copy[qIndex].options[nextLabel] = '';
       setQuestions(copy);
     }
   };
@@ -148,7 +148,7 @@ export default function QuizPage() {
     delete copy[qIndex].options[optionKey];
     // Nếu đáp án đúng bị xóa, reset về rỗng
     if (copy[qIndex].correctAnswer === optionKey) {
-      copy[qIndex].correctAnswer = "";
+      copy[qIndex].correctAnswer = '';
     }
     setQuestions(copy);
   };
@@ -218,7 +218,7 @@ export default function QuizPage() {
                     Processing...
                   </>
                 ) : (
-                  "Generate MCQ"
+                  'Generate MCQ'
                 )}
               </button>
             </div>
@@ -337,7 +337,7 @@ export default function QuizPage() {
                             {Object.keys(q.options).map((key) => (
                               <option key={key} value={key}>
                                 {key}: {q.options[key].substring(0, 50)}
-                                {q.options[key].length > 50 ? "..." : ""}
+                                {q.options[key].length > 50 ? '...' : ''}
                               </option>
                             ))}
                           </select>
@@ -397,15 +397,15 @@ export default function QuizPage() {
                             key={k}
                             className={`flex items-start gap-3 p-2 rounded ${
                               k === q.correctAnswer
-                                ? "bg-green-50 border border-green-200"
-                                : "bg-gray-50"
+                                ? 'bg-green-50 border border-green-200'
+                                : 'bg-gray-50'
                             }`}
                           >
                             <div
                               className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${
                                 k === q.correctAnswer
-                                  ? "bg-green-500 text-white"
-                                  : "bg-blue-100 text-blue-800"
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-blue-100 text-blue-800'
                               }`}
                             >
                               {k}
@@ -452,7 +452,7 @@ export default function QuizPage() {
                     Saving...
                   </>
                 ) : (
-                  "Accept All & Save to Database"
+                  'Accept All & Save to Database'
                 )}
               </button>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,7 +22,6 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import type { DocumentType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
@@ -44,6 +43,13 @@ export function CombinedFileUpload({
 }: CombinedFileUploadProps) {
   const [uploadError, setUploadError] = useState<string>('');
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (videoFile && !videoPreviewUrl) {
+      const url = URL.createObjectURL(videoFile);
+      setVideoPreviewUrl(url);
+    }
+  }, [videoFile]);
 
   // Document Dropzone
   const onDocumentDrop = useCallback(
@@ -197,73 +203,74 @@ export function CombinedFileUpload({
     );
   };
 
-  const renderVideoPreview = () => {
-    if (!videoFile || !videoPreviewUrl) return null;
+  // const renderVideoPreview = () => {
+  //   if (!videoFile || !videoPreviewUrl) return null;
 
-    return (
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </Button>
-        </DialogTrigger>
-        <DialogContent
-          style={{
-            width: '90vw',
-            maxWidth: '900px',
-            maxHeight: '95vh',
-            padding: '15px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Video Preview</DialogTitle>
-          </DialogHeader>
-          <div
-            style={{
-              width: '100%',
-              height: '70vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: '#000',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            }}
-          >
-            <video
-              src={videoPreviewUrl}
-              controls
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                background: '#000',
-                borderRadius: '12px',
-              }}
-              preload="metadata"
-            >
-              Your browser does not support the video tag.
-            </video>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-  
+  //   return (
+  //     <Dialog>
+  //       <DialogTrigger asChild>
+  //         <Button variant="ghost" size="sm">
+  //           <Eye className="h-4 w-4 mr-2" />
+  //           Preview
+  //         </Button>
+  //       </DialogTrigger>
+  //       <DialogContent
+  //         style={{
+  //           width: '90vw',
+  //           maxWidth: '900px',
+  //           maxHeight: '95vh',
+  //           padding: '15px',
+  //           display: 'flex',
+  //           flexDirection: 'column',
+  //           alignItems: 'center',
+  //           justifyContent: 'center',
+  //         }}
+  //       >
+  //         <DialogHeader>
+  //           <DialogTitle>Video Preview</DialogTitle>
+  //         </DialogHeader>
+  //         <div
+  //           style={{
+  //             width: '100%',
+  //             height: '70vh',
+  //             display: 'flex',
+  //             alignItems: 'center',
+  //             justifyContent: 'center',
+  //             background: '#000',
+  //             borderRadius: '12px',
+  //             overflow: 'hidden',
+  //           }}
+  //         >
+  //           <video
+  //             src={videoPreviewUrl}
+  //             controls
+  //             style={{
+  //               width: '100%',
+  //               height: '100%',
+  //               objectFit: 'contain',
+  //               background: '#000',
+  //               borderRadius: '12px',
+  //             }}
+  //             preload="metadata"
+  //           >
+  //             Your browser does not support the video tag.
+  //           </video>
+  //         </div>
+  //       </DialogContent>
+  //     </Dialog>
+  //   );
+  // };
+
   return (
     <div className="space-y-3">
       {/* Multi Document Upload */}
-      {documents && (
-        <div className="space-y-2">
-          {onDocumentsChange && (
-            <>
+      <div className="space-y-2">
+        {documents && onDocumentsChange && (
+          <>
+            {/* Upload area */}
+            <div>
               <Label className="text-sm font-medium">
-                Related Documents (optional)
+                Related Documents <strong className="text-red-500">*</strong>
               </Label>
               <Card
                 className={`border-2 border-dashed transition-all duration-200 ${
@@ -296,36 +303,35 @@ export function CombinedFileUpload({
                   </div>
                 </CardContent>
               </Card>
-            </>
-          )}
-          {documents.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                Uploaded Documents ({documents.length})
-              </Label>
-              {documents.map((document, index) => (
-                <Card
-                  key={index}
-                  className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
-                >
-                  <CardContent className="px-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="space-y-1">
+            </div>
+
+            {documents.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Uploaded Documents ({documents.length})
+                </Label>
+                {documents.map((document, index) => (
+                  <Card
+                    key={index}
+                    className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
+                  >
+                    <CardContent className="px-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            {getFileIcon(document.file)}
+                            <span className="text-sm font-medium">
+                              {document.file.name}
+                            </span>
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Size:{' '}
+                            {(document.file.size / (1024 * 1024)).toFixed(2)} MB
+                          </div>
+                        </div>
                         <div className="flex items-center gap-2">
-                          {getFileIcon(document.file)}
-                          <span className="text-sm font-medium">
-                            {document.file.name}
-                          </span>
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Size:{' '}
-                          {(document.file.size / (1024 * 1024)).toFixed(2)} MB
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {renderDocumentPreview(document.file)}
-                        {onDocumentsChange && (
+                          {renderDocumentPreview(document.file)}
                           <Button
                             type="button"
                             variant="ghost"
@@ -334,16 +340,16 @@ export function CombinedFileUpload({
                           >
                             <X className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Video Upload */}
       {onVideoSelect && onVideoRemove && (
@@ -384,57 +390,25 @@ export function CombinedFileUpload({
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-              <CardContent className="px-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Play className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {videoFile.name}
-                    </span>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {renderVideoPreview()}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleVideoRemove}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
-                </div>
-              </CardContent>
-            </Card>
+            <>
+              <VideoPreview
+                videoFile={videoFile}
+                videoPreviewUrl={videoPreviewUrl}
+                handleVideoRemove={handleVideoRemove}
+                mode="edit"
+              />
+            </>
           )}
         </div>
       )}
 
       {/* Display uploaded video */}
       {videoFile && !onVideoSelect && !onVideoRemove && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Uploaded Video</Label>
-          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-            <CardContent className="px-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Play className="h-4 w-4" />
-                  <span className="text-sm font-medium">{videoFile.name}</span>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                </div>
-                {renderVideoPreview()}
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <VideoPreview
+          videoFile={videoFile}
+          videoPreviewUrl={videoPreviewUrl}
+          handleVideoRemove={handleVideoRemove}
+        />
       )}
 
       {uploadError && (
@@ -446,3 +420,94 @@ export function CombinedFileUpload({
     </div>
   );
 }
+
+const VideoPreview = ({
+  videoFile,
+  videoPreviewUrl,
+  handleVideoRemove,
+  mode,
+}: {
+  videoFile: File;
+  videoPreviewUrl: string;
+  handleVideoRemove: () => void;
+  mode?: 'edit' | 'view';
+}) => {
+  return (
+    <>
+      {videoPreviewUrl ? (
+        <Card
+          className={` ${
+            mode === 'edit' &&
+            'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
+          }`}
+        >
+          <CardContent className="px-3">
+            <div className="space-y-3">
+              {/* Video Information */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  <Play className="h-4 w-4" />
+                  <span className="font-medium">
+                    {videoFile.name !== 'null'
+                      ? videoFile.name
+                      : 'Lesson video'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </span>
+                  {mode && mode === 'edit' && (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  )}
+                </div>
+                {mode && mode === 'edit' && (
+                  // Video Remove Button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleVideoRemove}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Video Preview */}
+              <div
+                style={{
+                  width: '100%',
+                  // maxHeight: '60vh',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#000',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                }}
+              >
+                <video
+                  src={videoPreviewUrl}
+                  controls
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    background: '#000',
+                    borderRadius: '12px',
+                  }}
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Upload Video Failed!</p>
+        </div>
+      )}
+    </>
+  );
+};

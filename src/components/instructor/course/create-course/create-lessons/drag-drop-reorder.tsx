@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
-import { CourseCreationType } from '@/utils/instructor/create-course-validations/lessons-validations';
 
 interface DragDropReorderProps<T extends { id: string; orderIndex: number }> {
   items: T[];
   onReorder: ((items: T[]) => void) | null;
+  // onReorder2?: (index1: number, index2: number) => void;
   renderItem: (item: T, index: number) => React.ReactNode;
   className?: string;
 }
@@ -17,6 +17,7 @@ interface DragDropReorderProps<T extends { id: string; orderIndex: number }> {
 export function DragDropReorder<T extends { id: string; orderIndex: number }>({
   items,
   onReorder,
+  // onReorder2,
   renderItem,
   className,
 }: DragDropReorderProps<T>) {
@@ -38,6 +39,10 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
         onReorder(newItems);
       }
     }
+
+    // if (onReorder2) {
+    //   onReorder2(index, index - 1);
+    // }
   };
 
   const moveDown = (index: number) => {
@@ -55,6 +60,10 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
         onReorder(newItems);
       }
     }
+
+    // if (onReorder2) {
+    //   onReorder2(index, index + 1);
+    // }
   };
 
   const handleOrderChange = (itemId: string, newOrder: number) => {
@@ -110,16 +119,26 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
       onReorder(newItems);
       setDraggedItem(null);
     }
+
+    // if (onReorder2) {
+    //   if (!draggedItem || draggedItem === targetId) {   
+    //     return;
+    //   };      
+    //   const draggedIndex = items.findIndex((item) => item.id === draggedItem);
+    //   const targetIndex = items.findIndex((item) => item.id === targetId);
+    //   onReorder2(draggedIndex, targetIndex);
+    //   setDraggedItem(null);
+    // }
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
     e.preventDefault();
     setDraggedItem(null);
-  }
+  };
 
   return (
     <div className={className}>
-      {items.map((item, index) => (
+      {items.map((item, index) => (        
         <div
           key={item.id}
           className={`relative group ${
@@ -195,7 +214,10 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
                       variant="ghost"
                       size="sm"
                       className="h-6 w-8 p-0 text-xs"
-                      onClick={() => setEditingOrder(item.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingOrder(item.id);
+                      }}
                     >
                       {item.orderIndex + 1}
                     </Button>

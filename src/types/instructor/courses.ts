@@ -1,7 +1,17 @@
+import { User } from './profile';
+
 export interface VideoContent {
   id: string;
   url: string;
   duration: number;
+  title: string;
+  format: string;
+  metadataDuration: number;
+  thumbnail: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
+  file: File;
 }
 
 export interface QuizQuestion {
@@ -9,39 +19,55 @@ export interface QuizQuestion {
   questionText: string;
   options: string[];
   correctAnswer: string;
-  explanation: string | null;
+  explanation?: string;
 }
 
-export interface Lesson {
+export interface Quiz {
+  id?: string;
+  questions: {
+    questionText: string;
+    options: {
+      A: string;
+      B: string;
+      C: string;
+      D: string;
+    };
+    correctAnswer: 'A' | 'B' | 'C' | 'D';
+    explanation: string;
+  }[];
+}
+
+export interface LessonOverview {
   id: string;
   title: string;
   type: 'VIDEO' | 'QUIZ';
+  videoUrl: string;
+  duration: number;
+  quizQuestionCount: number | null;
+}
+
+export interface LessonDetail extends LessonOverview {
   order: number;
+  orderIndex: number;
   video?: VideoContent;
-  quiz?: QuizQuestion[];
+  quiz?: {
+    questions: QuizQuestion[];
+  };
   isCompleted: boolean;
+  completedAt: string;
 }
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string;
-  role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
-  created_at: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-}
-
-export interface Section {
+export interface SectionOverview {
   id: string;
   title: string;
+  totalVideoDuration: number;
+  totalQuizQuestion: number;
+  lessons: LessonOverview[];
+}
+
+export interface SectionDetail extends SectionOverview {
   orderIndex: number;
-  lessonCount: number;
-  lessons?: Lesson[];
+  lessons: LessonDetail[];
 }
 
 export interface Enrollment {
@@ -64,6 +90,11 @@ export interface Review {
   user?: User;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -71,22 +102,32 @@ export interface Course {
   description: string;
   level: string;
   thumbnailUrl: string;
-  categories: Category[];
-  status: string;
   createdAt: string;
-  updateAt: string;
+  updatedAt: string;
+  categories: Category[];
   totalStudents: number;
   sectionCount: number;
   averageRating: number;
+  // lastContentUpdate: string;
+  // status: string;
   revenue: number;
   canEdit: boolean;
   canUnpublish: boolean;
   canDelete: boolean;
   canPublish: boolean;
+  statusReview: string;
+  reason: string;
   approved: boolean;
 }
 
-export interface Page {
+export interface CourseDetail extends Course {
+  isPublished: boolean;
+  enrollmentCount: number;
+  ratingCount: number;
+  sections: SectionOverview[];
+}
+
+export interface PageType {
   number: number;
   size: number;
   totalPages: number;
@@ -97,5 +138,5 @@ export interface Page {
 
 export interface Courses {
   content: Course[];
-  page: Page;
+  page: PageType;
 }

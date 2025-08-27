@@ -2,9 +2,21 @@
 export {
   Loading,
   CoursesLoadingSkeleton,
-  DashboardStatsLoadingSkeleton,
+  StatsLoadingSkeleton,
   ActivityFeedLoadingSkeleton,
+  CommentsLoadingSkeleton,
+  RepliesLoadingSkeleton,
 } from "./Loading";
 
 // Error components
-export { LoadingError, NetworkError, CourseLoadError } from "./LoadingError";
+export {
+  LoadingError,
+  StatsError,
+  EnrolledCoursesError,
+  ActivityFeedError,
+  ReviewsError,
+  PaymentsError,
+  LearningPageError,
+  CommentsError,
+  RepliesError,
+} from "./LoadingError";

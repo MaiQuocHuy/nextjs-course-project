@@ -1,5 +1,6 @@
 import { fetchBaseQuery, FetchArgs, BaseQueryFn, FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { getSession, signOut } from "next-auth/react";
+import { isAccessTokenValid } from "./auth";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BACKEND_URL;
 

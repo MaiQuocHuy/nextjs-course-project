@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { BookOpen } from "lucide-react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { Loading, CoursesLoadingSkeleton } from "./ui/Loading";
-import { LoadingError, CourseLoadError } from "./ui/LoadingError";
+import { LoadingError, EnrolledCoursesError } from "./ui/LoadingError";
 import { CourseStatus } from "./CourseStatus";
 
 export function EnrolledCoursesSummary() {
@@ -18,23 +18,48 @@ export function EnrolledCoursesSummary() {
     return <CoursesLoadingSkeleton />;
   }
   if (error) {
-    return <CourseLoadError onRetry={refetch} />;
+    return <EnrolledCoursesError onRetry={refetch} />;
   }
 
   const courses = data?.content || [];
+  // Chỉ hiển thị 3 khóa học gần đây nhất
+  const recentCourses = courses.slice(0, 3);
+
+  if (courses.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardContent className="py-12">
+          <div className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <BookOpen className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium">No courses enrolled</h3>
+              <p className="text-muted-foreground">
+                Discover and enroll in courses to start your learning journey.
+              </p>
+              <Button asChild>
+                <Link href="/">Browse Courses</Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">My Courses</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Recent Courses</h2>
         <Button variant="outline" size="sm">
           <Link href="/dashboard/my-courses">View All</Link>
         </Button>
       </div>
 
-      {courses && courses.length > 0 ? (
+      {recentCourses && recentCourses.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((enrollment) => (
+          {recentCourses.map((enrollment) => (
             <Card
               key={enrollment.courseId}
               className="overflow-hidden hover:shadow-lg transition-shadow "
@@ -50,8 +75,8 @@ export function EnrolledCoursesSummary() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg line-clamp-2 flex-1">
+                  <div className="flex flex-col items-start justify-between gap-2">
+                    <CardTitle className="text-lg line-clamp-1 flex-1">
                       {enrollment.title}
                     </CardTitle>
                     <CourseStatus status={enrollment.completionStatus} />

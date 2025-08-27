@@ -1,39 +1,12 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { publicBaseQuery } from "@/lib/baseQueryWithReauth";
+import type { User, RegisterStudentRequest, RegisterInstructorRequest } from "@/types";
 
-const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-  prepareHeaders: async (headers, api) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem("accessToken");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-    } 
-    return headers;
-  },
-});
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-interface RegisterStudentRequest {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}
-interface RegisterInstructorRequest {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-  portfolioUrl: string;
-  certificateFile: File ;
-  cvFile: File ;
-  supportingFile?: File;
+interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  refreshTokenExpires?: number; //* for test
 }
 
 interface RegisterUserResponse {
@@ -41,29 +14,112 @@ interface RegisterUserResponse {
   message?: string;
 }
 
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  data: AuthResponse;
+  message?: string;
+}
+
+interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+interface RefreshTokenResponse {
+  data: {
+    accessToken: string;
+    refreshToken?: string;
+    refreshTokenExpires?: number;
+    user?: User; // Optional updated user info
+  };
+}
+
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+interface ForgotPasswordResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    message: string;
+    maskedEmail: string;
+    expiresAt: string;
+    maxAttempts: number;
+    previousTokensInvalidated: boolean;
+  };
+  timestamp: string;
+}
+
+interface ForgotPasswordConfirmRequest {
+  email: string;
+  otpCode: string; 
+  newPassword: string;
+  confirmPassword: string;
+  passwordMatching: boolean;
+}
+
+interface ForgotPasswordConfirmResponse {
+  statusCode: number;
+  message: string;
+  data: null;
+  timestamp: string;
+}
+
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: baseQuery,
+  baseQuery: publicBaseQuery,
   endpoints: (builder) => ({
-    // Define your endpoints here
 
-    //* Register for Instructor
-    registerInstructor: builder.mutation<RegisterUserResponse, RegisterInstructorRequest>({
-      query: ({ name, email, password, role, portfolioUrl, certificateFile, cvFile, supportingFile }) => {
+    //forgot password
+    forgotPassword: builder.mutation<ForgotPasswordResponse, ForgotPasswordRequest>({
+      query: (body) => ({
+        url: "/auth/forgot-password",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    forgotPasswordConfirm: builder.mutation<ForgotPasswordConfirmResponse, ForgotPasswordConfirmRequest>({
+      query: (body) => ({
+        url: "/auth/forgot-password/confirm",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    // Register for Instructor
+    registerInstructor: builder.mutation<
+      RegisterUserResponse,
+      RegisterInstructorRequest
+    >({
+      query: ({
+        name,
+        email,
+        password,
+        role,
+        portfolioUrl,
+        certificateFile,
+        cvFile,
+        supportingFile,
+      }) => {
         const formData = new FormData();
-        
-        formData.append('name', name);
-        formData.append('email', email);
-        formData.append('password', password);
-        formData.append('role', role);
-        formData.append('portfolio', portfolioUrl); 
-        formData.append('certificate', certificateFile);
-        formData.append('cv', cvFile);
+
+        formData.append("name", name);
+        formData.append("email", email);
+        formData.append("password", password);
+        formData.append("role", role);
+        formData.append("portfolio", portfolioUrl);
+        formData.append("certificate", certificateFile, certificateFile.name);
+        formData.append("cv", cvFile, cvFile.name);
 
         if (supportingFile) {
-          formData.append('other', supportingFile);
+          formData.append("other", supportingFile, supportingFile.name);
         }
-        
+
         return {
           url: "/auth/register-application",
           method: "POST",
@@ -72,30 +128,23 @@ export const authApi = createApi({
       },
     }),
 
-    //* Register for Student
-    registerStudent: builder.mutation<RegisterUserResponse, RegisterStudentRequest>({
+    // Register for Student
+    registerStudent: builder.mutation<
+      RegisterUserResponse,
+      RegisterStudentRequest
+    >({
       query: ({ name, email, password, role }) => ({
         url: "/auth/register",
         method: "POST",
         body: { name, email, password, role },
       }),
     }),
-    
-    logout: builder.mutation<void, void>({
-      query: () => {
-        const refreshToken = typeof window !== 'undefined' 
-          ? localStorage.getItem("refreshToken") 
-          : null;
-        
-        return {
-          url: "/auth/logout",
-          method: "POST",
-          body: refreshToken ? { refreshToken } : {},
-        };
-      },
-    }),
-    
   }),
 });
 
-export const { useRegisterStudentMutation, useRegisterInstructorMutation, useLogoutMutation } = authApi;
+export const {
+  useRegisterStudentMutation,
+  useRegisterInstructorMutation,
+  useForgotPasswordMutation,
+  useForgotPasswordConfirmMutation
+} = authApi;

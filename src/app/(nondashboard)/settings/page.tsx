@@ -1,16 +1,19 @@
 "use client";
 
 import { DialogTrigger } from "@/components/ui/dialog";
-
-import type React from "react";
-
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import {
+  useResetPasswordMutation,
+  useUpdateProfileMutation,
+  useUpdateThumbnailMutation,
+} from "@/services/common/settingsApi";
 import { Edit2, User, Shield, Camera, RefreshCw, CheckCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,21 +34,26 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useGetProfileQuery } from "@/services/common/profileApi";
+import { useAuth } from "@/hooks/useAuth";
+
+// Avatar constraints
+const MAX_AVATAR_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp"];
 
 // Validation schemas
 const personalInfoSchema = z.object({
-  fullName: z.string().min(1, "Name is required"),
-  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(1, "Name is required"),
+  bio: z.string().default("").optional(),
 });
 
 const passwordSchema = z
   .object({
     oldPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+    newPassword: z.string(),
+    // .min(8, "Password must be at least 8 characters")
+    // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    // .regex(/[0-9]/, "Password must contain at least one number")
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -53,119 +61,34 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
+// Types
 type PersonalInfoForm = z.infer<typeof personalInfoSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 
-export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("personal");
+// Reusable editable field component
+interface EditableFieldProps {
+  field: keyof PersonalInfoForm;
+  label: string;
+  type?: "text" | "textarea";
+  isEditing: boolean;
+  onToggle: () => void;
+  form: UseFormReturn<PersonalInfoForm>;
+  currentValue: string;
+  originalValue: string;
+}
 
-  // Personal Info State
-  const [personalInfo, setPersonalInfo] = useState({
-    fullName: "John Doe",
-    email: "john.doe@example.com",
-  });
-  const [editingFields, setEditingFields] = useState<Record<string, boolean>>({});
-  const [avatarUrl, setAvatarUrl] = useState("/placeholder.svg?height=100&width=100&text=JD");
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-
-  // Password State
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
-
-  const personalForm = useForm<PersonalInfoForm>({
-    resolver: zodResolver(personalInfoSchema),
-    defaultValues: personalInfo,
-  });
-
-  const passwordForm = useForm<PasswordForm>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: {
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
-
-  const hasPersonalChanges = () => {
-    const currentValues = personalForm.getValues();
-    return (
-      currentValues.fullName !== personalInfo.fullName || currentValues.email !== personalInfo.email
-    );
-  };
-
-  const handlePersonalInfoUpdate = (data: PersonalInfoForm) => {
-    setPersonalInfo(data);
-    setEditingFields({});
-    setSuccessMessage("Profile updated successfully");
-    setShowSuccessDialog(true);
-  };
-
-  const handlePasswordUpdate = (data: PasswordForm) => {
-    // Simulate password validation
-    if (data.oldPassword !== "Password123") {
-      passwordForm.setError("oldPassword", {
-        message: "Current password is incorrect",
-      });
-      return;
-    }
-
-    passwordForm.reset();
-    setIsPasswordDialogOpen(false);
-    setShowPasswordSuccess(true);
-  };
-
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target?.result as string);
-        setIsAvatarDialogOpen(true);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAvatarSave = () => {
-    if (avatarPreview) {
-      setAvatarUrl(avatarPreview);
-      setAvatarPreview(null);
-      setIsAvatarDialogOpen(false);
-      setSuccessMessage("Avatar updated successfully");
-      setShowSuccessDialog(true);
-    }
-  };
-
-  const startEditing = (field: keyof PersonalInfoForm) => {
-    setEditingFields((prev) => ({ ...prev, [field]: true }));
-  };
-
-  const resetField = (field: keyof PersonalInfoForm) => {
-    personalForm.setValue(field, personalInfo[field]);
-    setEditingFields((prev) => ({ ...prev, [field]: false }));
-  };
-
-  const isFieldChanged = (field: keyof PersonalInfoForm) => {
-    return personalForm.getValues(field) !== personalInfo[field];
-  };
-
-  const EditableField = ({
+const EditableField = React.memo(
+  ({
     field,
-    value,
     label,
     type = "text",
-  }: {
-    field: keyof PersonalInfoForm;
-    value: string;
-    label: string;
-    type?: string;
-  }) => {
-    const isEditing = editingFields[field];
-    const isChanged = isFieldChanged(field);
-
+    isEditing,
+    onToggle,
+    form,
+    currentValue,
+    originalValue,
+  }: EditableFieldProps) => {
+    const isChanged = currentValue !== originalValue;
     return (
       <div className="space-y-2">
         <Label htmlFor={field} className="text-sm font-medium">
@@ -175,12 +98,26 @@ export default function SettingsPage() {
           {isEditing ? (
             <div className="flex-1">
               <FormField
-                control={personalForm.control}
+                control={form.control}
                 name={field}
                 render={({ field: formField }) => (
                   <FormItem>
                     <FormControl>
-                      <Input {...formField} type={type} className="flex-1" autoFocus={!isChanged} />
+                      {type === "textarea" ? (
+                        <Textarea
+                          {...formField}
+                          className="flex-1 min-h-[100px]"
+                          autoFocus={!isChanged}
+                          placeholder="Tell us about yourself..."
+                        />
+                      ) : (
+                        <Input
+                          {...formField}
+                          type={type}
+                          className="flex-1"
+                          autoFocus={!isChanged}
+                        />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -188,32 +125,207 @@ export default function SettingsPage() {
               />
             </div>
           ) : (
-            <>
-              <div
-                className="flex-1 py-2 px-3 bg-muted/50 rounded-md text-sm cursor-pointer hover:bg-muted/70"
-                onClick={() => startEditing(field)}
-              >
-                {personalForm.getValues(field)}
-              </div>
-            </>
+            <div
+              className={`flex-1 py-2 px-3 bg-muted/50 rounded-md text-sm cursor-pointer hover:bg-muted/70 ${
+                type === "textarea" ? "min-h-[100px] whitespace-pre-wrap" : ""
+              }`}
+              onClick={onToggle}
+            >
+              {currentValue || (type === "textarea" ? "Click to add bio..." : "")}
+            </div>
           )}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => (isEditing ? resetField(field) : startEditing(field))}
+            onClick={onToggle}
             className="h-8 w-8 p-0"
+            aria-label={isEditing ? `Reset ${label}` : `Edit ${label}`}
           >
             {isEditing ? <RefreshCw className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
           </Button>
         </div>
       </div>
     );
+  }
+);
+EditableField.displayName = "EditableField";
+
+export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState("personal");
+  const { data: profileResponse } = useGetProfileQuery();
+  const { refreshSession } = useAuth();
+
+  // API Mutations
+  const [updateProfile, { isLoading: isUpdatingProfile }] = useUpdateProfileMutation();
+  const [updateThumbnail, { isLoading: isUpdatingThumbnail }] = useUpdateThumbnailMutation();
+  const [resetPassword, { isLoading: isResettingPassword }] = useResetPasswordMutation();
+
+  // Personal Info State
+  const [personalInfo, setPersonalInfo] = useState({
+    name: profileResponse?.data?.name || "",
+    bio: profileResponse?.data?.bio || "",
+  });
+  const [editingFields, setEditingFields] = useState<Record<string, boolean>>({});
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Password State
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
+
+  // Forms
+  const personalForm = useForm<PersonalInfoForm>({
+    resolver: zodResolver(personalInfoSchema),
+    defaultValues: personalInfo,
+  });
+  const passwordForm = useForm<PasswordForm>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: { oldPassword: "", newPassword: "", confirmPassword: "" },
+  });
+
+  // Sync form with loaded profile
+  useEffect(() => {
+    if (profileResponse?.data) {
+      const next = {
+        name: profileResponse.data.name || "",
+        bio: profileResponse.data.bio || "",
+      };
+      setPersonalInfo(next);
+      personalForm.reset(next);
+      setAvatarUrl(profileResponse.data.thumbnailUrl || null);
+    }
+  }, [profileResponse, personalForm]);
+
+  // Watched values & change detection
+  const watchedName = personalForm.watch("name");
+  const watchedBio = personalForm.watch("bio");
+  const hasPersonalChanges = useMemo(
+    () => watchedName !== personalInfo.name || (watchedBio || "") !== personalInfo.bio,
+    [watchedName, watchedBio, personalInfo]
+  );
+
+  const setSuccess = useCallback((message: string) => {
+    setSuccessMessage(message);
+    setShowSuccessDialog(true);
+  }, []);
+
+  const handlePersonalInfoUpdate = useCallback(
+    async (data: PersonalInfoForm) => {
+      try {
+        if (!hasPersonalChanges) {
+          return;
+        }
+        const trimmedName = data.name.trim();
+        if (!trimmedName) {
+          setSuccess("Name is required");
+          return;
+        }
+        const payload = { name: trimmedName, bio: data.bio || "" };
+        await updateProfile(payload).unwrap();
+        setPersonalInfo(payload);
+        setEditingFields({});
+
+        // Force session refresh to update header
+        await refreshSession();
+
+        setSuccess("Profile updated successfully");
+      } catch (error: any) {
+        console.error("Profile update failed", error);
+        let message = "Failed to update profile. Please try again.";
+        if (error?.status === 400) message = "Invalid data provided.";
+        else if (error?.status === 401 || error?.status === 403) message = "Not authorized.";
+        else if (error?.status === 422) message = "Validation error.";
+        else if (error?.status === 500) message = error?.data?.message || "Server error.";
+        else if (error?.data?.message) message = error.data.message;
+        setSuccess(message);
+      }
+    },
+    [hasPersonalChanges, updateProfile, refreshSession, setSuccess]
+  );
+
+  const handlePasswordUpdate = useCallback(
+    async (data: PasswordForm) => {
+      try {
+        await resetPassword({
+          oldPassword: data.oldPassword,
+          newPassword: data.newPassword,
+        }).unwrap();
+        passwordForm.reset();
+        setIsPasswordDialogOpen(false);
+        setShowPasswordSuccess(true);
+      } catch (error: any) {
+        console.error("Password update failed", error);
+        if (error?.data?.message?.includes("incorrect") || error?.status === 401) {
+          passwordForm.setError("oldPassword", { message: "Current password is incorrect" });
+        } else {
+          passwordForm.setError("root", {
+            message: "Failed to update password. Please try again.",
+          });
+        }
+      }
+    },
+    [resetPassword, passwordForm]
+  );
+
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setSuccess("Unsupported image format. Please upload JPEG, PNG, GIF, BMP, or WebP.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setSuccess("Image is too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatarPreview(e.target?.result as string);
+      setIsAvatarDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarSave = useCallback(async () => {
+    if (!avatarPreview || !avatarFile) return;
+    try {
+      await updateThumbnail({
+        thumbnail: avatarFile,
+        currentName: personalInfo.name,
+      }).unwrap();
+      setAvatarUrl(avatarPreview);
+      setAvatarPreview(null);
+      setAvatarFile(null);
+      setIsAvatarDialogOpen(false);
+
+      // Force session refresh to update header avatar
+      await refreshSession();
+
+      setSuccess("Avatar updated successfully");
+    } catch (error) {
+      console.error("Avatar update failed", error);
+      setSuccess("Failed to update avatar. Please try again.");
+    }
+  }, [avatarPreview, avatarFile, updateThumbnail, personalInfo.name, refreshSession, setSuccess]);
+
+  const toggleEditField = (field: keyof PersonalInfoForm) => {
+    setEditingFields((prev) => ({ ...prev, [field]: !prev[field] }));
+    if (editingFields[field]) {
+      // Reset to original when toggling off
+      personalForm.setValue(field, personalInfo[field]);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#e5ecff]">
       <div className="container mx-auto max-w-4xl px-4 py-8">
-        {/* Add back button and header */}
         <div className="mb-8 flex items-center">
           <Button
             variant="ghost"
@@ -232,7 +344,6 @@ export default function SettingsPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Enhanced Sidebar Navigation */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm border p-2">
                 <TabsList className="grid w-full grid-cols-2 lg:grid-cols-1 lg:h-auto lg:space-y-2 bg-transparent">
@@ -254,7 +365,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Enhanced Content Panel */}
             <div className="lg:col-span-3">
               <TabsContent value="personal" className="mt-0">
                 <Card className="shadow-sm border-0 bg-white">
@@ -265,18 +375,17 @@ export default function SettingsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6 p-6">
-                    {/* Avatar Section */}
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <Avatar className="h-20 w-20">
                           <AvatarImage
-                            src={avatarUrl || "/placeholder.svg"}
+                            src={avatarUrl || profileResponse?.data?.thumbnailUrl || ""}
                             alt="Profile picture"
                           />
                           <AvatarFallback>
-                            {personalInfo.fullName
+                            {personalInfo.name
                               .split(" ")
-                              .map((n) => n[0])
+                              .map((n: string) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>
@@ -289,7 +398,7 @@ export default function SettingsPage() {
                         <input
                           id="avatar-upload"
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/gif,image/bmp,image/webp"
                           className="hidden"
                           onChange={handleAvatarUpload}
                         />
@@ -299,34 +408,44 @@ export default function SettingsPage() {
                         <p className="text-sm text-muted-foreground">
                           Click the camera icon to upload a new avatar
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Supported: JPEG, PNG, GIF, BMP, WebP. Max size: 10MB
+                        </p>
                       </div>
                     </div>
 
-                    {/* Personal Info Form */}
                     <Form {...personalForm}>
                       <form
                         onSubmit={personalForm.handleSubmit(handlePersonalInfoUpdate)}
                         className="space-y-4"
                       >
                         <EditableField
-                          field="fullName"
-                          value={personalInfo.fullName}
+                          field="name"
                           label="Full Name"
+                          type="text"
+                          isEditing={!!editingFields.name}
+                          onToggle={() => toggleEditField("name")}
+                          form={personalForm}
+                          currentValue={watchedName}
+                          originalValue={personalInfo.name}
                         />
                         <EditableField
-                          field="email"
-                          value={personalInfo.email}
-                          label="Email Address"
-                          type="email"
+                          field="bio"
+                          label="Bio"
+                          type="textarea"
+                          isEditing={!!editingFields.bio}
+                          onToggle={() => toggleEditField("bio")}
+                          form={personalForm}
+                          currentValue={watchedBio || ""}
+                          originalValue={personalInfo.bio}
                         />
-
                         <div className="pt-6 flex justify-end border-t border-gray-100">
                           <Button
                             type="submit"
-                            disabled={!hasPersonalChanges() || !personalForm.formState.isValid}
-                            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                            disabled={!hasPersonalChanges || isUpdatingProfile}
+                            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Update Profile
+                            {isUpdatingProfile ? "Updating..." : "Update Profile"}
                           </Button>
                         </div>
                       </form>
@@ -410,11 +529,17 @@ export default function SettingsPage() {
                                     type="button"
                                     variant="outline"
                                     onClick={() => setIsPasswordDialogOpen(false)}
+                                    disabled={isResettingPassword}
                                   >
                                     Cancel
                                   </Button>
-                                  <Button type="submit" disabled={!passwordForm.formState.isValid}>
-                                    Update Password
+                                  <Button
+                                    type="submit"
+                                    disabled={
+                                      !passwordForm.formState.isValid || isResettingPassword
+                                    }
+                                  >
+                                    {isResettingPassword ? "Updating..." : "Update Password"}
                                   </Button>
                                 </DialogFooter>
                               </form>
@@ -442,7 +567,7 @@ export default function SettingsPage() {
                 <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-border">
                   {avatarPreview && (
                     <img
-                      src={avatarPreview || "/placeholder.svg"}
+                      src={avatarPreview}
                       alt="Avatar preview"
                       className="w-full h-full object-cover"
                     />
@@ -456,16 +581,20 @@ export default function SettingsPage() {
                 onClick={() => {
                   setIsAvatarDialogOpen(false);
                   setAvatarPreview(null);
+                  setAvatarFile(null);
                 }}
+                disabled={isUpdatingThumbnail}
               >
                 Cancel
               </Button>
-              <Button onClick={handleAvatarSave}>Save Avatar</Button>
+              <Button onClick={handleAvatarSave} disabled={isUpdatingThumbnail}>
+                {isUpdatingThumbnail ? "Saving..." : "Save Avatar"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Success Dialog for Profile Updates */}
+        {/* Success Dialog for Profile & Avatar */}
         <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>

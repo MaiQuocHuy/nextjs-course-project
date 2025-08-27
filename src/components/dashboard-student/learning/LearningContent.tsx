@@ -34,6 +34,7 @@ import {
   updateQuizScore,
 } from "@/store/slices/student/learningProgressSlice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Comments } from "./Comments";
 
 interface LearningContentProps {
   currentLesson?: Lesson;
@@ -47,6 +48,7 @@ interface QuizState {
   answers: Record<string, string>;
   submitted: boolean;
   showResults: boolean;
+  submissionResult?: QuizSubmissionResponse;
 }
 
 const VideoContent = ({
@@ -739,12 +741,27 @@ const TextContent = ({ lesson }: { lesson: Lesson }) => {
   );
 };
 
-const QuizContent = ({ lesson }: { lesson: Lesson }) => {
+const QuizContent = ({
+  lesson,
+  section,
+  courseId,
+  onMarkComplete,
+  onRefetchCourse,
+}: {
+  lesson: Lesson;
+  section: Section;
+  courseId: string;
+  onMarkComplete?: () => void;
+  onRefetchCourse?: () => void;
+}) => {
   const [quizState, setQuizState] = useState<QuizState>({
     answers: {},
     submitted: false,
     showResults: false,
   });
+
+  const [submitQuiz, { isLoading: isSubmitting }] = useSubmitQuizMutation();
+  const dispatch = useAppDispatch();
 
   if (!lesson.quiz) return null;
 
@@ -760,20 +777,78 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
     }));
   };
 
-  const handleSubmitQuiz = () => {
-    setQuizState((prev) => ({
-      ...prev,
-      submitted: true,
-      showResults: true,
-    }));
+  const handleSubmitQuiz = async () => {
+    if (!section?.id || isSubmitting) return;
+
+    try {
+      const result = await submitQuiz({
+        sectionId: section.id,
+        lessonId: lesson.id,
+        answers: quizState.answers,
+      }).unwrap();
+
+      setQuizState((prev) => ({
+        ...prev,
+        submitted: true,
+        showResults: true,
+        submissionResult: result,
+      }));
+
+      // Update Redux state with quiz completion and score
+      dispatch(
+        markLessonCompleted({
+          lessonId: lesson.id,
+          sectionId: section.id,
+          courseId,
+          isCompleted: true,
+          completedAt: result.submittedAt,
+        })
+      );
+
+      dispatch(
+        updateQuizScore({
+          lessonId: lesson.id,
+          score: result.score,
+        })
+      );
+
+      // Mark lesson as complete after successful quiz submission
+      if (onMarkComplete) {
+        onMarkComplete();
+      }
+
+      // Refresh dashboard data to update activity feed
+      if (onRefetchCourse) {
+        onRefetchCourse();
+      }
+    } catch (error) {
+      console.error("Failed to submit quiz:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const getScore = () => {
+    if (quizState.submissionResult) {
+      return quizState.submissionResult.score;
+    }
+
+    // Fallback to client-side calculation if no server result
     const totalQuestions = lesson.quiz!.questions.length;
     const correctAnswers = lesson.quiz!.questions.filter(
       (q) => quizState.answers[q.id] === q.correctAnswer
     ).length;
     return Math.round((correctAnswers / totalQuestions) * 100);
+  };
+
+  const getCorrectAnswersCount = () => {
+    if (quizState.submissionResult) {
+      return quizState.submissionResult.correctAnswers;
+    }
+
+    // Fallback to client-side calculation
+    return lesson.quiz!.questions.filter(
+      (q) => quizState.answers[q.id] === q.correctAnswer
+    ).length;
   };
 
   const allQuestionsAnswered = lesson.quiz.questions.every(
@@ -792,14 +867,14 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
               </span>
             </div>
             <p className="text-green-700 text-sm sm:text-base">
-              Your score: {getScore()}% (
-              {
-                lesson.quiz.questions.filter(
-                  (q) => quizState.answers[q.id] === q.correctAnswer
-                ).length
-              }
-              /{lesson.quiz.questions.length} correct)
+              Your score: {getScore()}% ({getCorrectAnswersCount()}/
+              {lesson.quiz.questions.length} correct)
             </p>
+            {quizState.submissionResult?.feedback && (
+              <p className="text-green-600 text-sm sm:text-base mt-2">
+                {quizState.submissionResult.feedback}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -814,62 +889,135 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 sm:space-y-3">
-                {question.options.map((option) => {
-                  const optionLetter = option.charAt(0);
-                  const isSelected =
-                    quizState.answers[question.id] === optionLetter;
-                  const isCorrect = optionLetter === question.correctAnswer;
-                  const showResult = quizState.showResults;
+                {(() => {
+                  // Handle object format: { "A": "Option text", "B": "Option text" }
+                  const options = question.options;
+                  if (!options) return [];
 
-                  return (
-                    <button
-                      key={option}
-                      onClick={() =>
-                        handleAnswerSelect(question.id, optionLetter)
-                      }
-                      className={cn(
-                        "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
-                        !quizState.submitted && "hover:border-blue-300",
-                        isSelected &&
-                          !showResult &&
-                          "border-blue-500 bg-blue-50",
-                        showResult &&
-                          isCorrect &&
-                          "border-green-500 bg-green-50",
-                        showResult &&
-                          isSelected &&
-                          !isCorrect &&
-                          "border-red-500 bg-red-50",
-                        !showResult && !isSelected && "border-gray-200"
-                      )}
-                      disabled={quizState.submitted}
-                    >
-                      <div className="flex items-start gap-2 sm:gap-3">
-                        <div
+                  if (typeof options === "object" && !Array.isArray(options)) {
+                    // Object format like { "A": "Database management", "B": "Building user interfaces" }
+                    return Object.entries(options).map(([key, value]) => {
+                      const optionLetter = key;
+                      const optionText = value as string;
+                      const isSelected =
+                        quizState.answers[question.id] === optionLetter;
+                      const isCorrect = optionLetter === question.correctAnswer;
+                      const showResult = quizState.showResults;
+
+                      return (
+                        <button
+                          key={key}
+                          onClick={() =>
+                            handleAnswerSelect(question.id, optionLetter)
+                          }
                           className={cn(
-                            "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                            "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                            !quizState.submitted && "hover:border-blue-300",
                             isSelected &&
                               !showResult &&
-                              "border-blue-500 bg-blue-500 text-white",
+                              "border-blue-500 bg-blue-50",
                             showResult &&
                               isCorrect &&
-                              "border-green-500 bg-green-500 text-white",
+                              "border-green-500 bg-green-50",
                             showResult &&
                               isSelected &&
                               !isCorrect &&
-                              "border-red-500 bg-red-500 text-white",
-                            !showResult && !isSelected && "border-gray-300"
+                              "border-red-500 bg-red-50",
+                            !showResult && !isSelected && "border-gray-200"
                           )}
+                          disabled={quizState.submitted}
                         >
-                          {optionLetter}
-                        </div>
-                        <span className="leading-relaxed">
-                          {option.substring(3)}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div
+                              className={cn(
+                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                isSelected &&
+                                  !showResult &&
+                                  "border-blue-500 bg-blue-500 text-white",
+                                showResult &&
+                                  isCorrect &&
+                                  "border-green-500 bg-green-500 text-white",
+                                showResult &&
+                                  isSelected &&
+                                  !isCorrect &&
+                                  "border-red-500 bg-red-500 text-white",
+                                !showResult && !isSelected && "border-gray-300"
+                              )}
+                            >
+                              {optionLetter}
+                            </div>
+                            <span className="leading-relaxed">
+                              {optionText}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    });
+                  }
+
+                  // Fallback for array format
+                  if (Array.isArray(options)) {
+                    return options.map((option) => {
+                      const optionLetter = option.charAt(0);
+                      const optionText = option.substring(3);
+                      const isSelected =
+                        quizState.answers[question.id] === optionLetter;
+                      const isCorrect = optionLetter === question.correctAnswer;
+                      const showResult = quizState.showResults;
+
+                      return (
+                        <button
+                          key={option}
+                          onClick={() =>
+                            handleAnswerSelect(question.id, optionLetter)
+                          }
+                          className={cn(
+                            "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                            !quizState.submitted && "hover:border-blue-300",
+                            isSelected &&
+                              !showResult &&
+                              "border-blue-500 bg-blue-50",
+                            showResult &&
+                              isCorrect &&
+                              "border-green-500 bg-green-50",
+                            showResult &&
+                              isSelected &&
+                              !isCorrect &&
+                              "border-red-500 bg-red-50",
+                            !showResult && !isSelected && "border-gray-200"
+                          )}
+                          disabled={quizState.submitted}
+                        >
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div
+                              className={cn(
+                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                isSelected &&
+                                  !showResult &&
+                                  "border-blue-500 bg-blue-500 text-white",
+                                showResult &&
+                                  isCorrect &&
+                                  "border-green-500 bg-green-500 text-white",
+                                showResult &&
+                                  isSelected &&
+                                  !isCorrect &&
+                                  "border-red-500 bg-red-500 text-white",
+                                !showResult && !isSelected && "border-gray-300"
+                              )}
+                            >
+                              {optionLetter}
+                            </div>
+                            <span className="leading-relaxed">
+                              {optionText}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    });
+                  }
+
+                  return [];
+                })()}
               </div>
 
               {quizState.showResults && (
@@ -890,10 +1038,17 @@ const QuizContent = ({ lesson }: { lesson: Lesson }) => {
       {!quizState.submitted && (
         <Button
           onClick={handleSubmitQuiz}
-          disabled={!allQuestionsAnswered}
+          disabled={!allQuestionsAnswered || isSubmitting}
           className="w-full h-10 sm:h-11"
         >
-          <span className="text-sm sm:text-base">Submit Quiz</span>
+          {isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm sm:text-base">Submitting...</span>
+            </div>
+          ) : (
+            <span className="text-sm sm:text-base">Submit Quiz</span>
+          )}
         </Button>
       )}
     </div>
@@ -909,6 +1064,7 @@ export function LearningContent({
 }: LearningContentProps) {
   const [completeLesson, { isLoading: isCompleting }] =
     useCompleteLessonMutation();
+  const dispatch = useAppDispatch();
 
   if (!currentLesson || !section) {
     return (
@@ -938,6 +1094,17 @@ export function LearningContent({
         courseId,
       }).unwrap();
 
+      // Update Redux state
+      dispatch(
+        markLessonCompleted({
+          lessonId: currentLesson.id,
+          sectionId: section.id,
+          courseId,
+          isCompleted: true,
+          completedAt: new Date().toISOString(),
+        })
+      );
+
       // Call parent callback if provided
       if (onMarkComplete) {
         onMarkComplete(currentLesson.id);
@@ -962,6 +1129,17 @@ export function LearningContent({
         lessonId: currentLesson.id,
         courseId,
       }).unwrap();
+
+      // Update Redux state
+      dispatch(
+        markLessonCompleted({
+          lessonId: currentLesson.id,
+          sectionId: section.id,
+          courseId,
+          isCompleted: true,
+          completedAt: new Date().toISOString(),
+        })
+      );
 
       if (onMarkComplete) {
         onMarkComplete(currentLesson.id);
@@ -1057,39 +1235,32 @@ export function LearningContent({
         <div className="flex-1 p-3 sm:p-4 lg:p-6">
           {currentLesson.type === "VIDEO" && (
             <VideoContent
+              key={currentLesson.id}
               lesson={currentLesson}
               onAutoComplete={handleAutoComplete}
             />
           )}
           {currentLesson.type === "QUIZ" && (
-            <QuizContent lesson={currentLesson} />
+            <QuizContent
+              key={currentLesson.id}
+              lesson={currentLesson}
+              section={section}
+              courseId={courseId}
+              onMarkComplete={handleAutoComplete}
+              onRefetchCourse={onRefetchCourse}
+            />
           )}
           {currentLesson.type === "TEXT" && (
-            <TextContent lesson={currentLesson} />
+            <TextContent key={currentLesson.id} lesson={currentLesson} />
           )}
         </div>
 
         {/* Footer */}
         <div className="border-t border-gray-200 p-3 sm:p-4 lg:p-6 bg-white">
-          <Button
-            onClick={handleMarkComplete}
-            disabled={currentLesson.isCompleted || isCompleting}
-            className="w-full h-10 sm:h-11"
-          >
-            {isCompleting ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm sm:text-base">Completing...</span>
-              </div>
-            ) : currentLesson.isCompleted ? (
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Completed</span>
-              </div>
-            ) : (
-              <span className="text-sm sm:text-base">Mark as Complete</span>
-            )}
-          </Button>
+          <Comments
+            lesson={currentLesson}
+            onMarkComplete={handleMarkComplete}
+          />
         </div>
       </div>
     </div>

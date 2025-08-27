@@ -39,11 +39,14 @@ export const paymentApi = createApi({
       CreateCheckoutSessionResponse,
       CreateCheckoutSessionRequest
     >({
-      query: (data) => ({
-        url: "/stripe/create-checkout-session",
-        method: "POST",
-        body: data,
-      }),
+      query: (data) => {
+        console.log("Creating checkout session with data:", data);
+        return {
+          url: "/stripe/create-checkout-session",
+          method: "POST",
+          body: data,
+        };
+      },
       transformResponse: (response: any) => {
         console.log("Raw API response:", response);
         // Backend returns wrapped response with ApiResponse structure
@@ -78,6 +81,11 @@ export const paymentApi = createApi({
         console.log("Payment history API response:", response);
         // Backend returns wrapped response with ApiResponse structure
         return response.data;
+      },
+      transformErrorResponse: (error: any) => {
+        console.error("Payment history API error:", error);
+        // Handle error response
+        return error.data;
       },
       providesTags: ["Payment"],
     }),

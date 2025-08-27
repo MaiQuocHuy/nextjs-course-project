@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import _ from 'lodash';
 
 import {
   type CourseBasicInfoType,
   getWordCount,
   getCharacterCount,
+  imageFileSchema,
   fullCourseSchema,
 } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import {
   Form,
   FormControl,
@@ -48,45 +47,49 @@ import {
   Upload,
   Trash2,
   Send,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import {
-  useDeleteCourseMutation,
+  useCreateCourseMutation,
   useUpdateCourseMutation,
-} from '@/services/instructor/courses-api';
+  useDeleteCourseMutation,
+  useUpdateCourseStatusMutation,
+} from '@/services/instructor/courses/courses-api';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import WarningAlert from '@/components/instructor/commom/WarningAlert';
+import { CourseDetail } from '@/types/instructor/courses';
+import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
+import { isDirty, isValid, set } from 'zod/v3';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+} from '@/components/ui/dialog';
+import {
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@radix-ui/react-dialog';
 
 interface CourseFormProps {
   mode: 'create' | 'edit';
-  courseInfor?: CourseBasicInfoType;
+  courseInfor?: CourseDetail;
   onCancel?: () => void;
   onSubmit?: (data: CourseBasicInfoType) => void;
-  className?: string;
 }
 
-interface UploadedFile {
+interface Thumbnail {
   id: string;
   file: File;
   preview: string;
-  type: 'image' | 'video';
-  status: 'uploading' | 'success' | 'error';
-  error?: string;
 }
 
 const accept = 'image/*,video/*';
@@ -98,87 +101,123 @@ export function CreateCourseBasicInforPage({
   courseInfor,
   onCancel,
   onSubmit,
-  className,
 }: CourseFormProps) {
   const { data: categories } = useGetCategoriesQuery();
-  const [courseThumb, setCourseThumb] = useState<UploadedFile | null>(null);
+  const [courseThumb, setCourseThumb] = useState<Thumbnail | null>(null);
+  const [isCourseThumbUpdated, setIsCourseThumbUpdated] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [courseStatus, setCourseStatus] = useState<
-    'published' | 'unpublished' | 'pending'
-  >('published');
-  const [updateCourse, { isLoading: isUpdatingCourse }] =
-    useUpdateCourseMutation();
+  const [courseStatus, setCourseStatus] = useState<'published' | 'unpublished'>(
+    'published'
+  );
+
+  const [createCourse] = useCreateCourseMutation();
+  const [updateCourse] = useUpdateCourseMutation();
+  const [updateCourseStatus] = useUpdateCourseStatusMutation();
   const [deleteCourse] = useDeleteCourseMutation();
+
   const dispatch: AppDispatch = useDispatch();
   const router = useRouter();
 
   const form = useForm<CourseBasicInfoType>({
     resolver: zodResolver(fullCourseSchema),
-    defaultValues: courseInfor
-      ? courseInfor
-      : {
-          title: '',
-          description: '',
-          price: 0,
-          categoryIds: [],
-          level: 'BEGINNER',
-        },
+    defaultValues: {
+      title: '',
+      description: '',
+      price: 0,
+      categoryIds: [],
+      level: 'BEGINNER',
+      file: undefined,
+    },
     mode: 'onChange', // Enable real-time validation
   });
 
   const {
     watch,
-    formState: { errors, isValid, isDirty },
+    formState: { errors, isValid, isDirty, dirtyFields },
   } = form;
+  // console.log(courseInfor);
+
+  // Set up data for edit mode
+  useEffect(() => {
+    if (courseInfor) {
+      const setUpData = async () => {
+        const courseBasicInfo: CourseBasicInfoType = {
+          title: courseInfor.title ? courseInfor.title : '',
+          description: courseInfor.description ? courseInfor.description : '',
+          price: courseInfor.price ? courseInfor.price : 0,
+          categoryIds: [],
+          level: courseInfor.level,
+          file: undefined,
+        };
+        if (courseInfor.categories) {
+          courseBasicInfo.categoryIds = courseInfor.categories.map(
+            (cat) => cat.id
+          );
+        }
+        if (courseInfor.thumbnailUrl) {
+          courseBasicInfo.file = await createFileFromUrl(
+            courseInfor.thumbnailUrl,
+            courseInfor.title
+          );
+        }
+        form.reset(courseBasicInfo);
+
+        setCourseStatus(courseInfor.isPublished ? 'published' : 'unpublished');
+      };
+      setUpData();
+    }
+  }, [courseInfor]);
 
   const watchThumbnail = watch('file');
 
-  // Loading animation
-  useEffect(() => {
-    if (isUpdatingCourse) {
-      loadingAnimation(true, dispatch);
-    } else {
-      loadingAnimation(false, dispatch);
-    }
-    return () => {
-      loadingAnimation(false, dispatch);
-    };
-  }, [isUpdatingCourse]);
-
-  // Clear thumbnail if file is invalid
-  useEffect(() => {
-    if (errors.file !== undefined) {
-      setCourseThumb(null);
-    }
-  }, [errors.file]);
-
   // Set thumbnail only if file is valid
   useEffect(() => {
-    // Only set thumbnail if file exists and is valid
-    if (
-      watchThumbnail &&
-      watchThumbnail.size > 0 &&
-      errors.file === undefined
-    ) {
-      const handleCourseThumb = async (file: File) => {
-        const preview = await createFilePreview(file);
-        const courseThumb: UploadedFile = {
+    const validateAndSetThumbnail = async () => {
+      // Clear thumbnail first if there's no file
+      if (!watchThumbnail || watchThumbnail.size === 0) {
+        setCourseThumb(null);
+        return;
+      }
+
+      try {
+        // Validate the file using the schema directly
+        await imageFileSchema.parseAsync({ file: watchThumbnail });
+
+        // Only create preview if validation passes
+        const preview = await createFilePreview(watchThumbnail);
+        const courseThumb: Thumbnail = {
           id: crypto.randomUUID(),
-          file,
+          file: watchThumbnail,
           preview,
-          type: file.type.startsWith('image/') ? 'image' : 'video',
-          status: 'success',
         };
         setCourseThumb(courseThumb);
-      };
-      handleCourseThumb(watchThumbnail);
-    } else {
-      // Clear thumbnail if file is invalid or removed
-      setCourseThumb(null);
+      } catch (error) {
+        // If validation fails, clear the thumbnail
+        setCourseThumb(null);
+      }
+    };
+
+    validateAndSetThumbnail();
+  }, [watchThumbnail]);
+
+  const getStatusReviewColor = (status: string) => {
+    if (status) status = status.toLowerCase();
+    switch (status) {
+      case 'approved':
+        return 'text-green-700 bg-green-100 px-5 py-1 rounded-lg font-medium';
+      case 'pending':
+        return 'text-yellow-700 bg-yellow-100 px-5 py-1 rounded-lg font-medium';
+      case 'denied':
+        return 'text-red-700 bg-red-100 px-5 py-1 rounded-lg font-medium';
+      case 'resubmitted':
+        return 'text-purple-700 bg-purple-100 px-5 py-1 rounded-lg font-medium';
+      default:
+        // Draft
+        return 'text-blue-700 bg-blue-100 px-5 py-1 rounded-lg font-medium';
     }
-  }, [watchThumbnail, errors.file]);
+  };
 
   const createFilePreview = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -206,25 +245,12 @@ export function CreateCourseBasicInforPage({
     });
   };
 
-  // Calculate form completion percentage
-  const getFormCompletionPercentage = () => {
-    const fields = [
-      watch('title'),
-      watch('price') >= 0,
-      watch('categoryIds') && watch('categoryIds').length > 0,
-      watch('description'),
-      watchThumbnail,
-    ];
-    const completedFields = fields.filter(Boolean).length;
-    return Math.round((completedFields / fields.length) * 100);
-  };
-
   const handleSubmit = (data: CourseBasicInfoType) => {
     // console.log('Course form data:', data);
     if (mode === 'edit') {
       handleUpdateCourse(data);
     } else {
-      onSubmit?.(data);
+      handleCreateCourse(data);
     }
   };
 
@@ -248,139 +274,209 @@ export function CreateCourseBasicInforPage({
     );
   };
 
+  const handleCreateCourse = async (data: CourseBasicInfoType) => {
+    loadingAnimation(true, dispatch, 'Creating course. Please wait...');
+    try {
+      const result = await createCourse(data).unwrap();
+      if (result.statusCode === 201) {
+        const courseData = {
+          ...data,
+          id: result.data.id,
+        };
+        loadingAnimation(false, dispatch);
+        if (onSubmit) {
+          onSubmit(courseData);
+        }
+      }
+    } catch (error: any) {
+      // console.error('Create course error:', error);
+      loadingAnimation(false, dispatch);
+      toast.error(error.message);
+    }
+  };
+
   const handleUpdateCourse = async (data: CourseBasicInfoType) => {
     // console.log(data);
+    loadingAnimation(true, dispatch, 'Course is being updated. Please wait...');
     if (courseInfor) {
-      const dataWithCourseId = { ...data, id: courseInfor.id };
+      const keys = Object.keys(dirtyFields) as (keyof CourseBasicInfoType)[];
+      const updatedData: Partial<CourseBasicInfoType> = {
+        id: courseInfor.id,
+      };
+      for (const key of keys) {
+        updatedData[key] = data[key];
+      }
+      if (isCourseThumbUpdated) {
+        updatedData.file = data.file;
+      }
+
       try {
-        loadingAnimation(
-          true,
-          dispatch,
-          'Course is being updated. Please wait...'
-        );
-        const res = await updateCourse(dataWithCourseId).unwrap();
-        // console.log(res);
-        if ('statusCode' in res && res.statusCode === 200) {
+        const res = await updateCourse(updatedData).unwrap();
+        if (res.statusCode === 200) {
           loadingAnimation(false, dispatch);
           form.reset(data);
           toast.success(res.message);
         }
-      } catch (error) {
+      } catch (error: any) {
         // console.log(error);
         loadingAnimation(false, dispatch);
-        toast.error('Update course failed!');
+        toast.error(error.message);
       }
+    } else {
+      // Handle case where courseInfor is not available
+      loadingAnimation(false, dispatch);
+      toast.error('Course information is not available.');
     }
   };
 
-  const handlePublishCourseToggle = () => {
-    setCourseStatus((prev) => {
-      if (prev === 'published') {
-        return 'unpublished';
-      } else {
-        return 'published';
+  const handlePublishCourseToggle = async () => {
+    loadingAnimation(true, dispatch, 'Updating course status. Please wait...');
+    let isUpdateStatusSuccess = false;
+    if (courseInfor && courseInfor.id) {
+      try {
+        const updateStatus =
+          courseStatus === 'published' ? 'unpublished' : 'published';
+        const res = await updateCourseStatus({
+          courseId: courseInfor.id,
+          status: updateStatus.toUpperCase(),
+        }).unwrap();
+
+        if (res && res.statusCode === 200) {
+          isUpdateStatusSuccess = true;
+        }
+      } catch (error: any) {
+        loadingAnimation(false, dispatch);
+        toast.error(error.message);
       }
-    });
+    }
+
+    if (isUpdateStatusSuccess) {
+      loadingAnimation(false, dispatch);
+      toast.success('Course status updated successfully!');
+      setCourseStatus((prev) => {
+        if (prev === 'published') {
+          return 'unpublished';
+        } else {
+          return 'published';
+        }
+      });
+    } else {
+      loadingAnimation(false, dispatch);
+      toast.error('Course status update failed!');
+    }
   };
 
-  const handleDeleCourse = async () => {
+  const handleDeleteCourse = async () => {
+    loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
     try {
-      loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
-      if (courseInfor?.id) {
-        await deleteCourse(courseInfor?.id);
+      const res = await deleteCourse(courseInfor?.id).unwrap();
+      if (res.statusCode === 200) {
+        loadingAnimation(false, dispatch);
+        toast.error('Delete course successfully!');
         router.push('/instructor/courses');
       }
     } catch (error) {
       loadingAnimation(false, dispatch);
       toast.error('Delete course failed!');
     }
-    loadingAnimation(false, dispatch);
-    toast.error('Delete course successfully!');
   };
 
-  const handleRequestApproval = () => {};
-
   return (
-    <div className={cn('space-y-6', className)}>
-      {/* Form Progress */}
-      {mode === 'create' && (
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Form Completion</span>
-              <span className="text-sm text-muted-foreground">
-                {getFormCompletionPercentage()}%
-              </span>
-            </div>
-            <Progress value={getFormCompletionPercentage()} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
-
+    <div className={cn('space-y-6')}>
+      {/* Course actions */}
       {mode === 'edit' && courseInfor && (
         <div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Course Actions</CardTitle>
-              <div className="flex items-center gap-4">
-                {courseStatus !== 'pending' ? (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={courseStatus === 'published'}
-                      onCheckedChange={handlePublishCourseToggle}
-                    />
-                    <span>
-                      {courseStatus === 'published'
-                        ? 'Published'
-                        : 'Unpublished'}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-4">
+                  <span
+                    className={getStatusReviewColor(courseInfor.statusReview)}
+                  >
+                    {courseInfor.statusReview
+                      ? courseInfor.statusReview
+                      : 'Draft'}
+                  </span>
+
+                  {courseInfor.statusReview === null && (
+                    <span className="text-sm text-muted-foreground">
+                      Switch to publish mode to be able to submit for review
                     </span>
-                  </div>
-                ) : (
-                  <Button onClick={handleRequestApproval}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Request Approval
+                  )}
+
+                  {courseInfor.statusReview === 'DENIED' && (
+                    <>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                          >
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            View Denied Reason
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="text-red-600">
+                              Course Rejection Reason
+                            </DialogTitle>
+                            <DialogDescription>
+                              Your course was denied for the following reason:
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="border-l-4 border-red-400 bg-red-50 p-4 my-2 rounded-r">
+                            <p className="text-red-700">
+                              {courseInfor.reason ||
+                                'No specific reason provided.'}
+                            </p>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={courseStatus === 'published'}
+                    onCheckedChange={handlePublishCourseToggle}
+                  />
+                  <span>
+                    {courseStatus === 'published' ? 'Published' : 'Unpublished'}
+                  </span>
+                </div>
+
+                {/* Delete course */}
+                {courseInfor.id && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
                   </Button>
                 )}
-                <Button
-                  variant="destructive"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
               </div>
             </CardHeader>
           </Card>
 
           {/* Display warning message and handle delete course if can */}
-          <AlertDialog
+          <WarningAlert
             open={isDeleteDialogOpen}
             onOpenChange={setIsDeleteDialogOpen}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Are you sure you want to delete this course?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  course and all its content.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleCourse}
-                  className="bg-destructive text-destructive-foreground"
-                >
-                  Delete Course
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            title="Are you sure you want to delete this course?"
+            description="This action cannot be undone. This will permanently delete the
+                  course and all its content."
+            onClick={handleDeleteCourse}
+            actionTitle="Delete Course"
+          />
         </div>
       )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           {/* Basic Information */}
@@ -414,6 +510,7 @@ export function CreateCourseBasicInforPage({
                 )}
               </div>
             </CardHeader>
+
             <CardContent className="space-y-6">
               {/* Course Title */}
               <FormField
@@ -623,7 +720,6 @@ export function CreateCourseBasicInforPage({
                           min="0"
                           max="999.99"
                           placeholder="0.00"
-                          defaultValue={field.value}
                           className={cn(
                             'pl-8',
                             errors.price && 'border-red-500',
@@ -658,9 +754,9 @@ export function CreateCourseBasicInforPage({
                     </FormLabel>
                     <FormControl>
                       <div>
+                        {/* Upload Area */}
                         {courseThumb === null ? (
                           <>
-                            {/* Upload Area */}
                             <div
                               className={cn(
                                 'relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer group',
@@ -685,11 +781,14 @@ export function CreateCourseBasicInforPage({
                                 ref={fileInputRef}
                                 accept={accept}
                                 className="hidden"
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.files && e.target.files[0]
-                                  )
-                                }
+                                onChange={(e) => {
+                                  if (e.target.files) {
+                                    field.onChange(e.target.files[0]);
+                                  }
+                                  if (mode === 'edit') {
+                                    setIsCourseThumbUpdated(true);
+                                  }
+                                }}
                               />
 
                               <div className="space-y-4">
@@ -752,62 +851,48 @@ export function CreateCourseBasicInforPage({
                                     : 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
                                 )}
                               >
-                                <div className="flex items-center space-x-4">
-                                  {/* Preview */}
-                                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                    <img
-                                      src={
-                                        courseThumb.preview ||
-                                        '/placeholder.svg'
-                                      }
-                                      alt={courseThumb.file.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-
-                                  {/* File Info */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center space-x-2">
+                                <div className="space-y-4">
+                                  {/* File Info Header */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2 flex-1 min-w-0">
                                       <ImageIcon className="w-4 h-4 text-blue-500" />
-                                      <p className="font-medium truncate">
+                                      <p className="font-medium truncate text-sm">
                                         {courseThumb.file.name}
                                       </p>
-                                    </div>
-
-                                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                      <span>
+                                      <span className="text-sm text-muted-foreground">
                                         {formatFileSize(courseThumb.file.size)}
                                       </span>
                                     </div>
 
-                                    {/* Error Message */}
-                                    {/* {errors.file && (
-                                        <div className="mt-2 flex items-center space-x-2">
-                                          <AlertCircle className="w-4 h-4 text-red-500" />
-                                          <p className="text-sm text-red-600 dark:text-red-400">
-                                            {errors.file.message?.toString()}
-                                          </p>
-                                        </div>
-                                      )} */}
+                                    {/* Status & Actions */}
+                                    <div className="flex items-center space-x-2">
+                                      {errors.file === undefined && (
+                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                      )}
+
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          field.onChange(null);
+                                          setCourseThumb(null);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
                                   </div>
 
-                                  {/* Status & Actions */}
-                                  <div className="flex items-center space-x-2">
-                                    {errors.file === undefined && (
-                                      <CheckCircle className="w-5 h-5 text-green-500" />
+                                  {/* Full Width Preview */}
+                                  <div className="relative w-full rounded-lg overflow-hidden">
+                                    {courseThumb.preview && (
+                                      <img
+                                        src={courseThumb.preview}
+                                        alt={courseThumb.file.name}
+                                        className="w-full h-auto object-cover max-h-80"
+                                      />
                                     )}
-
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        field.onChange(null);
-                                        setCourseThumb(null);
-                                      }}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
                                   </div>
                                 </div>
                               </div>
@@ -834,9 +919,11 @@ export function CreateCourseBasicInforPage({
               </Button>
             )}
 
-            {mode === 'edit' && isValid && isDirty && (
-              <Button type="submit">Save changes</Button>
-            )}
+            {mode === 'edit' &&
+              isValid &&
+              (isDirty || isCourseThumbUpdated) && (
+                <Button type="submit">Save changes</Button>
+              )}
           </div>
         </form>
       </Form>

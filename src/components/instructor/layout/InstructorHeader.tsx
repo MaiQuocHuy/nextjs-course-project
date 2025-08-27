@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Menu } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 interface InstructorHeaderProps {
   onMenuClick: () => void;
@@ -17,6 +19,19 @@ interface InstructorHeaderProps {
 
 export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
   const unreadCount = 0;
+  const { logout: authLogout, user } = useAuth();
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await authLogout('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force redirect if logout fails
+      router.push('/login');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-card/95 backdrop-blur px-6 shadow-card">
@@ -31,15 +46,6 @@ export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
       </Button>
 
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-end">
-        {/* Search bar */}
-        {/* <div className="relative flex flex-1 items-center">
-          <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search courses, students..."
-            className="pl-10 w-full max-w-sm"
-          />
-        </div> */}
-
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
@@ -65,19 +71,27 @@ export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    John Instructor
+                    {user?.name}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    john@instructor.com
+                    {user?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/instructor/profiles')}>
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/instructor/settings')}>
+                Settings
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer"
+              >
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

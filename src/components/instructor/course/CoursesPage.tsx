@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { MouseEventHandler, useEffect, useRef, useState } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
   Card,
@@ -37,20 +37,24 @@ import {
   Edit,
   Trash2,
   Eye,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-import { useGetCoursesQuery } from '@/services/instructor/courses-api';
-import { Course } from '@/types';
+import {
+  useDeleteCourseMutation,
+  useGetCoursesQuery,
+} from '@/services/instructor/courses/courses-api';
+import { Course } from '@/types/instructor/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
-import Image from 'next/image';
-import { Separator } from '@radix-ui/react-select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import WarningAlert from '../commom/WarningAlert';
+import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 
 const coursesParams = {
   page: 0,
@@ -74,6 +78,11 @@ export const CoursesPage = () => {
   const [filteredCourses, setFilterdCourses] = useState<Course[]>();
   const [filters, setFilters] = useState(initFilterValues.current);
   const [showFilters, setShowFilters] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
+  const router = useRouter();
+  const dispatch: AppDispatch = useDispatch();
 
   const {
     data: courses,
@@ -87,21 +96,20 @@ export const CoursesPage = () => {
     isError: isFetchCategoriesError,
     error: errorFetchCategories,
   } = useGetCategoriesQuery();
-  const router = useRouter();
-  const dispath: AppDispatch = useDispatch();
+  const [deleteCourse] = useDeleteCourseMutation();
 
   // Loading animation
-  // useEffect(() => {
-  //   if (isFetchingCourses || isFetchingCategories) {
-  //     loadingAnimation(true, dispath);
-  //   } else {
-  //     loadingAnimation(false, dispath);
-  //   }
+  useEffect(() => {
+    if (isFetchingCourses || isFetchingCategories) {
+      loadingAnimation(true, dispatch);
+    } else {
+      loadingAnimation(false, dispatch);
+    }
 
-  //   return () => {
-  //     loadingAnimation(false, dispath);
-  //   };
-  // }, [isFetchingCourses, isFetchingCategories]);
+    return () => {
+      loadingAnimation(false, dispatch);
+    };
+  }, [isFetchingCourses, isFetchingCategories]);
 
   useEffect(() => {
     if (courses && courses.content && courses.content.length > 0) {
@@ -128,18 +136,18 @@ export const CoursesPage = () => {
       }
 
       // Status
-      if (filters.status !== 'all') {
-        if (filters.status === 'pending') {
-          matchedCourses = matchedCourses.filter(
-            (course) => course.approved === false
-          );
-        } else {
-          matchedCourses = matchedCourses.filter(
-            (course) =>
-              course.approved && course.status.toLowerCase() === filters.status
-          );
-        }
-      }
+      // if (filters.status !== 'all') {
+      //   if (filters.status === 'pending') {
+      //     matchedCourses = matchedCourses.filter(
+      //       (course) => course.approved === false
+      //     );
+      //   } else {
+      //     matchedCourses = matchedCourses.filter(
+      //       (course) =>
+      //         course.approved && course.status.toLowerCase() === filters.status
+      //     );
+      //   }
+      // }
 
       // Category
       if (filters.category !== 'all') {
@@ -206,18 +214,18 @@ export const CoursesPage = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    status = status.toLowerCase();
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-400 text-slate-900';
-      case 'unpublished':
-        return 'bg-destructive text-white';
-      default:
-        // published
-        return 'bg-green-500 text-white';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   status = status.toLowerCase();
+  //   switch (status) {
+  //     case 'pending':
+  //       return 'bg-yellow-400 text-slate-900';
+  //     case 'unpublished':
+  //       return 'bg-destructive text-white';
+  //     default:
+  //       // published
+  //       return 'bg-green-500 text-white';
+  //   }
+  // };
 
   const getPriceRange = (courses: Course[]) => {
     const coursePrices = courses.map((course) => course.price);
@@ -250,6 +258,21 @@ export const CoursesPage = () => {
 
   const handleClearFilters = () => {
     setFilters(initFilterValues.current);
+  };
+
+  const handleDeleteCourse = async (id: string) => {
+    try {
+      setIsDeleteDialogOpen(false);
+      loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
+      const res = await deleteCourse(id).unwrap();
+      if (res.statusCode === 200) {
+        loadingAnimation(false, dispatch);
+        toast.error('Delete course successfully!');
+      }
+    } catch (error) {
+      loadingAnimation(false, dispatch);
+      toast.error('Delete course failed!');
+    }
   };
 
   if (isFetchingCourses || isFetchingCategories) {
@@ -519,11 +542,12 @@ export const CoursesPage = () => {
                   />
                   <span
                     className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                      course.approved ? course.status : 'pending'
+                      course.statusReview
                     )}`}
                   >
-                    {course.approved ? course.status : 'Pending'}
+                    {course.statusReview ? course.statusReview : 'Draft'}
                   </span>
+
                   {/* Actions */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -570,6 +594,11 @@ export const CoursesPage = () => {
                       <DropdownMenuItem
                         className="cursor-pointer"
                         variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsDeleteDialogOpen(true);
+                          setSelectedCourse(course);
+                        }}
                       >
                         <Trash2 className="mr-1 h-4 w-4" />
                         Delete Course
@@ -580,7 +609,7 @@ export const CoursesPage = () => {
 
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-2 min-h-[40px]">
                     {course.description}
                   </CardDescription>
                 </CardHeader>
@@ -588,10 +617,9 @@ export const CoursesPage = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {/* Categories */}
-                    <div className={`flex items-start justify-between text-sm`}>
-                      <span className="text-muted-foreground">Category</span>
-                      <div className="flex flex-col gap-1">
-                        {course.categories.map((category) => {
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        {course.categories.slice(0, 2).map((category) => {
                           return (
                             <Badge key={category.id} variant="outline">
                               {category.name}
@@ -599,17 +627,19 @@ export const CoursesPage = () => {
                           );
                         })}
                       </div>
+
+                      {course.categories.length > 2 && <ArrowRight />}
                     </div>
 
                     {/* Total students and sections */}
                     <div className="flex items-center justify-between text-sm border-t-1 pt-2">
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.totalStudents} students</span>
+                        <span>{`${course.totalStudents} student(s)`}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.sectionCount} sections</span>
+                        <span>{course.sectionCount} section(s)</span>
                       </div>
                     </div>
 
@@ -635,9 +665,10 @@ export const CoursesPage = () => {
                       </div>
                     </div>
 
+                    {/* Price and view detail course button */}
                     <div className="flex items-center justify-between pt-2 border-t">
                       <span className="text-2xl font-bold text-primary">
-                        ${course.price}
+                        {course.price > 0 ? '$' + course.price : 'Free'}
                       </span>
                       <Button
                         variant="outline"
@@ -687,6 +718,19 @@ export const CoursesPage = () => {
               )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Display warning message and handle delete course if can */}
+      {selectedCourse && (
+        <WarningAlert
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Are you sure you want to delete this course?"
+          description="This action cannot be undone. This will permanently delete the
+                          course and all its content."
+          onClick={() => handleDeleteCourse(selectedCourse.id)}
+          actionTitle="Delete Course"
+        />
       )}
     </div>
   );

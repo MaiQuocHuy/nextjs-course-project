@@ -18,227 +18,75 @@ import {
   Eye,
 } from 'lucide-react';
 import Link from 'next/link';
-import {
-  Course,
-  getAllCourses,
-  mockPayments,
-  mockReviews,
-  MonthlyRevenue,
-  Notification,
-} from '@/app/data/courses';
+import { Course } from '@/app/data/courses';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { useRouter } from 'next/navigation';
+import { mockInstructorDashboardData } from '@/types/instructor/dashboard';
+import { useAuth } from '@/hooks/useAuth';
 
+// Initialize stats with icons from mock data
 const initStats = {
   totalCourses: {
-    title: 'Total Courses',
-    value: 0,
-    description: '',
+    ...mockInstructorDashboardData.stats.totalCourses,
     icon: <BookOpen className="h-4 w-4 text-primary" />,
-    color: 'text-primary',
-    href: '/instructor/courses',
   },
   totalStudents: {
-    title: 'Total Students',
-    value: 0,
-    description: '+12% from last month',
+    ...mockInstructorDashboardData.stats.totalStudents,
     icon: <Users className="h-4 w-4 text-success" />,
-    color: 'text-success',
-    href: '/instructor/students',
   },
   totalRevenue: {
-    title: 'Total Revenue',
-    value: 0,
-    description: '',
+    ...mockInstructorDashboardData.stats.totalRevenue,
     icon: <DollarSign className="h-4 w-4 text-destructive" />,
-    href: '/instructor/earnings',
   },
   avgRating: {
-    title: 'Avg Rating',
-    value: 0,
-    description: 'Across all courses',
+    ...mockInstructorDashboardData.stats.avgRating,
     icon: <Star className={`h-4 w-4 text-instructor-accent`} />,
-    href: '/instructor/courses',
   },
 };
 
 export const InsDashboard = () => {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  const router = useRouter();
-  const [courses, setCourses] = useState<Course[]>();
-  const [publishedCourses, setPublishedCourses] = useState<Course[]>();
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [ratings, setRatings] = useState(0);
+  const [courses, setCourses] = useState<Course[]>(
+    mockInstructorDashboardData.courses
+  );
+  const [publishedCourses, setPublishedCourses] = useState<Course[]>(
+    mockInstructorDashboardData.publishedCourses
+  );
+  const [monthlyRevenue, setMonthlyRevenue] = useState(
+    mockInstructorDashboardData.monthlyRevenue
+  );
+  const [notifications, setNotifications] = useState(
+    mockInstructorDashboardData.notifications
+  );
   const [stats, setStats] = useState(initStats);
+  const [students, setStudents] = useState(
+    mockInstructorDashboardData.students
+  );
 
-  // Get all courses
+  const {user} = useAuth();  
+
+  // Single useEffect to initialize the component with mock data
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else {
-      const courses = getAllCourses();
-      setCourses(courses);
-    }
-  }, []);
-
-  // Get published courses
-  useEffect(() => {
-    if (courses && courses.length > 0) {
-      getPublishedCourses(courses);
-    }
-  }, [courses]);
-
-  // Get total students and update courses & students staticstic
-  useEffect(() => {
-    if (publishedCourses && publishedCourses.length > 0) {
-      // Get total students
-      let totalStudents = 0;
-      publishedCourses.map((course) => {
-        if (course.studentsCount) {
-          return (totalStudents += course.studentsCount);
-        }
-      });
-      setTotalStudents(totalStudents);
-
-      // Update courses & students staticstic
-      const courseDes = publishedCourses.length + ' published';
-      const stuDes = `+${12}% from last month`;
-      setStats((prev) => ({
-        ...prev,
-        totalCourses: {
-          ...prev.totalCourses,
-          value: publishedCourses.length,
-          description: courseDes,
-        },
-        totalStudents: {
-          ...prev.totalStudents,
-          value: totalStudents,
-          description: stuDes,
-        },
-      }));
-    }
-  }, [publishedCourses]);
-
-  // Get notifications
-  useEffect(() => {
-    // Call Api to get notifications
-  }, []);
-
-  // Get avg rating
-  useEffect(() => {
-    const reviews = mockReviews;
-    let sum = 0;
-    reviews.map((rate) => (sum += rate.rating));
-    const avgRating = sum / reviews.length;
-    setRatings(parseFloat(avgRating.toFixed(2)));
-  }, []);
-
-  // Get total and monthly revenue
-  useEffect(() => {
-    const payments = mockPayments;
-    // Get total revenue
-    let sum = 0;
-    payments.map((pay) => {
-      if (pay.status === 'COMPLETED') {
-        sum += pay.amount;
-      }
-    });
-    setTotalRevenue(sum);
-
-    // Get monthly revenue
-    const monthlyRevenue = new Array<MonthlyRevenue>();
-    // Order payments by descending date
-    const orderdPayments = payments.sort(
-      (a, b) =>
-        new Date(b.created_at.split('T')[0]).getTime() -
-        new Date(a.created_at.split('T')[0]).getTime()
-    );
-    for (const pay of orderdPayments) {
-      // Get last 3 months
-      if (monthlyRevenue.length < 3) {
-        if (pay.status === 'COMPLETED') {
-          if (pay.paid_at) {
-            // Get year and month
-            const paidDate = new Date(pay.paid_at).toLocaleDateString();
-            let seperator = '-';
-            if (paidDate.includes('/')) {
-              seperator = '/';
-            }
-            const year = parseInt(paidDate.split(seperator)[2]);
-            const month = parseInt(paidDate.split(seperator)[1]);
-
-            // Calculate revenue
-            const item = {} as MonthlyRevenue;
-            item.year = year;
-            item.month = month;
-            item.revenue = pay.amount;
-            if (monthlyRevenue.length > 0) {
-              // Check if exist year
-              const isExistedYear = monthlyRevenue.find(
-                (item) => item.year === year
-              );
-              if (isExistedYear) {
-                // Check if exist month
-                const years = monthlyRevenue.filter(
-                  (item) => item.year === year
-                );
-                const isExistedMonth = years.find(
-                  (item) => item.month === month
-                );
-                if (isExistedMonth) {
-                  // Add new amount to existed month
-                  const index = years.findIndex((item) => item.month === month);
-                  monthlyRevenue[index].revenue += pay.amount;
-                } else {
-                  monthlyRevenue.push(item);
-                }
-              } else {
-                monthlyRevenue.push(item);
-              }
-            } else {
-              monthlyRevenue.push(item);
-            }
-          }
-        }
-      } else {
-        break;
-      }
-    }
-    if (monthlyRevenue.length > 0) {
-      // console.log(monthlyRevenue);
-      setMonthlyRevenue(monthlyRevenue);
-    }
-  }, []);
-
-  // Update states for renenue statistics
-  useEffect(() => {
-    const des = 'This month: $' + totalRevenue;
-    setStats((prev) => ({
-      ...prev,
+    // No need to fetch data as we're using mock data directly
+    // Just update the stats with icons
+    setStats({
+      totalCourses: {
+        ...mockInstructorDashboardData.stats.totalCourses,
+        icon: <BookOpen className="h-4 w-4 text-primary" />,
+      },
+      totalStudents: {
+        ...mockInstructorDashboardData.stats.totalStudents,
+        icon: <Users className="h-4 w-4 text-success" />,
+      },
       totalRevenue: {
-        ...prev.totalRevenue,
-        value: totalRevenue,
-        description: des,
+        ...mockInstructorDashboardData.stats.totalRevenue,
+        icon: <DollarSign className="h-4 w-4 text-destructive" />,
       },
-    }));
-  }, [totalRevenue]);
-
-  // Update states for ratings statistics
-  useEffect(() => {
-    setStats((prev) => ({
-      ...prev,
       avgRating: {
-        ...prev.avgRating,
-        value: ratings,
+        ...mockInstructorDashboardData.stats.avgRating,
+        icon: <Star className={`h-4 w-4 text-instructor-accent`} />,
       },
-    }));
-  }, [ratings]);
+    });
+  }, []);
 
   const getCourseStatus = (isPublished: boolean, isAproved: boolean) => {
     if (isAproved) {
@@ -252,18 +100,6 @@ export const InsDashboard = () => {
     }
   };
 
-  const getPublishedCourses = (courses: Course[]) => {
-    const publishedCourses = courses.filter((course: Course) => {
-      const courseStatus = getCourseStatus(
-        course.is_published,
-        course.is_approved
-      );
-      return courseStatus === 'published' || courseStatus === 'discontinued';
-    });
-
-    setPublishedCourses(publishedCourses);
-  };
-
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -271,15 +107,15 @@ export const InsDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Welcome back, John!
+              Welcome back, {user && user.name ? user.name : 'Instructor'}!
             </h1>
             <p className="text-muted-foreground mt-1">
               Here's what's happening with your courses today.
             </p>
           </div>
           <div className="flex gap-3">
-            <Link href="/instructor/courses/create">
-              <Button className="bg-gradient-primary shadow-elegant">
+            <Link href="/instructor/courses/create-course">
+              <Button className="shadow-elegant">
                 <BookOpen className="mr-2 h-4 w-4" />
                 Create Course
               </Button>
@@ -290,8 +126,8 @@ export const InsDashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(stats).map((stat) => (
-          <Link href={stat[1].href}>
+        {Object.entries(stats).map((stat, index) => (
+          <Link href={stat[1].href} key={index}>
             <Card key={stat[1].title} className="shadow-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -320,48 +156,51 @@ export const InsDashboard = () => {
           <CardContent className="space-y-4 px-0">
             {courses &&
               courses.length > 0 &&
-              courses.slice(0, 3).map((course) => (
-                <Link
-                  href={`/instructor/coursers/${course.id}`}
-                  key={course.id}
-                  className="flex items-center px-6 py-2 gap-6 hover:bg-accent"
-                >
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="h-12 w-12 rounded-lg object-cover"
-                  />
-                  <div className="flex-1 space-y-1">
-                    <h4 className="text-sm font-medium">{course.title}</h4>
-                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                      <Badge
-                        variant={
-                          getCourseStatus(
+              courses
+                .slice(0, courses.length > 3 ? 3 : courses.length)
+                .map((course) => (
+                  <Link
+                    href={`/instructor/courses/${course.id}`}
+                    target='_blank'
+                    key={course.id}
+                    className="flex items-center px-6 py-2 gap-6 hover:bg-accent"
+                  >
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                    <div className="flex-1 space-y-1">
+                      <h4 className="text-sm font-medium">{course.title}</h4>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                        <Badge
+                          variant={
+                            getCourseStatus(
+                              course.is_published,
+                              course.is_approved
+                            ) === 'published'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {getCourseStatus(
                             course.is_published,
                             course.is_approved
-                          ) === 'published'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {getCourseStatus(
-                          course.is_published,
-                          course.is_approved
-                        )}
-                      </Badge>
-                      <span>•</span>
-                      <span>{course.studentsCount} students</span>
+                          )}
+                        </Badge>
+                        <span>•</span>
+                        <span>{course.studentsCount} students</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">${course.price}</p>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Star className="mr-1 h-3 w-3 fill-current" />
-                      {course.rating || 'N/A'}
+                    <div className="text-right">
+                      <p className="text-sm font-medium">${course.price}</p>
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Star className="mr-1 h-3 w-3 fill-current" />
+                        {course.rating || 'N/A'}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
             <Link href="/instructor/courses">
               <Button variant="outline" className="w-full mt-4 cursor-pointer">
                 <Eye className="mr-2 h-4 w-4" />
@@ -379,24 +218,28 @@ export const InsDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {notifications.length > 0 &&
-              notifications.slice(0, 3).map((notification) => (
-                <div key={notification.id} className="flex space-x-3">
-                  <div
-                    className={`h-2 w-2 rounded-full mt-2 ${
-                      notification.isRead ? 'bg-muted' : 'bg-primary'
-                    }`}
-                  />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(notification.timestamp).toLocaleDateString()}
-                    </p>
+              notifications
+                .slice(0, notifications.length > 3 ? 3 : notifications.length)
+                .map((notification) => (
+                  <div key={notification.id} className="flex space-x-3">
+                    <div
+                      className={`h-2 w-2 rounded-full mt-2 ${
+                        notification.isRead ? 'bg-muted' : 'bg-primary'
+                      }`}
+                    />
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(notification.timestamp).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             <Link href="/instructor/notifications">
               <Button variant="outline" className="w-full mt-4">
                 <MessageSquare className="mr-2 h-4 w-4" />
@@ -420,25 +263,30 @@ export const InsDashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {monthlyRevenue.length > 0 &&
-                monthlyRevenue.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        {item.month}/{item.year}
-                      </span>
+                monthlyRevenue
+                  .slice(
+                    0,
+                    monthlyRevenue.length > 3 ? 3 : monthlyRevenue.length
+                  )
+                  .map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {item.month}/{item.year}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold">
+                          ${Math.floor(item.revenue)}
+                        </span>
+                        <TrendingUp className="h-4 w-4 text-success" />
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold">
-                        ${Math.floor(item.revenue)}
-                      </span>
-                      <TrendingUp className="h-4 w-4 text-success" />
-                    </div>
-                  </div>
-                ))}
+                  ))}
             </div>
             <Link href="/instructor/earnings">
               <Button variant="outline" className="w-full mt-4 cursor-pointer">
@@ -456,7 +304,7 @@ export const InsDashboard = () => {
             <CardDescription>New enrollments</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* {students.slice(0, 4).map((student) => (
+            {students.slice(0, 4).map((student) => (
               <div key={student.id} className="flex items-center space-x-4">
                 <Avatar>
                   <AvatarImage src={student.avatar} alt={student.name} />
@@ -479,7 +327,7 @@ export const InsDashboard = () => {
                   </p>
                 </div>
               </div>
-            ))} */}
+            ))}
             <Link href="/instructor/students">
               <Button variant="outline" className="w-full mt-4 cursor-pointer">
                 <Users className="mr-2 h-4 w-4" />

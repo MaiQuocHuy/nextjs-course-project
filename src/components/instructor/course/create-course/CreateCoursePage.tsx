@@ -11,23 +11,25 @@ import type { CourseBasicInfoType } from '@/utils/instructor/create-course-valid
 import { CreateCourseBasicInforPage } from '@/components/instructor/course/create-course/create-basic-infor/CreateCourseBasicInforPage';
 import { useRouter } from 'next/navigation';
 import CreateLessonsPage2 from '@/components/instructor/course/create-course/create-lessons/create-lessons2';
-import { useCreateCourseMutation } from '@/services/instructor/courses-api';
+import { useCreateCourseMutation } from '@/services/instructor/courses/courses-api';
 import {
   startLoading,
   stopLoading,
 } from '@/store/slices/instructor/loadingAnimaSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store/store';
+import WarningAlert from '../../commom/WarningAlert';
+import SectionsLessonsManager2 from '../SectionsLessonsManager2';
 
 export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseBasicInfo, setCourseBasicInfo] =
     useState<CourseBasicInfoType | null>();
   const [progress, setProgress] = useState(0);
-  const [
-    createCourse,
-    { isLoading: isCreatingCourse, error: creatingCourseError },
-  ] = useCreateCourseMutation();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const [createCourse, { isLoading: isCreatingCourse }] =
+    useCreateCourseMutation();
   const router = useRouter();
   const dispatch: AppDispatch = useDispatch();
 
@@ -46,37 +48,24 @@ export default function CreateCoursePage() {
 
   // Handle back button to go to previous step or exit
   const handleSteps = () => {
-    if (currentStep > 1) {
-      setCurrentStep(1);
-    } else {
-      router.push('/instructor/courses');
-    }
+    setIsDeleteDialogOpen(true);
   };
 
-  // Get basic course info
+  const handleExitCreateCourse = () => {
+    router.push('/instructor/courses');
+  };
+
+  // Create new course into database
   const handleCourseFormSubmit = async (data: CourseBasicInfoType) => {
     // console.log(data);
-
-    // Create new course into database
-    try {
-      const res = await createCourse(data);
-      // console.log(res);
-      if ('data' in res && res.data.statusCode === 201) {
-        const courseData: CourseBasicInfoType = {
-          ...data,
-          id: res.data.data.id,
-        };
-        // console.log(courseData);
-
-        // Save course basic info and proceed to next step
-        setCourseBasicInfo(courseData);
-        setProgress(50); // Update progress to 50% after course info is saved
-        setCurrentStep(2);
-      }
-    } catch (error) {
-      toast.error('Create course failed!');
-    }
+    setCourseBasicInfo(data);
+    setProgress(50); // Update progress to 50% after course info is saved
+    setCurrentStep(2);
   };
+
+  if (isCreatingCourse) {
+    return <></>;
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -142,13 +131,31 @@ export default function CreateCoursePage() {
           />
         )}
 
-        {/* Step 2: Create Lessons */}
-        {currentStep === 2 && courseBasicInfo && (
-          <CreateLessonsPage2
-            courseBasicInfo={courseBasicInfo}
-            setProgress={setProgress}
+        {/* Step 2: Create Sections and Lessons */}
+        {currentStep === 2 && courseBasicInfo && courseBasicInfo.id && (
+          <SectionsLessonsManager2
+            courseId={courseBasicInfo.id}
+            mode="create"
+            setProgress={(progress) => setProgress(progress)}
           />
         )}
+
+        {/* {currentStep === 1 && (
+          <SectionsLessonsManager2
+            courseId='abc'
+            mode="create"
+            setProgress={(progress) => setProgress(progress)}
+          />
+        )} */}
+
+        <WarningAlert
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Are you sure you want to exit!"
+          description="You are creating course's information. If you exit, these information will not be saved."
+          onClick={handleExitCreateCourse}
+          actionTitle="Exit"
+        />
       </div>
     </div>
   );

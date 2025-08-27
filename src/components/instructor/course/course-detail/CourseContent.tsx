@@ -1,50 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/instructor/course/course-detail/Collapsible';
-import { ChevronRight, BookOpen, Video, Brain, FileText } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-// ...existing imports...
-import { Edit, Trash2, Lock, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import CreateLessonsPage2 from '../create-course/create-lessons/create-lessons2';
-import SectionsLessonsManager, {
-  SectionWithComments,
-} from '../SectionsLessonsManager';
-import { useGetSectionsQuery } from '@/services/instructor/courses-api';
+import SectionsLessonsManager2 from '../SectionsLessonsManager2';
+import { useGetSectionsQuery } from '@/services/instructor/courses/sections-api';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
+import { SectionDetail } from '@/types/instructor/courses';
 import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
+import { SectionType } from '@/utils/instructor/create-course-validations/lessons-validations';
+import { Button } from '@/components/ui/button';
 
 interface CourseContentProps {
   courseId: string;
 }
 
 const CourseContent = ({ courseId }: CourseContentProps) => {
-  const [courseSections, setCourseSections] = useState<SectionWithComments[]>();
-  const [isSetUpSections, setIsSetUpSections] = useState(false);
-  const { data: sections, isLoading: isFetchingSections, isError } = useGetSectionsQuery(courseId);
+  const {
+    data: sections,
+    isLoading: isFetchingSections,
+    isError,
+  } = useGetSectionsQuery(courseId);
+
+  const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
+  const [createContent, setCreateContent] = useState(false);
+
   const dispatch: AppDispatch = useDispatch();
 
   // Loading animation
   useEffect(() => {
-    if (isFetchingSections || isFetchingSections) {
+    if (isFetchingSections || isSettingUp) {
       loadingAnimation(true, dispatch);
     } else {
       loadingAnimation(false, dispatch);
@@ -52,70 +38,122 @@ const CourseContent = ({ courseId }: CourseContentProps) => {
     return () => {
       loadingAnimation(false, dispatch);
     };
-  }, [isFetchingSections, isSetUpSections]);
+  }, [isFetchingSections, isSettingUp]);
 
-  // Modify lesson's property from 'order' to 'orderIndex'
+  // Normalize data
   useEffect(() => {
-    if (sections) {
-      const updateSections = async () => {
-        if (sections) {          
-          setIsSetUpSections(true);
-          const sectionsCopy = await Promise.all(
-            sections.map(async (sec: any) => ({
-              ...sec,
-              lessons: await Promise.all(
-                sec.lessons.map(async (les: any) => {
-                  const lessonsVideo = await createFileFromUrl(
-                    les.video.url,
-                    les.title
-                  ); // Your async function here
-                  return {
-                    ...les,
-                    orderIndex: les.order,
-                    video: { ...les.video, file: lessonsVideo },
-                  };
-                })
-              ),
-            }))
-          );
-          // console.log(sectionsCopy);
-          setIsSetUpSections(false);
-          setCourseSections(sectionsCopy);
-        }
-      };
-      updateSections();
-    }
+    const fetchFiles = async () => {
+      if (sections && sections.length > 0) {
+        setIsSettingUp(true);
+        const updatedSections = await Promise.all(
+          sections.map(async (section: SectionDetail) => ({
+            ...section,
+            lessons: await Promise.all(
+              section.lessons.map(async (lesson) => ({
+                ...lesson,
+                // Add video file creation
+                video: lesson.video && {
+                  // ...lesson.video,
+                  file: await createFileFromUrl(
+                    lesson.video.url,
+                    lesson.video.title
+                  ),
+                },
+                // Add orderIndex
+                orderIndex: lesson.order,
+                quiz: lesson.quiz &&
+                  lesson.quiz.questions &&
+                  lesson.quiz.questions.length > 0 && {
+                    ...lesson.quiz,
+                    questions: lesson.quiz.questions.map((q, index) => ({
+                      ...q,
+                      // Add quiz question orderIndex
+                      orderIndex: index,
+                    })),
+                  },
+              }))
+            ),
+          }))
+        );
+        setUpdatedSections(updatedSections);
+        setIsSettingUp(false);
+      }
+    };
+    fetchFiles();
   }, [sections]);
 
-  if (isFetchingSections || isFetchingSections) {
+  if (isFetchingSections || isSettingUp) {
     return <></>;
+  }
+
+  if (isError) {
+    return <p>Error fetching course content!</p>;
   }
 
   return (
     <>
-      {(isError || courseSections?.length === 0) ? (
-        <p>Error</p>
+      {updatedSections && updatedSections.length > 0 ? (
+        courseId && (
+          <CreateCourseContentForm
+            courseId={courseId}
+            sections={updatedSections}
+            mode="view"
+          />
+        )
       ) : (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {courseSections && (
-                <SectionsLessonsManager
-                  courseId={courseId}
-                  mode="view"
-                  sections={courseSections}
-                  canEditContent={true}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <>
+          {createContent ? (
+            courseId && (
+              <CreateCourseContentForm courseId={courseId} mode="create" />
+            )
+          ) : (
+            <>
+              <div className="text-center space-y-4">
+                <p>No content available</p>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setCreateContent(true);
+                    setHasContent(false);
+                  }}
+                >
+                  Create Content
+                </Button>
+              </div>
+            </>
+          )}
+        </>
       )}
     </>
   );
 };
 
 export default CourseContent;
+
+const CreateCourseContentForm = ({
+  courseId,
+  sections,
+  mode,
+}: {
+  courseId: string;
+  sections?: SectionType[];
+  mode: 'create' | 'view';
+}) => {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Course Content</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionsLessonsManager2
+            courseId={courseId}
+            mode={mode}
+            sections={sections}
+            canEditContent={true}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

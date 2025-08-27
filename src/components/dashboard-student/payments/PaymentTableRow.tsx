@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useGetPaymentDetailQuery } from "@/services/student/studentApi";
+import { RefundDialog } from "./RefundDialog";
 import type { Payment } from "@/types/student";
 import Image from "next/image";
 import {
@@ -18,6 +19,7 @@ import {
   Calendar,
   AlertCircle,
   ExternalLink,
+  Undo2,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -25,6 +27,11 @@ import {
   getPaymentMethodDisplay,
   getPaymentStatusBadge,
 } from "@/utils/student";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PaymentTableRowProps {
   payment: Payment;
@@ -32,6 +39,7 @@ interface PaymentTableRowProps {
 
 export function PaymentTableRow({ payment }: PaymentTableRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
 
   // Only fetch payment detail when the row is expanded
   const {
@@ -45,6 +53,18 @@ export function PaymentTableRow({ payment }: PaymentTableRowProps) {
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
   };
+
+  // Calculate if refund is still allowed (within 3 days)
+  const isRefundAllowed = () => {
+    const paymentDate = new Date(payment.createdAt);
+    const currentDate = new Date();
+    const diffInDays = Math.floor(
+      (currentDate.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return diffInDays <= 3 && payment.status === "COMPLETED";
+  };
+
+  const canRefund = isRefundAllowed();
 
   return (
     <>
@@ -174,9 +194,17 @@ export function PaymentTableRow({ payment }: PaymentTableRowProps) {
                             Session ID
                           </span>
                         </div>
-                        <p className="text-sm text-gray-900 font-mono break-all">
-                          {paymentDetail.stripeSessionId}
-                        </p>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-sm text-gray-900 font-mono overflow-hidden text-ellipsis">
+                              {paymentDetail.stripeSessionId}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {paymentDetail.stripeSessionId}
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     )}
 
@@ -256,12 +284,39 @@ export function PaymentTableRow({ payment }: PaymentTableRowProps) {
                       </p>
                     </div>
                   </div>
+
+                  {/* Action Buttons */}
+                  {canRefund && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsRefundDialogOpen(true)}
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                        >
+                          <Undo2 className="h-4 w-4 mr-2" />
+                          Request Refund
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2 text-right">
+                        Refunds must be requested within 3 days of purchase
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </TableCell>
         </TableRow>
       )}
+
+      {/* Refund Dialog */}
+      <RefundDialog
+        isOpen={isRefundDialogOpen}
+        onClose={() => setIsRefundDialogOpen(false)}
+        payment={payment}
+      />
     </>
   );
 }

@@ -17,7 +17,7 @@ import {
   ShoppingCart,
   Loader2,
 } from "lucide-react";
-import { Course } from "@/services/coursesApi";
+import { Course, useGetCourseReviewsBySlugQuery } from "@/services/coursesApi";
 import {
   PaymentButton,
   CompactPaymentButton,
@@ -73,6 +73,26 @@ export function CourseHeader({
     }
   };
 
+  // Fetch reviews data
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+    error: reviewsError,
+  } = useGetCourseReviewsBySlugQuery(course.slug);
+
+  // Calculate average rating from reviews
+  const calculateAverageRating = () => {
+    if (!reviewsData || reviewsData.content.length === 0) return 0;
+
+    const totalRating = reviewsData.content.reduce(
+      (sum, review) => sum + review.rating,
+      0
+    );
+    return totalRating / reviewsData.content.length;
+  };
+
+  const averageRating = calculateAverageRating();
+
   if (variant === "compact") {
     return (
       <Card className={cn("lg:block hidden sticky top-8", className)}>
@@ -89,7 +109,6 @@ export function CourseHeader({
                 onError={(e) => {
                   e.currentTarget.src = "/placeholder-course.jpg";
                 }}
-                priority
               />
             </div>
 
@@ -100,7 +119,6 @@ export function CourseHeader({
               </div>
             </div>
 
-            {/* Enroll Button */}
             {/* Enroll Button */}
             <CompactPaymentButton
               courseId={course.id}
@@ -150,7 +168,6 @@ export function CourseHeader({
               src={course.thumbnailUrl || "/placeholder-course.jpg"}
               alt={course.title}
               fill
-              sizes="100vh"
               className="object-cover"
               priority
               onError={(e) => {
@@ -181,7 +198,7 @@ export function CourseHeader({
                 >
                   {course.categories
                     .map((category) => category.name)
-                    .join(", ") || "Course"}
+                    .join(", ")}
                 </Badge>
               </div>
             )}
@@ -239,7 +256,7 @@ export function CourseHeader({
                     <Star
                       key={i}
                       className={`w-5 h-5 transition-colors ${
-                        i < Math.floor(course.averageRating || 0)
+                        i < Math.floor(averageRating || 0)
                           ? "fill-yellow-400 text-yellow-400"
                           : "text-gray-300 dark:text-gray-600"
                       }`}
@@ -247,10 +264,10 @@ export function CourseHeader({
                   ))}
                 </div>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {(course.averageRating || 0).toFixed(1)}
+                  {(averageRating || 0).toFixed(1)}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  ({Math.floor(course.enrollCount * 0.1)} reviews)
+                  ({Math.floor(course.rating?.totalReviews || 0)} reviews)
                 </span>
               </div>
 
@@ -263,8 +280,9 @@ export function CourseHeader({
                 </div>
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
-                  <span>{course.sectionCount} sections</span>
+                  <span>{course.sections?.length} sections</span>
                 </div>
+                {/* TODO: Implement duration calculation */}
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
                   <span>{getDurationInHours()}h total</span>
