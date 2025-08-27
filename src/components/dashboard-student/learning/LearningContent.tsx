@@ -787,6 +787,8 @@ const QuizContent = ({
         answers: quizState.answers,
       }).unwrap();
 
+      const isPassed = result.score >= 80;
+
       setQuizState((prev) => ({
         ...prev,
         submitted: true,
@@ -794,37 +796,56 @@ const QuizContent = ({
         submissionResult: result,
       }));
 
-      // Update Redux state with quiz completion and score
-      dispatch(
-        markLessonCompleted({
-          lessonId: lesson.id,
-          sectionId: section.id,
-          courseId,
-          isCompleted: true,
-          completedAt: result.submittedAt,
-        })
-      );
+      // Only mark as completed if score >= 80%
+      if (isPassed) {
+        // Update Redux state with quiz completion and score
+        dispatch(
+          markLessonCompleted({
+            lessonId: lesson.id,
+            sectionId: section.id,
+            courseId,
+            isCompleted: true,
+            completedAt: result.submittedAt,
+          })
+        );
 
-      dispatch(
-        updateQuizScore({
-          lessonId: lesson.id,
-          score: result.score,
-        })
-      );
+        dispatch(
+          updateQuizScore({
+            lessonId: lesson.id,
+            score: result.score,
+          })
+        );
 
-      // Mark lesson as complete after successful quiz submission
-      if (onMarkComplete) {
-        onMarkComplete();
-      }
+        // Mark lesson as complete after successful quiz submission
+        if (onMarkComplete) {
+          onMarkComplete();
+        }
 
-      // Refresh dashboard data to update activity feed
-      if (onRefetchCourse) {
-        onRefetchCourse();
+        // Refresh dashboard data to update activity feed
+        if (onRefetchCourse) {
+          onRefetchCourse();
+        }
+      } else {
+        // Just update the score without marking as completed
+        dispatch(
+          updateQuizScore({
+            lessonId: lesson.id,
+            score: result.score,
+          })
+        );
       }
     } catch (error) {
       console.error("Failed to submit quiz:", error);
       // You might want to show an error message to the user here
     }
+  };
+
+  const handleRetryQuiz = () => {
+    setQuizState({
+      answers: {},
+      submitted: false,
+      showResults: false,
+    });
   };
 
   const getScore = () => {
@@ -855,25 +876,65 @@ const QuizContent = ({
     (q) => quizState.answers[q.id]
   );
 
+  const isPassed = quizState.submissionResult
+    ? quizState.submissionResult.score >= 60
+    : false;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {quizState.showResults && (
-        <Card className="border-green-200 bg-green-50">
+        <Card
+          className={`${
+            isPassed
+              ? "border-green-200 bg-green-50"
+              : "border-red-200 bg-red-50"
+          }`}
+        >
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-              <span className="font-semibold text-green-800 text-sm sm:text-base">
-                Quiz Completed!
+              {isPassed ? (
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              ) : (
+                <X className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+              )}
+              <span
+                className={`font-semibold text-sm sm:text-base ${
+                  isPassed ? "text-green-800" : "text-red-800"
+                }`}
+              >
+                {isPassed ? "Quiz Passed!" : "Quiz Failed"}
               </span>
             </div>
-            <p className="text-green-700 text-sm sm:text-base">
+            <p
+              className={`text-sm sm:text-base ${
+                isPassed ? "text-green-700" : "text-red-700"
+              }`}
+            >
               Your score: {getScore()}% ({getCorrectAnswersCount()}/
               {lesson.quiz.questions.length} correct)
             </p>
+            {!isPassed && (
+              <p className="text-red-600 text-sm sm:text-base mt-2">
+                You need at least 80% to pass this quiz. Please try again.
+              </p>
+            )}
             {quizState.submissionResult?.feedback && (
-              <p className="text-green-600 text-sm sm:text-base mt-2">
+              <p
+                className={`text-sm sm:text-base mt-2 ${
+                  isPassed ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {quizState.submissionResult.feedback}
               </p>
+            )}
+            {!isPassed && (
+              <Button
+                onClick={handleRetryQuiz}
+                variant="outline"
+                className="mt-4 border-red-300 text-red-700 hover:bg-red-50"
+              >
+                Try Again
+              </Button>
             )}
           </CardContent>
         </Card>
@@ -903,6 +964,7 @@ const QuizContent = ({
                         quizState.answers[question.id] === optionLetter;
                       const isCorrect = optionLetter === question.correctAnswer;
                       const showResult = quizState.showResults;
+                      const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
 
                       return (
                         <button
@@ -916,11 +978,16 @@ const QuizContent = ({
                             isSelected &&
                               !showResult &&
                               "border-blue-500 bg-blue-50",
-                            showResult &&
+                            showCorrectAnswer &&
                               isCorrect &&
                               "border-green-500 bg-green-50",
                             showResult &&
                               isSelected &&
+                              !isPassed &&
+                              "border-red-500 bg-red-50",
+                            showResult &&
+                              isSelected &&
+                              isPassed &&
                               !isCorrect &&
                               "border-red-500 bg-red-50",
                             !showResult && !isSelected && "border-gray-200"
@@ -934,11 +1001,16 @@ const QuizContent = ({
                                 isSelected &&
                                   !showResult &&
                                   "border-blue-500 bg-blue-500 text-white",
-                                showResult &&
+                                showCorrectAnswer &&
                                   isCorrect &&
                                   "border-green-500 bg-green-500 text-white",
                                 showResult &&
                                   isSelected &&
+                                  !isPassed &&
+                                  "border-red-500 bg-red-500 text-white",
+                                showResult &&
+                                  isSelected &&
+                                  isPassed &&
                                   !isCorrect &&
                                   "border-red-500 bg-red-500 text-white",
                                 !showResult && !isSelected && "border-gray-300"
@@ -964,6 +1036,7 @@ const QuizContent = ({
                         quizState.answers[question.id] === optionLetter;
                       const isCorrect = optionLetter === question.correctAnswer;
                       const showResult = quizState.showResults;
+                      const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
 
                       return (
                         <button
@@ -977,11 +1050,16 @@ const QuizContent = ({
                             isSelected &&
                               !showResult &&
                               "border-blue-500 bg-blue-50",
-                            showResult &&
+                            showCorrectAnswer &&
                               isCorrect &&
                               "border-green-500 bg-green-50",
                             showResult &&
                               isSelected &&
+                              !isPassed &&
+                              "border-red-500 bg-red-50",
+                            showResult &&
+                              isSelected &&
+                              isPassed &&
                               !isCorrect &&
                               "border-red-500 bg-red-50",
                             !showResult && !isSelected && "border-gray-200"
@@ -995,11 +1073,16 @@ const QuizContent = ({
                                 isSelected &&
                                   !showResult &&
                                   "border-blue-500 bg-blue-500 text-white",
-                                showResult &&
+                                showCorrectAnswer &&
                                   isCorrect &&
                                   "border-green-500 bg-green-500 text-white",
                                 showResult &&
                                   isSelected &&
+                                  !isPassed &&
+                                  "border-red-500 bg-red-500 text-white",
+                                showResult &&
+                                  isSelected &&
+                                  isPassed &&
                                   !isCorrect &&
                                   "border-red-500 bg-red-500 text-white",
                                 !showResult && !isSelected && "border-gray-300"
@@ -1020,7 +1103,7 @@ const QuizContent = ({
                 })()}
               </div>
 
-              {quizState.showResults && (
+              {quizState.showResults && isPassed && (
                 <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h5 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">
                     Explanation:
