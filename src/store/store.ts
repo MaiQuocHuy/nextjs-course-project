@@ -6,13 +6,15 @@ import { paymentApi } from '@/services/paymentApi';
 import { studentApi } from '@/services/student/studentApi';
 import { authSlice, logoutState } from './slices/auth/authSlice';
 import { profileApi } from '@/services/common/profileApi';
+import { chatApi } from "@/services/websocket/chatApi";
 
 // Instructor
-import { loadingAnimaSlice } from './slices/instructor/loadingAnimaSlice';
-import { coursesInstSlice } from '@/services/instructor/courses/courses-api';
-import { sectionsInstSlice } from '@/services/instructor/courses/sections-api';
-import { lessonsInstSlice } from '@/services/instructor/courses/lessons-api';
-import { quizzesInstSlice } from '@/services/instructor/courses/quizzes-api';
+import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
+import { coursesInstSlice } from "@/services/instructor/courses/courses-api";
+import { sectionsInstSlice } from "@/services/instructor/courses/sections-api";
+import { lessonsInstSlice } from "@/services/instructor/courses/lessons-api";
+import { quizzesInstSlice } from "@/services/instructor/courses/quizzes-api";
+
 
 import courseFilterReducer from './slices/student/courseFilterSlice';
 import { settingsApi } from '@/services/common/settingsApi';
@@ -31,6 +33,7 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
     store.dispatch(geminiApi.util.resetApiState());
+    store.dispatch(chatApi.util.resetApiState());
   }
 
   return result;
@@ -50,6 +53,7 @@ export const makeStore = () => {
       [profileApi.reducerPath]: profileApi.reducer,
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
+      [chatApi.reducerPath]: chatApi.reducer,
 
       // Instructor
       loadingAnima: loadingAnimaSlice.reducer,
@@ -57,8 +61,7 @@ export const makeStore = () => {
       [sectionsInstSlice.reducerPath]: sectionsInstSlice.reducer,
       [lessonsInstSlice.reducerPath]: lessonsInstSlice.reducer,
       [quizzesInstSlice.reducerPath]: quizzesInstSlice.reducer,
-      [earningsInstSlice.reducerPath]: earningsInstSlice.reducer,
-      [refundsInstSlice.reducerPath]: refundsInstSlice.reducer,
+      [earningsInstSlice.reducerPath]: earningsInstSlice.reducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -69,6 +72,7 @@ export const makeStore = () => {
         profileApi.middleware,
         settingsApi.middleware,
         geminiApi.middleware,
+        chatApi.middleware,
         clearCacheOnLogout,
 
         // Instructor
@@ -77,7 +81,6 @@ export const makeStore = () => {
         lessonsInstSlice.middleware,
         quizzesInstSlice.middleware,
         earningsInstSlice.middleware,
-        refundsInstSlice.middleware
       ),
   });
 
