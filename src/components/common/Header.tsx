@@ -14,7 +14,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+  VisuallyHidden,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +36,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth, useAuthStatus } from "@/hooks/useAuth";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
-import { getSession } from "next-auth/react";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -42,7 +47,6 @@ const navigation = [
 export function Header() {
   const { logout: authLogout, user } = useAuth();
   const { isAuthenticated: isLoggedIn, isReady } = useAuthStatus();
-  // const [userRole, setUserRole] = useState<string | undefined>(undefined);
 
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
@@ -275,6 +279,9 @@ export function Header() {
               side="right"
               className="w-[320px] p-0 bg-background border-l border-border/50 shadow-2xl"
             >
+              <VisuallyHidden.Root>
+                <SheetTitle>Navigation Menu</SheetTitle>
+              </VisuallyHidden.Root>
               <div className="flex flex-col h-full">
                 {/* Mobile Header */}
                 <div className="p-6 border-b border-border/50 bg-background">
