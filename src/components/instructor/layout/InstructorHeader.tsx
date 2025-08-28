@@ -79,10 +79,16 @@ export const InstructorHeader = ({ onMenuClick }: InstructorHeaderProps) => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/instructor/profiles')}>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => router.push('/profile')}
+              >
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/instructor/settings')}>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => router.push('/setting')}
+              >
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
