@@ -13,18 +13,27 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuizResultDetails } from "@/hooks/student/useQuizResults";
 import type { QuizResults } from "@/types/student";
-import { CheckCircle, XCircle, Clock, Book, Target } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Book,
+  Target,
+  RotateCcw,
+} from "lucide-react";
 
 interface QuizResultDetailsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   quizResult: QuizResults;
   isMobile?: boolean;
+  onTryAgain?: () => void;
 }
 
 function formatDate(dateString: string) {
@@ -40,11 +49,17 @@ function formatDate(dateString: string) {
 
 function getScoreColor(score: number) {
   if (score >= 80) return "text-green-600";
-  if (score >= 50) return "text-yellow-600";
+  if (score >= 40) return "text-yellow-600";
   return "text-red-600";
 }
 
-function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
+function QuizResultDetailsContent({
+  quizResult,
+  onTryAgain,
+}: {
+  quizResult: QuizResults;
+  onTryAgain?: () => void;
+}) {
   const {
     data: quizDetails,
     isLoading,
@@ -156,6 +171,20 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
             </p>
           </div>
         </div>
+        {/* Try Again Button for failed quizzes */}
+        {quizResult.score < 80 && onTryAgain && (
+          <div className="mt-3">
+            <Button
+              onClick={onTryAgain}
+              className="w-full"
+              variant="outline"
+              size="sm"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Questions and Answers - Mobile Optimized */}
@@ -207,19 +236,19 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
                             <div
                               key={key}
                               className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
-                                isCorrectAnswer
-                                  ? "border-green-500 bg-green-50 text-green-800"
-                                  : isStudentAnswer && !isCorrectAnswer
+                                isStudentAnswer && !isCorrectAnswer
                                   ? "border-red-500 bg-red-50 text-red-800"
+                                  : isStudentAnswer && isCorrectAnswer
+                                  ? "border-green-500 bg-green-50 text-green-800"
                                   : "border-gray-200 bg-gray-50"
                               }`}
                             >
                               <div
                                 className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
-                                  isCorrectAnswer
-                                    ? "bg-green-600 text-white"
-                                    : isStudentAnswer && !isCorrectAnswer
+                                  isStudentAnswer && !isCorrectAnswer
                                     ? "bg-red-600 text-white"
+                                    : isStudentAnswer && isCorrectAnswer
+                                    ? "bg-green-600 text-white"
                                     : "bg-gray-300 text-gray-600"
                                 }`}
                               >
@@ -229,24 +258,16 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
                                 {optionText}
                               </span>
                               <div className="flex-shrink-0 flex items-center gap-1 ml-2">
-                                {isCorrectAnswer && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-green-100 text-green-800 text-xs px-1 py-0"
-                                  >
-                                    Correct
-                                  </Badge>
-                                )}
                                 {isStudentAnswer && (
                                   <Badge
                                     variant="secondary"
                                     className={`text-xs px-1 py-0 ${
                                       isCorrectAnswer
-                                        ? "bg-blue-100 text-blue-800"
+                                        ? "bg-green-100 text-green-800"
                                         : "bg-red-100 text-red-800"
                                     }`}
                                   >
-                                    You
+                                    Your Answer
                                   </Badge>
                                 )}
                               </div>
@@ -270,19 +291,19 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
                             <div
                               key={optionIndex}
                               className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
-                                isCorrectAnswer
-                                  ? "border-green-500 bg-green-50 text-green-800"
-                                  : isStudentAnswer && !isCorrectAnswer
+                                isStudentAnswer && !isCorrectAnswer
                                   ? "border-red-500 bg-red-50 text-red-800"
+                                  : isStudentAnswer && isCorrectAnswer
+                                  ? "border-green-500 bg-green-50 text-green-800"
                                   : "border-gray-200 bg-gray-50"
                               }`}
                             >
                               <div
                                 className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
-                                  isCorrectAnswer
-                                    ? "bg-green-600 text-white"
-                                    : isStudentAnswer && !isCorrectAnswer
+                                  isStudentAnswer && !isCorrectAnswer
                                     ? "bg-red-600 text-white"
+                                    : isStudentAnswer && isCorrectAnswer
+                                    ? "bg-green-600 text-white"
                                     : "bg-gray-300 text-gray-600"
                                 }`}
                               >
@@ -292,24 +313,16 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
                                 {option}
                               </span>
                               <div className="flex-shrink-0 flex items-center gap-1 ml-2">
-                                {isCorrectAnswer && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-green-100 text-green-800 text-xs px-1 py-0"
-                                  >
-                                    Correct
-                                  </Badge>
-                                )}
                                 {isStudentAnswer && (
                                   <Badge
                                     variant="secondary"
                                     className={`text-xs px-1 py-0 ${
                                       isCorrectAnswer
-                                        ? "bg-blue-100 text-blue-800"
+                                        ? "bg-green-100 text-green-800"
                                         : "bg-red-100 text-red-800"
                                     }`}
                                   >
-                                    You
+                                    Your Answer
                                   </Badge>
                                 )}
                               </div>
@@ -322,8 +335,8 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
                     })()}
                   </div>
 
-                  {/* Explanation - Mobile Optimized */}
-                  {question.explanation && (
+                  {/* Explanation - Mobile Optimized - Only show for correct answers */}
+                  {question.explanation && question.isCorrect && (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <h5 className="font-medium text-blue-900 mb-1 text-xs">
                         Explanation:
@@ -374,7 +387,7 @@ function QuizResultDetailsContent({ quizResult }: { quizResult: QuizResults }) {
           <div className="space-y-1 text-xs text-blue-800 leading-relaxed">
             {quizResult.score >= 80 ? (
               <>
-                <p>• Great job! You've shown strong understanding.</p>
+                <p>• Great job! You've passed this quiz.</p>
                 <p>• Continue to the next lesson to build on this knowledge.</p>
                 {quizResult.score < 90 && (
                   <p>• Review missed questions for deeper understanding.</p>
@@ -400,6 +413,7 @@ export function QuizResultDetailsDialog({
   onOpenChange,
   quizResult,
   isMobile = false,
+  onTryAgain,
 }: QuizResultDetailsDialogProps) {
   if (isMobile) {
     return (
@@ -413,7 +427,10 @@ export function QuizResultDetailsDialog({
             </SheetHeader>
             <div className="flex-1 overflow-hidden">
               <ScrollArea className="h-full px-4 py-4">
-                <QuizResultDetailsContent quizResult={quizResult} />
+                <QuizResultDetailsContent
+                  quizResult={quizResult}
+                  onTryAgain={onTryAgain}
+                />
                 <div className="h-4" />{" "}
                 {/* Bottom padding for better scrolling */}
               </ScrollArea>
@@ -431,7 +448,10 @@ export function QuizResultDetailsDialog({
           <DialogTitle>Quiz Result Details</DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[calc(90vh-8rem)]">
-          <QuizResultDetailsContent quizResult={quizResult} />
+          <QuizResultDetailsContent
+            quizResult={quizResult}
+            onTryAgain={onTryAgain}
+          />
         </ScrollArea>
       </DialogContent>
     </Dialog>

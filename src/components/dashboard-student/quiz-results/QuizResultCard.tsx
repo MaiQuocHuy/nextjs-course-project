@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuizResultDetailsDialog } from "./QuizResultDetailsDialog";
 import type { QuizResults } from "@/types/student";
@@ -10,15 +11,34 @@ import { formatDate } from "@/utils/student";
 
 interface QuizResultCardProps {
   quizResult: QuizResults;
+  onTryAgain?: (quizResult: QuizResults) => void;
 }
 
 function getScoreColor(score: number) {
-  if (score >= 75) return "text-green-600";
+  if (score >= 80) return "text-green-600";
   if (score >= 40) return "text-yellow-600";
   return "text-red-600";
 }
 
-export function QuizResultCard({ quizResult }: QuizResultCardProps) {
+function getPassFailBadge(score: number) {
+  if (score >= 80) {
+    return (
+      <Badge variant="secondary" className="bg-green-100 text-green-800">
+        Passed
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="bg-red-100 text-red-800">
+      Failed
+    </Badge>
+  );
+}
+
+export function QuizResultCard({
+  quizResult,
+  onTryAgain,
+}: QuizResultCardProps) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -47,16 +67,20 @@ export function QuizResultCard({ quizResult }: QuizResultCardProps) {
                   {quizResult.lesson.title}
                 </h3>
               </div>
-              {/* Score display in header */}
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs text-muted-foreground">Score</p>
-                <p
-                  className={`text-xl font-bold ${getScoreColor(
-                    quizResult.score
-                  )}`}
-                >
-                  {quizResult.score}
-                </p>
+              <div className="flex items-center gap-2">
+                {/* Pass/Fail Badge */}
+                {getPassFailBadge(quizResult.score)}
+                {/* Score display in header */}
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-muted-foreground">Score</p>
+                  <p
+                    className={`text-xl font-bold ${getScoreColor(
+                      quizResult.score
+                    )}`}
+                  >
+                    {quizResult.score}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -124,6 +148,7 @@ export function QuizResultCard({ quizResult }: QuizResultCardProps) {
         onOpenChange={setIsDetailsOpen}
         quizResult={quizResult}
         isMobile={isMobile}
+        onTryAgain={onTryAgain ? () => onTryAgain(quizResult) : undefined}
       />
     </>
   );

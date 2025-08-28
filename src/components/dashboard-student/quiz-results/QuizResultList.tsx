@@ -5,18 +5,29 @@ import { useQuizResults } from "@/hooks/student/useQuizResults";
 import { Loader2, BookOpen, Target } from "lucide-react";
 import { QuizResultsLoadingSkeleton } from "../ui/Loading";
 import { QuizResultError } from "../ui/LoadingError";
-import { CustomPagination, usePagination } from "@/components/ui/custom-pagination";
+import {
+  CustomPagination,
+  usePagination,
+} from "@/components/ui/custom-pagination";
+import { useRouter } from "next/navigation";
+import type { QuizResults } from "@/types/student";
 
 export function QuizResultList() {
+  const router = useRouter();
   const { data: quizResults, isLoading, error, refetch } = useQuizResults();
-  
+
   // Pagination với 6 quiz results per page
   const {
     currentPage,
     totalPages,
     paginatedItems: paginatedResults,
-    handlePageChange
+    handlePageChange,
   } = usePagination(quizResults?.content || [], 6);
+
+  const handleTryAgain = (quizResult: QuizResults) => {
+    // Navigate to the lesson to retake the quiz
+    router.push(`/dashboard/learning/${quizResult.course.id}`);
+  };
 
   if (isLoading) {
     return <QuizResultsLoadingSkeleton />;
@@ -47,7 +58,11 @@ export function QuizResultList() {
       {/* Quiz Results Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {paginatedResults.map((quizResult) => (
-          <QuizResultCard key={quizResult.id} quizResult={quizResult} />
+          <QuizResultCard
+            key={quizResult.id}
+            quizResult={quizResult}
+            onTryAgain={handleTryAgain}
+          />
         ))}
       </div>
 

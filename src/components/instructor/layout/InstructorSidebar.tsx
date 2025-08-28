@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   GraduationCap,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Courses', href: '/instructor/courses', icon: BookOpen },
   { name: 'Students', href: '/instructor/students', icon: Users },
   { name: 'Earnings', href: '/instructor/earnings', icon: DollarSign },
+  { name: 'Refunds', href: '/instructor/refunds', icon: RefreshCw },
   { name: 'Notifications', href: '/instructor/notifications', icon: Bell },
 ];
 

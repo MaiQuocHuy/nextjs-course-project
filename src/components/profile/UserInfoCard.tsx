@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, User, Edit } from "lucide-react";
+import { Mail, User, Edit, ShieldUser } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useGetProfileQuery } from "@/services/common/profileApi";
@@ -51,6 +51,12 @@ export function UserInfoCard() {
               <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600">
                 <Mail className="h-4 w-4 flex-shrink-0" />
                 <span className="text-base truncate">{userProfileData?.email}</span>
+              </div>
+
+              {/* ROLE */}
+              <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600">
+                <ShieldUser className="h-4 w-4 flex-shrink-0" />
+                <span className="text-base truncate">{userProfileData?.role}</span>
               </div>
 
               {/* Bio */}

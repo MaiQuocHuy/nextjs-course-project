@@ -214,19 +214,6 @@ export const CoursesPage = () => {
     }
   };
 
-  // const getStatusColor = (status: string) => {
-  //   status = status.toLowerCase();
-  //   switch (status) {
-  //     case 'pending':
-  //       return 'bg-yellow-400 text-slate-900';
-  //     case 'unpublished':
-  //       return 'bg-destructive text-white';
-  //     default:
-  //       // published
-  //       return 'bg-green-500 text-white';
-  //   }
-  // };
-
   const getPriceRange = (courses: Course[]) => {
     const coursePrices = courses.map((course) => course.price);
     const minPrice = Math.min(...coursePrices);

@@ -13,3 +13,8 @@ export interface ApiResponse<T> {
   data: T;
   timestamp: string;
 }
+
+export interface PaginatedData<T> {
+  content: T[];
+  page: Page;
+}
