@@ -1,4 +1,3 @@
-import { QuizResults } from '../student';
 import { Category } from './courses';
 
 export interface EnrolledCourse {
@@ -16,7 +15,6 @@ export interface EnrolledCourse {
   price?: number;
   averageRating?: number;
   totalRating?: number;
-  // quizResults?: QuizResults[];
   enrolledAt?: string;
 }
 

@@ -20,6 +20,8 @@ import learningProgressReducer from './slices/student/learningProgressSlice';
 import { geminiApi } from '@/services/quiz/geminiApi';
 import { earningsInstSlice } from '@/services/instructor/earnings/earnings-ins-api';
 import { refundsInstSlice } from '@/services/instructor/refunds/refunds-ins-api';
+import { dashboardStatsInstSlice } from '@/services/instructor/statistics/dashboard-statistics';
+import { studentsInstSlice } from '@/services/instructor/students/students-ins-api';
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
@@ -59,6 +61,8 @@ export const makeStore = () => {
       [quizzesInstSlice.reducerPath]: quizzesInstSlice.reducer,
       [earningsInstSlice.reducerPath]: earningsInstSlice.reducer,
       [refundsInstSlice.reducerPath]: refundsInstSlice.reducer,
+      [dashboardStatsInstSlice.reducerPath]: dashboardStatsInstSlice.reducer,
+      [studentsInstSlice.reducerPath]: studentsInstSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -77,7 +81,9 @@ export const makeStore = () => {
         lessonsInstSlice.middleware,
         quizzesInstSlice.middleware,
         earningsInstSlice.middleware,
-        refundsInstSlice.middleware
+        refundsInstSlice.middleware,
+        dashboardStatsInstSlice.middleware,
+        studentsInstSlice.middleware
       ),
   });
 
