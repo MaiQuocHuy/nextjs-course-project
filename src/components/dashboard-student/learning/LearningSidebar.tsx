@@ -12,6 +12,7 @@ import {
   FileText,
   HelpCircle,
   X,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -42,6 +43,40 @@ const getLessonIcon = (lesson: Lesson) => {
     default:
       return <Circle className="h-4 w-4 text-gray-400" />;
   }
+};
+
+// Helper function to determine if a lesson is accessible
+const isLessonAccessible = (
+  sections: Section[],
+  targetSectionId: string,
+  targetLessonId: string
+): boolean => {
+  let allLessons: { sectionId: string; lesson: Lesson }[] = [];
+
+  // Flatten all lessons from all sections in order
+  sections.forEach((section) => {
+    section.lessons.forEach((lesson) => {
+      allLessons.push({ sectionId: section.id, lesson });
+    });
+  });
+
+  // Find the index of the target lesson
+  const targetIndex = allLessons.findIndex(
+    (item) =>
+      item.sectionId === targetSectionId && item.lesson.id === targetLessonId
+  );
+
+  if (targetIndex === -1) return false;
+  if (targetIndex === 0) return true; // First lesson is always accessible
+
+  // Check if all previous lessons are completed
+  for (let i = 0; i < targetIndex; i++) {
+    if (!allLessons[i].lesson.isCompleted) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 export function LearningSidebar({
@@ -145,31 +180,63 @@ export function LearningSidebar({
               {openSections.includes(section.id) && (
                 <div className="border-t border-gray-200">
                   <div className="space-y-0.5 sm:space-y-1">
-                    {section.lessons.map((lesson) => (
-                      <button
-                        key={lesson.id}
-                        onClick={() => onSelectLesson(lesson.id)}
-                        className={cn(
-                          "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 text-left text-xs sm:text-sm hover:bg-gray-50 transition-colors",
-                          currentLessonId === lesson.id &&
-                            "bg-blue-50 border-r-2 border-blue-500"
-                        )}
-                      >
-                        <div className="flex-shrink-0">
-                          {getLessonIcon(lesson)}
-                        </div>
-                        <span
+                    {section.lessons.map((lesson) => {
+                      const isAccessible = isLessonAccessible(
+                        sections,
+                        section.id,
+                        lesson.id
+                      );
+                      const isCurrentLesson = currentLessonId === lesson.id;
+
+                      if (!isAccessible) {
+                        // Render locked lesson as non-clickable div
+                        return (
+                          <div
+                            key={lesson.id}
+                            className={cn(
+                              "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 text-left text-xs sm:text-sm opacity-50 cursor-not-allowed bg-gray-50"
+                            )}
+                          >
+                            <div className="flex-shrink-0">
+                              <Lock className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <span className="flex-1 line-clamp-2 text-gray-400">
+                              {lesson.title}
+                            </span>
+                            <span className="text-xs text-gray-400 flex-shrink-0">
+                              Locked
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      // Render accessible lesson as clickable button
+                      return (
+                        <button
+                          key={lesson.id}
+                          onClick={() => onSelectLesson(lesson.id)}
                           className={cn(
-                            "flex-1 line-clamp-2",
-                            lesson.isCompleted && "line-through text-gray-500",
-                            currentLessonId === lesson.id &&
-                              "font-medium text-blue-700"
+                            "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 text-left text-xs sm:text-sm hover:bg-gray-50 transition-colors",
+                            isCurrentLesson &&
+                              "bg-blue-50 border-r-2 border-blue-500"
                           )}
                         >
-                          {lesson.title}
-                        </span>
-                      </button>
-                    ))}
+                          <div className="flex-shrink-0">
+                            {getLessonIcon(lesson)}
+                          </div>
+                          <span
+                            className={cn(
+                              "flex-1 line-clamp-2",
+                              lesson.isCompleted &&
+                                "line-through text-gray-500",
+                              isCurrentLesson && "font-medium text-blue-700"
+                            )}
+                          >
+                            {lesson.title}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

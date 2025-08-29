@@ -30,39 +30,31 @@ export function QuizResultStats() {
         </CardContent>
       </Card>
 
-      {/* High Scoring Quizzes */}
+      {/* Passed Quizzes */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            High Scoring Quizzes
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Passed Quizzes</CardTitle>
           <Trophy className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
-            {stats.highScoringQuizzes}
+            {stats.passedQuizzes}
           </div>
-          <p className="text-xs text-muted-foreground">
-            ≥ 80 score (Excellent!)
-          </p>
+          <p className="text-xs text-muted-foreground">≥ 80 score (Passed!)</p>
         </CardContent>
       </Card>
 
-      {/* Low Scoring Quizzes */}
+      {/* Failed Quizzes */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Low Scoring Quizzes
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Failed Quizzes</CardTitle>
           <TrendingUp className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-red-600">
-            {stats.lowScoringQuizzes}
+            {stats.failedQuizzes}
           </div>
-          <p className="text-xs text-muted-foreground">
-            ≤ 40 score (Need improvement)
-          </p>
+          <p className="text-xs text-muted-foreground">Need improvement</p>
         </CardContent>
       </Card>
 
