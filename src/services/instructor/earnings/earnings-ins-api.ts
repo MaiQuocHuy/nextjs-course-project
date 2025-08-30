@@ -3,6 +3,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
 import { InsEarningsResponse } from '@/types/instructor/earnings';
 import { ApiResponse } from '@/types/common';
+import { MonthlyRevenue } from '@/types/instructor/dashboard';
 
 interface GetInsEarningsParams {
   courseId?: string;
@@ -44,7 +45,13 @@ export const earningsInstSlice = createApi({
       transformResponse: (response: any) => response.data,
       providesTags: ['Earnings'],
     }),
+
+    getRecentEarnings: builder.query<MonthlyRevenue[], void>({
+      query: () => `/instructor/earnings/recent-revenues`,
+      transformResponse: (response: any) => response.data,
+      providesTags: ['Earnings'],
+    })
   }),
 });
 
-export const { useGetInsEarningsQuery } = earningsInstSlice;
+export const { useGetInsEarningsQuery, useGetRecentEarningsQuery } = earningsInstSlice;

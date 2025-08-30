@@ -1,8 +1,8 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
 import type { Course, CourseDetail } from '@/types/instructor/courses';
-import { ApiResponse, PaginatedData } from '@/types/apiResponse';
-import { CoursesFilter } from '@/services/coursesApi';
+import { ApiResponse, PaginatedData } from '@/types/common';
+import { CoursesFilter } from '@/types/common';
 
 const errorsHandler = (response: { status: number; data: any }) => {
   let errorMessage = 'Failed to create course';

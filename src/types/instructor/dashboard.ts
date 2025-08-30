@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Course, Notification, MonthlyRevenue } from '@/app/data/courses';
+import { Course, Notification } from '@/app/data/courses';
 
 // Interface for dashboard statistics item
 export interface DashboardStatItem {
@@ -13,10 +13,16 @@ export interface DashboardStatItem {
 
 // Interface for dashboard statistics
 export interface DashboardStats {
-  totalCourses: DashboardStatItem;
-  totalStudents: DashboardStatItem;
-  totalRevenue: DashboardStatItem;
-  avgRating: DashboardStatItem;
+  courseStatistics: DashboardStatItem;
+  studentStatistics: DashboardStatItem;
+  revenueStatistics: DashboardStatItem;
+  ratingStatistics: DashboardStatItem;
+}
+
+export interface MonthlyRevenue {
+  year: number;
+  month: number;
+  revenue: number;
 }
 
 // Interface for a student in the dashboard
@@ -47,7 +53,7 @@ export interface InstructorDashboardData {
 export const mockInstructorDashboardData: InstructorDashboardData = {
   instructorName: 'John',
   stats: {
-    totalCourses: {
+    courseStatistics: {
       title: 'Total Courses',
       value: 5,
       description: '5 published',
@@ -55,7 +61,7 @@ export const mockInstructorDashboardData: InstructorDashboardData = {
       color: 'text-primary',
       href: '/instructor/courses',
     },
-    totalStudents: {
+    studentStatistics: {
       title: 'Total Students',
       value: 128,
       description: '+12% from last month',
@@ -63,14 +69,14 @@ export const mockInstructorDashboardData: InstructorDashboardData = {
       color: 'text-success',
       href: '/instructor/students',
     },
-    totalRevenue: {
+    revenueStatistics: {
       title: 'Total Revenue',
       value: '$4250',
       description: 'This month: $1200',
       icon: null,
       href: '/instructor/earnings',
     },
-    avgRating: {
+    ratingStatistics: {
       title: 'Avg Rating',
       value: 4.8,
       description: 'Across all courses',
