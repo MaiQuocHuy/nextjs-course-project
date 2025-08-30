@@ -11,6 +11,7 @@ import { RefreshCw, AlertCircle, Menu, X } from "lucide-react";
 import type { Lesson, Section } from "@/types/student/index";
 import { LearningLoadingSkeleton } from "../ui/Loading";
 import { LearningPageError } from "../ui";
+import { FloatingChatBubble } from "@/components/chat/FloatingChatBubble";
 
 interface LearningPageClientProps {
   courseId: string;
@@ -171,6 +172,12 @@ export default function LearningPageClient({
           />
         </div>
       </div>
+
+      {/* Floating Chat Bubble */}
+      <FloatingChatBubble
+        courseId={courseId}
+        courseName={courseData.course.title}
+      />
     </div>
   );
 }
