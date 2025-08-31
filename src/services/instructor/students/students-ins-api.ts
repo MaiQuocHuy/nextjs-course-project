@@ -10,7 +10,7 @@ export const studentsInstSlice = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ['StudentsIns'],
   endpoints: (builder) => ({
-    // Fetch courses for instructor
+    // Get enrolled students
     getEnrolledStudents: builder.query<PaginatedData<Students>, CoursesFilter>({
       query: (courseParams) => ({
         url: `/instructor/enrolled-students?page=${
@@ -36,7 +36,21 @@ export const studentsInstSlice = createApi({
             ]
           : [{ type: 'StudentsIns', id: 'LIST' }],
     }),
+
+    // Get student details
+    getStudentDetails: builder.query<Students, string>({
+      query: (studentId) => ({
+        url: `/instructor/enrolled-students/${studentId}`,
+        method: 'GET',
+      }),
+      transformResponse: (response: ApiResponse<Students>) => {
+        return response.data;
+      },
+      providesTags: (result, error, id) => [
+        { type: 'StudentsIns', id },
+      ],
+    }),
   }),
 });
 
-export const { useGetEnrolledStudentsQuery } = studentsInstSlice;
+export const { useGetEnrolledStudentsQuery, useGetStudentDetailsQuery } = studentsInstSlice;

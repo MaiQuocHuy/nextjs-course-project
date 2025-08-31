@@ -108,8 +108,6 @@ export interface Course {
   totalStudents: number;
   sectionCount: number;
   averageRating: number;
-  // lastContentUpdate: string;
-  // status: string;
   revenue: number;
   canEdit: boolean;
   canUnpublish: boolean;

@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -18,61 +11,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Search,
-  Users,
-  MessageSquare,
-  Mail,
-  BookOpen,
-  TrendingUp,
-} from 'lucide-react';
-import Link from 'next/link';
-import { Course, getAllCourses } from '@/app/data/courses';
-import {
-  EnrolledCourse,
-  mockStudents,
-  Students,
-} from '@/types/instructor/students';
-import { useRouter } from 'next/navigation';
+import { Search, Users, Mail, BookOpen, TrendingUp } from 'lucide-react';
+import { EnrolledCourse, Students } from '@/types/instructor/students';
+import { useGetEnrolledStudentsQuery } from '@/services/instructor/students/students-ins-api';
+import { EnrolledStudentList } from './EnrolledStudentList';
+import { ErrorComponent } from '../commom/ErrorComponents';
+import { StudentSkeleton } from './StudentSkeleton';
+import { Pagination } from '../../common/Pagination';
+
+const params = {
+  page: 0,
+  size: 10,
+};
 
 export const StudentsPage = () => {
-  const [courses, setCourses] = useState<Course[]>();
-  const [students, setStudents] = useState<Students[]>([]);
+  const [currentPage, setCurrentPage] = useState(params.page);
+  const [itemsPerPage, setItemsPerPage] = useState(params.size);
   const [filteredStudents, setFilteredStudents] = useState<Students[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Students | null>(null);
 
-  const router = useRouter();
-
-  // Get all students
-  useEffect(() => {
-    setStudents(mockStudents);
-  }, []);
-
-  // Get all courses
-  useEffect(() => {
-    const courses = getAllCourses();
-    setCourses(courses);
-  }, []);
+  // Fetch enrolled students
+  const {
+    data: enrolledStudents,
+    isLoading: isLoadingEnrolledStudents,
+    error: enrolledStudentsError,
+  } = useGetEnrolledStudentsQuery({
+    page: currentPage,
+    size: itemsPerPage,
+  });
+  console.log(enrolledStudents);
 
   useEffect(() => {
-    setFilteredStudents(students);
-  }, [students]);
-
-  useEffect(() => {
-    if (searchTerm !== '') {
-      const processedSearchTerm = searchTerm.trim().toLowerCase();
-      setFilteredStudents(
-        students.filter(
-          (student) =>
-            student.name.toLowerCase().includes(processedSearchTerm) ||
-            student.email.toLowerCase().includes(processedSearchTerm)
-        )
-      );
-    } else {
-      setFilteredStudents(students);
+    if (enrolledStudents && enrolledStudents.content.length > 0) {
+      setFilteredStudents(enrolledStudents.content);
     }
-  }, [searchTerm, students]);
+  }, [enrolledStudents]);
+
+  // Handle search
+  useEffect(() => {
+    if (enrolledStudents && enrolledStudents.content.length > 0) {
+      const students = enrolledStudents.content;
+      if (searchTerm !== '') {
+        const processedSearchTerm = searchTerm.trim().toLowerCase();
+        setFilteredStudents(
+          students.filter(
+            (student) =>
+              student.name.toLowerCase().includes(processedSearchTerm) ||
+              student.email.toLowerCase().includes(processedSearchTerm)
+          )
+        );
+      } else {
+        setFilteredStudents(students);
+      }
+    }
+  }, [searchTerm, enrolledStudents]);
 
   const getAverageProgress = (enrolledCourses: EnrolledCourse[]) => {
     const progressValues = enrolledCourses.map((course) => course.progress);
@@ -84,6 +77,16 @@ export const StudentsPage = () => {
           progressValues.length
       : 0;
   };
+
+  // Show loading state while fetching data
+  if (isLoadingEnrolledStudents) {
+    return <StudentSkeleton />;
+  }
+
+  // Show error state if there's an error
+  if (enrolledStudentsError) {
+    return <ErrorComponent />;
+  }
 
   return (
     <div className="space-y-6">
@@ -119,131 +122,44 @@ export const StudentsPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-card">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-4xl font-bold">{students.length}</p>
-                <p className="text-xs text-muted-foreground">Total Students</p>
+        {enrolledStudents && enrolledStudents.content.length > 0 && (
+          <Card className="shadow-card">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-4xl font-bold">
+                    {enrolledStudents.content.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Students
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Students List */}
-      {filteredStudents.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
-          {filteredStudents.map((student) => {
-            const averageProgress = getAverageProgress(student.enrolledCourses);
-            return (
-              <Link
-                key={student.id}
-                href={`/instructor/students/${student.id}`}
-                target="_blank"
-              >
-                <Card
-                  key={student.id}
-                  className=" shadow-card hover:shadow-elegant transition-shadow cursor-pointer"
-                >
-                  {/* Student's info */}
-                  <CardHeader>
-                    <img
-                      src={student.avatar}
-                      alt={student.name}
-                      className="w-full h-48 object-cover rounded-t-lg"
-                    />
-                    <div>
-                      <CardTitle className="text-xl">{student.name}</CardTitle>
-                      <CardDescription>{student.email}</CardDescription>
-                    </div>
-                  </CardHeader>
+      <div className="space-y-4">
+        <EnrolledStudentList
+          enrolledStudents={filteredStudents}
+          searchTerm={searchTerm}
+        />
 
-                  <CardContent>
-                    <div className="flex flex-col gap-4 mb-3">
-                      {/* Progress */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Overall Progress</span>
-                          <span>{Math.round(averageProgress)}%</span>
-                        </div>
-                        <Progress value={averageProgress} className="h-2" />
-                      </div>
-
-                      {/* Enrolled Courses */}
-                      <div className="flex flex-col gap-1">
-                        <p className="text-sm font-medium">Enrolled Courses:</p>
-                        {student.enrolledCourses.length > 0 && (
-                          <div className="flex flex-wrap gap-1 ">
-                            {student.enrolledCourses
-                              .slice(0, 1)
-                              .map((course) => (
-                                <Badge
-                                  key={course.courseId}
-                                  variant="outline"
-                                  className="text-sm"
-                                >
-                                  {course.title}
-                                </Badge>
-                              ))}
-                            {student.enrolledCourses.length > 2 && (
-                              <Badge
-                                key={`more-enrolled-courses-2`}
-                                variant="secondary"
-                                className="text-sm"
-                              >
-                                +{student.enrolledCourses.length - 1}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-300">
-                      {/* Chat and send email */}
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <MessageSquare className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Mail className="h-3 w-3" />
-                        </Button>
-                      </div>
-
-                      {/* View detail information */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          router.push(`/instructor/students/${student.id}`);
-                        }}
-                      >
-                        View Student
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      ) : (
-        <Card className="shadow-card">
-          <CardContent className="p-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No students found</h3>
-            <p className="text-muted-foreground">
-              {searchTerm
-                ? 'Try adjusting your search criteria.'
-                : 'Students will appear here once they enroll in your courses.'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        {enrolledStudents &&
+          enrolledStudents.page &&
+          enrolledStudents.page.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              pageInfo={enrolledStudents?.page}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
+      </div>
 
       {/* Student Details Dialog */}
       {selectedStudent && (
@@ -264,7 +180,7 @@ export const StudentsPage = () => {
               <div className="flex items-center space-x-4">
                 <Avatar className="h-16 w-16">
                   <AvatarImage
-                    src={selectedStudent.avatar}
+                    src={selectedStudent.thumbnailUrl}
                     alt={selectedStudent.name}
                   />
                   <AvatarFallback className="text-lg">

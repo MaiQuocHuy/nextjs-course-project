@@ -13,7 +13,6 @@ import {
   formatPaymentId,
   getStatusVariant,
 } from '@/utils/instructor/refunds';
-import Link from 'next/link';
 
 interface RefundRowProps {
   index: number;
@@ -21,10 +20,15 @@ interface RefundRowProps {
   style?: React.CSSProperties;
 }
 
+const ViewRefundDetail = (id: string) => {
+  window.open(`/instructor/refunds/${id}`, '_blank');
+};
+
 export const RefundRow = ({ refund, style, index }: RefundRowProps) => {
   return (
-    <Link href={`/instructor/refunds/${refund.id}`} passHref target="_blank" className="contents">
-      <TableRow className="hover:bg-gray-200 cursor-pointer" style={style}>
+      <TableRow className="hover:bg-gray-200 cursor-pointer" style={style}
+        onClick={() => ViewRefundDetail(refund.id)}
+      >
         {/* No. */}
         <TableCell className="text-center">{index + 1}</TableCell>
 
@@ -86,6 +90,5 @@ export const RefundRow = ({ refund, style, index }: RefundRowProps) => {
           </div>
         </TableCell>
       </TableRow>
-    </Link>
   );
 };
