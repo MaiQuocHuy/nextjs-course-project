@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { InstructorSidebar } from '@/components/instructor/layout/InstructorSidebar';
 import { InstructorHeader } from '@/components/instructor/layout/InstructorHeader';
-import { LoadingAnimation } from '@/components/instructor/LoadingAnimation';
+import { LoadingAnimation } from '@/components/instructor/commom/LoadingAnimation';
 import { RootState } from '@/store/store';
 import { useSelector } from 'react-redux';
 

@@ -46,7 +46,6 @@ import {
   ImageIcon,
   Upload,
   Trash2,
-  Send,
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -66,13 +65,7 @@ import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
 import { CourseDetail } from '@/types/instructor/courses';
 import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
-import { isDirty, isValid, set } from 'zod/v3';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import {
   DialogDescription,
   DialogTitle,

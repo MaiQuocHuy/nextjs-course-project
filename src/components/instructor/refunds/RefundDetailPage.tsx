@@ -61,14 +61,14 @@ export const RefundDetailPage = () => {
   return (
     <div className="container mx-auto p-4 lg:p-6 space-y-6">
       {/* Back button */}
-      <Button
+      {/* <Button
         variant="ghost"
         onClick={() => router.push('/instructor/refunds')}
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Refunds
-      </Button>
+      </Button> */}
 
       {/* Header */}
       <Card>
