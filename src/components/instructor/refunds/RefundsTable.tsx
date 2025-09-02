@@ -1,3 +1,5 @@
+import { usePathname, useRouter } from 'next/navigation';
+
 import {
   Table,
   TableBody,
@@ -6,14 +8,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCcwIcon } from 'lucide-react';
 import { RefundRow } from './RefundRow';
 import { RefundResponse } from '@/types/instructor/refunds';
 
 type RefundsTableProps = {
   filteredRefunds: RefundResponse[];
+  refetch?: () => void;
 };
 
-export const RefundsTable = ({ filteredRefunds }: RefundsTableProps) => {
+export const RefundsTable = ({ filteredRefunds, refetch }: RefundsTableProps) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  
+  const handleRefresh = () => {
+    // Refresh the current page
+    if (refetch) {
+      refetch();
+    }
+  };
+
   return (
     <Card className="shadow-sm border-0 bg-card py-0">
       <CardContent className="p-0">
@@ -33,12 +48,6 @@ export const RefundsTable = ({ filteredRefunds }: RefundsTableProps) => {
                 <TableHead className="font-semibold text-xs uppercase tracking-wide">
                   Amount
                 </TableHead>
-                {/* <TableHead className="font-semibold text-xs uppercase tracking-wide">
-                  Reason
-                </TableHead>
-                <TableHead className="font-semibold text-xs uppercase tracking-wide">
-                  Rejected Reason
-                </TableHead> */}
                 <TableHead className="font-semibold text-xs uppercase tracking-wide">
                   Status
                 </TableHead>
@@ -54,19 +63,49 @@ export const RefundsTable = ({ filteredRefunds }: RefundsTableProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRefunds.map((refund, index) => (
-                <RefundRow
-                  key={refund.id}
-                  refund={refund}
-                  index={index}
-                  style={{
-                    animationDelay: `${index * 50}ms`,
-                    cursor: 'pointer',
-                  }}
-                />
-              ))}
+              {filteredRefunds
+                .slice(
+                  0,
+                  pathname === '/instructor' ? 3 : filteredRefunds.length
+                )
+                .map((refund, index) => (
+                  <RefundRow
+                    key={refund.id}
+                    refund={refund}
+                    index={index}
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
             </TableBody>
           </Table>
+          
+          {pathname === '/instructor' && (
+            <div className="flex justify-end gap-2 py-4 px-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="text-sm"
+              >
+                <RefreshCcwIcon className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+              
+              {filteredRefunds.length > 3 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/instructor/refunds')}
+                  className="text-sm"
+                >
+                  View More Refunds
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

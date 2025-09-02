@@ -1,26 +1,9 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  BookOpen,
-  Users,
-  DollarSign,
-  TrendingUp,
-  MessageSquare,
-  Star,
-  Calendar,
-} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import {
-  DashboardStats,
-  mockInstructorDashboardData,
-} from '@/types/instructor/dashboard';
+
+import { Button } from '@/components/ui/button';
+import { BookOpen, Users, DollarSign, Star, Plus } from 'lucide-react';
+import { DashboardStats } from '@/types/instructor/dashboard';
 import { useAuth } from '@/hooks/useAuth';
 import { useGetDashboardStatsQuery } from '@/services/instructor/statistics/dashboard-statistics';
 import { useGetCoursesQuery } from '@/services/instructor/courses/courses-api';
@@ -29,39 +12,68 @@ import { StudentStatistics } from './StudentStatistics';
 import { CourseStatistics } from './CourseStatistics';
 import { useGetRecentEarningsQuery } from '@/services/instructor/earnings/earnings-ins-api';
 import { RevenueStatistics } from './RevenueStatistics';
+import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
+import { RefundsTable } from '../refunds/RefundsTable';
+
+// Import our custom components
+import {
+  SkeletonTable,
+  SkeletonChart,
+  SkeletonStatsCard,
+} from '@/components/instructor/commom/skeletons/SkeletonComponents';
+import {
+  ChartError,
+  DashboardError,
+  StatsCardError,
+  TableError,
+} from '@/components/instructor/commom/ErrorComponents';
+import { SkeletonContainer } from '@/components/instructor/commom/skeletons/SkeletonContainer';
+import { DashboardSkeleton } from './DashboardSkeleton';
+import { GeneralStatistics } from './GeneralStatistics';
 
 export const InsDashboard = () => {
   const [stats, setStats] = useState<DashboardStats | {}>({});
-  const [notifications, setNotifications] = useState(
-    mockInstructorDashboardData.notifications
-  );
   const { user } = useAuth();
 
+  // Fetch dashboard statistics
   const {
     data: dashboardStats,
     isLoading: isLoadingDashboardStats,
     error: dashboardStatsError,
+    refetch: refetchDashboardStats,
   } = useGetDashboardStatsQuery(undefined);
 
+  // Fetch enrolled students
   const {
     data: enrolledStudents,
     isLoading: isLoadingEnrolledStudents,
     error: enrolledStudentsError,
+    refetch: refetchEnrolledStudents,
   } = useGetEnrolledStudentsQuery({});
 
+  // Fetch courses
   const {
     data: coursesData,
     isLoading: isLoadingCourses,
     error: coursesError,
+    refetch: refetchCourses,
   } = useGetCoursesQuery({});
 
+  // Fetch recent earnings
   const {
     data: recentEarnings,
     isLoading: isLoadingRecentEarnings,
     error: recentEarningsError,
+    refetch: refetchRecentEarnings,
   } = useGetRecentEarningsQuery();
 
-  console.log(recentEarnings);
+  // Fetch refunds
+  const {
+    data: refundsData,
+    isLoading: isLoadingRefunds,
+    error: refundsError,
+    refetch: refetchRefunds,
+  } = useGetAllRefundsQuery({});
 
   useEffect(() => {
     if (dashboardStats) {
@@ -92,6 +104,39 @@ export const InsDashboard = () => {
     }
   }, [dashboardStats]);
 
+  // Main dashboard error state
+  const hasDashboardError =
+    dashboardStatsError ||
+    enrolledStudentsError ||
+    coursesError ||
+    recentEarningsError ||
+    refundsError;
+
+  // Function to retry all data fetches
+  const handleRetryAll = () => {
+    refetchDashboardStats();
+    refetchEnrolledStudents();
+    refetchCourses();
+    refetchRecentEarnings();
+    refetchRefunds();
+  };
+
+  // If everything is loading, show the dashboard skeleton
+  if (
+    isLoadingDashboardStats &&
+    isLoadingEnrolledStudents &&
+    isLoadingCourses &&
+    isLoadingRecentEarnings &&
+    isLoadingRefunds
+  ) {
+    return <DashboardSkeleton />;
+  }
+
+  // If there's an error with the main dashboard data, show the error component
+  if (hasDashboardError) {
+    return <DashboardError onRetry={handleRetryAll} />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -108,7 +153,7 @@ export const InsDashboard = () => {
           <div className="flex gap-3">
             <Link href="/instructor/courses/create-course">
               <Button className="shadow-elegant">
-                <BookOpen className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 h-4 w-4" />
                 Create Course
               </Button>
             </Link>
@@ -117,85 +162,71 @@ export const InsDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      {stats && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {Object.entries(stats).map((stat, index) => (
-            <Link
-              href={stat[1].href ? stat[1].href : '#'}
-              key={index}
-              target="_blank"
-              className={!stat[1].href ? 'pointer-events-none' : ''}
-            >
-              <Card key={stat[1].title} className="shadow-card gap-3">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {stat[1].title}
-                  </CardTitle>
-                  <>{stat[1].icon}</>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat[1].value}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stat[1].description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+      <SkeletonContainer
+        data={stats}
+        isLoading={isLoadingDashboardStats}
+        error={dashboardStatsError}
+        onRetry={refetchDashboardStats}
+        loadingComponent={<SkeletonStatsCard />}
+        errorComponent={<StatsCardError onRetry={refetchDashboardStats} />}
+      >
+        {(statsData) => <GeneralStatistics statsData={statsData} />}
+      </SkeletonContainer>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Recent Courses */}
-        <CourseStatistics courses={coursesData?.content} />
+      {/* Refunds Table */}
+      <SkeletonContainer
+        data={refundsData?.content}
+        isLoading={isLoadingRefunds}
+        error={refundsError}
+        onRetry={refetchRefunds}
+        loadingComponent={<SkeletonTable />}
+        errorComponent={<TableError onRetry={refetchRefunds} />}
+      >
+        {(refundsContent) => (
+          <RefundsTable
+            filteredRefunds={refundsContent}
+            refetch={refetchRefunds}
+          />
+        )}
+      </SkeletonContainer>
 
-        {/* Recent Notifications */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest notifications</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {notifications.length > 0 &&
-              notifications
-                .slice(0, notifications.length > 3 ? 3 : notifications.length)
-                .map((notification) => (
-                  <div key={notification.id} className="flex space-x-3">
-                    <div
-                      className={`h-2 w-2 rounded-full mt-2 ${
-                        notification.isRead ? 'bg-muted' : 'bg-primary'
-                      }`}
-                    />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(notification.timestamp).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-            <Link href="/instructor/notifications">
-              <Button variant="outline" className="w-full mt-4">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                View All Notifications
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Recent Courses */}
+      <SkeletonContainer
+        data={coursesData?.content}
+        isLoading={isLoadingCourses}
+        error={coursesError}
+        onRetry={refetchCourses}
+        loadingComponent={<SkeletonTable />}
+        errorComponent={<ChartError onRetry={refetchCourses} />}
+      >
+        {(courses) => <CourseStatistics courses={courses} />}
+      </SkeletonContainer>
 
       {/* Revenue Chart and Recent Students */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Revenue */}
-        <RevenueStatistics revenueStatistics={recentEarnings} />
+        <SkeletonContainer
+          data={recentEarnings}
+          isLoading={isLoadingRecentEarnings}
+          error={recentEarningsError}
+          onRetry={refetchRecentEarnings}
+          loadingComponent={<SkeletonChart />}
+          errorComponent={<ChartError onRetry={refetchRecentEarnings} />}
+        >
+          {(earnings) => <RevenueStatistics revenueStatistics={earnings} />}
+        </SkeletonContainer>
 
         {/* Students */}
-        <StudentStatistics enrolledStudents={enrolledStudents?.content} />
+        <SkeletonContainer
+          data={enrolledStudents?.content}
+          isLoading={isLoadingEnrolledStudents}
+          error={enrolledStudentsError}
+          onRetry={refetchEnrolledStudents}
+          loadingComponent={<SkeletonTable />}
+          errorComponent={<TableError onRetry={refetchEnrolledStudents} />}
+        >
+          {(students) => <StudentStatistics enrolledStudents={students} />}
+        </SkeletonContainer>
       </div>
     </div>
   );
