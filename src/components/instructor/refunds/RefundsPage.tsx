@@ -1,22 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { Calendar, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   SearchBar,
   FilterBar,
@@ -25,7 +10,6 @@ import {
 } from '@/components/instructor/refunds/shared';
 import { RefundsTable } from '@/components/instructor/refunds/RefundsTable';
 import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
-import { RefundResponse } from '@/types/instructor/refunds';
 import { TableLoadingSkeleton } from './shared/LoadingSkeleton';
 import { TableLoadingError } from './shared/LoadingError';
 
@@ -186,21 +170,18 @@ const RefundsPage = () => {
             </Button>
           </div>
 
+          {/* Refunds Table */}
           <RefundsTable filteredRefunds={filteredRefunds} />
+
           {/* Pagination */}
           {data && data.page && data.page.totalPages > 1 && (
-            <Card className="py-0">
-              <CardContent className="px-4">
-                <Pagination
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  pageInfo={data.page || null}
-                  totalFilteredElements={filteredRefunds.length}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
-              </CardContent>
-            </Card>
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              pageInfo={data.page || null}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
           )}
         </div>
       ) : (

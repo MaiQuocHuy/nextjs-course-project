@@ -14,14 +14,16 @@ import { coursesInstSlice } from "@/services/instructor/courses/courses-api";
 import { sectionsInstSlice } from "@/services/instructor/courses/sections-api";
 import { lessonsInstSlice } from "@/services/instructor/courses/lessons-api";
 import { quizzesInstSlice } from "@/services/instructor/courses/quizzes-api";
-
+import { earningsInstSlice } from '@/services/instructor/earnings/earnings-ins-api';
+import { refundsInstSlice } from '@/services/instructor/refunds/refunds-ins-api';
+import { dashboardStatsInstSlice } from '@/services/instructor/statistics/dashboard-statistics';
+import { studentsInstSlice } from '@/services/instructor/students/students-ins-api';
 
 import courseFilterReducer from './slices/student/courseFilterSlice';
 import { settingsApi } from '@/services/common/settingsApi';
 import learningProgressReducer from './slices/student/learningProgressSlice';
 import { geminiApi } from '@/services/quiz/geminiApi';
-import { earningsInstSlice } from '@/services/instructor/earnings/earnings-ins-api';
-import { refundsInstSlice } from '@/services/instructor/refunds/refunds-ins-api';
+
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
@@ -61,7 +63,10 @@ export const makeStore = () => {
       [sectionsInstSlice.reducerPath]: sectionsInstSlice.reducer,
       [lessonsInstSlice.reducerPath]: lessonsInstSlice.reducer,
       [quizzesInstSlice.reducerPath]: quizzesInstSlice.reducer,
-      [earningsInstSlice.reducerPath]: earningsInstSlice.reducer
+      [earningsInstSlice.reducerPath]: earningsInstSlice.reducer,
+      [refundsInstSlice.reducerPath]: refundsInstSlice.reducer,
+      [dashboardStatsInstSlice.reducerPath]: dashboardStatsInstSlice.reducer,
+      [studentsInstSlice.reducerPath]: studentsInstSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -81,6 +86,9 @@ export const makeStore = () => {
         lessonsInstSlice.middleware,
         quizzesInstSlice.middleware,
         earningsInstSlice.middleware,
+        refundsInstSlice.middleware,
+        dashboardStatsInstSlice.middleware,
+        studentsInstSlice.middleware
       ),
   });
 

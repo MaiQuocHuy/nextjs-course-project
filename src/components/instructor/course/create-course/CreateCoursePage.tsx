@@ -1,23 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
 
 import type { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
 import { CreateCourseBasicInforPage } from '@/components/instructor/course/create-course/create-basic-infor/CreateCourseBasicInforPage';
 import { useRouter } from 'next/navigation';
-import CreateLessonsPage2 from '@/components/instructor/course/create-course/create-lessons/create-lessons2';
-import { useCreateCourseMutation } from '@/services/instructor/courses/courses-api';
-import {
-  startLoading,
-  stopLoading,
-} from '@/store/slices/instructor/loadingAnimaSlice';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/store/store';
 import WarningAlert from '../../commom/WarningAlert';
 import SectionsLessonsManager2 from '../SectionsLessonsManager2';
 
@@ -28,23 +19,7 @@ export default function CreateCoursePage() {
   const [progress, setProgress] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const [createCourse, { isLoading: isCreatingCourse }] =
-    useCreateCourseMutation();
   const router = useRouter();
-  const dispatch: AppDispatch = useDispatch();
-
-  // Handle loading state
-  useEffect(() => {
-    if (isCreatingCourse) {
-      dispatch(startLoading('Creating course...'));
-    } else {
-      dispatch(stopLoading());
-    }
-
-    return () => {
-      dispatch(stopLoading());
-    };
-  }, [isCreatingCourse, dispatch]);
 
   // Handle back button to go to previous step or exit
   const handleSteps = () => {
@@ -62,10 +37,6 @@ export default function CreateCoursePage() {
     setProgress(50); // Update progress to 50% after course info is saved
     setCurrentStep(2);
   };
-
-  if (isCreatingCourse) {
-    return <></>;
-  }
 
   return (
     <div className="min-h-screen bg-background p-6">

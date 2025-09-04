@@ -101,7 +101,7 @@ export const mockStudentDetail: Students = {
   id: '1',
   name: 'John Doe',
   email: 'john@example.com',
-  avatar: 'https://i.pravatar.cc/150?img=1',
+  thumbnailUrl: 'https://i.pravatar.cc/150?img=1',
   enrolledCourses: [
     {
       courseId: 'course-1',
