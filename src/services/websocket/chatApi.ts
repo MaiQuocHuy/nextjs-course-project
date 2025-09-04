@@ -1,48 +1,10 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "@/lib/baseQueryWithReauth";
-import { ChatMessage, SendMessageData } from "./webSocketService";
-
-export interface SendMessageRequest {
-  courseId: string;
-  tempId: string;
-  type: "text" | "file" | "audio" | "video";
-  content: string;
-  fileName?: string | null;
-  fileSize?: number | null;
-  duration?: number | null;
-  thumbnailUrl?: string | null;
-}
-
-export interface SendMessageResponse {
-  statusCode: number;
-  message: string;
-  data: ChatMessage;
-  timestamp: string;
-}
-
-export interface GetMessagesResponse {
-  statusCode: number;
-  message: string;
-  data: {
-    content: ChatMessage[];
-    page: {
-      number: number;
-      size: number;
-      totalElements: number;
-      totalPages: number;
-      first: boolean;
-      last: boolean;
-    };
-  };
-  timestamp: string;
-}
-
-export interface ApiErrorResponse {
-  statusCode: number;
-  message: string;
-  data: null;
-  timestamp: string;
-}
+import {
+  GetMessagesResponse,
+  SendMessageRequest,
+  SendMessageResponse,
+} from "@/types/chat";
 
 export const chatApi = createApi({
   reducerPath: "chatApi",
@@ -57,7 +19,7 @@ export const chatApi = createApi({
         body: messageData,
       }),
       // Don't invalidate tags since we're using WebSocket for real-time updates
-      // invalidatesTags: ["ChatMessage"], 
+      // invalidatesTags: ["ChatMessage"],
     }),
 
     // Get chat messages for a course (paginated)

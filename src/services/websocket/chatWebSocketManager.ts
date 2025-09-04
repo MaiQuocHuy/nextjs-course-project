@@ -1,8 +1,5 @@
-import {
-  webSocketService,
-  ChatMessage,
-  WebSocketConfig,
-} from "./webSocketService";
+import { ChatMessage, WebSocketConfig } from ".";
+import { webSocketService } from "./webSocketService";
 
 export interface ChatWebSocketManagerConfig {
   baseUrl: string;

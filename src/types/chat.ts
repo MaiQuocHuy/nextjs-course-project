@@ -1,69 +1,77 @@
 export interface ChatMessage {
   id: string;
-  courseId?: string;
+  courseId: string;
   senderId: string;
-  senderName?: string;
-  senderRole?: "STUDENT" | "INSTRUCTOR";
-  type: "text" | "file" | "video" | "audio";
-  content?: string;
+  senderName: string;
+  senderRole: "STUDENT" | "INSTRUCTOR";
+  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
   textContent?: string;
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
-  mimeType?: string;
-  fileType?: string;
-  audioUrl?: string;
-  audioDuration?: number;
-  videoUrl?: string;
-  videoThumbnailUrl?: string;
-  videoDuration?: number;
-  thumbnailUrl?: string;
   duration?: number;
-  resolution?: string;
+  thumbnailUrl?: string;
   createdAt: string;
-  tempId?: string;
-  status?: "PENDING" | "SENT" | "FAILED";
+}
+
+export interface SendMessageData {
+  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
+  content: string;
+  fileName?: string | null;
+  fileSize?: number | null;
+  duration?: number | null;
+  thumbnailUrl?: string | null;
+}
+
+export interface WebSocketConfig {
+  baseUrl: string;
+  token: string;
+  courseId: string;
+  onMessage: (message: ChatMessage) => void;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onError?: (error: any) => void;
+  onReconnect?: () => void;
 }
 
 export interface SendMessageRequest {
+  courseId: string;
   tempId: string;
-  type: "text" | "file" | "video" | "audio";
-  content?: string;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  thumbnailUrl?: string;
-  duration?: number;
-  mimeType?: string;
-  resolution?: string;
+  type: "text" | "file" | "audio" | "video";
+  content: string;
+  fileName?: string | null;
+  fileSize?: number | null;
+  duration?: number | null;
+  thumbnailUrl?: string | null;
 }
 
 export interface SendMessageResponse {
-  tempId: string;
-  status: "PENDING" | "SENT" | "FAILED";
+  statusCode: number;
+  message: string;
+  data: ChatMessage;
+  timestamp: string;
 }
 
-export interface UpdateMessageRequest {
-  type: "TEXT";
-  content: string;
-}
-
-export interface ChatMessagesResponse {
+export interface GetMessagesResponse {
   statusCode: number;
   message: string;
   data: {
-    messages: ChatMessage[];
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
+    content: ChatMessage[];
+    page: {
+      number: number;
+      size: number;
+      totalElements: number;
+      totalPages: number;
+      first: boolean;
+      last: boolean;
+    };
   };
   timestamp: string;
 }
 
-export interface ChatApiResponse {
+export interface ApiErrorResponse {
   statusCode: number;
   message: string;
-  data: any;
+  data: null;
   timestamp: string;
 }

@@ -1,41 +1,6 @@
+import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-
-export interface ChatMessage {
-  id: string;
-  courseId: string;
-  senderId: string;
-  senderName: string;
-  senderRole: "STUDENT" | "INSTRUCTOR";
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
-  textContent?: string;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  duration?: number;
-  thumbnailUrl?: string;
-  createdAt: string;
-}
-
-export interface SendMessageData {
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
-  content: string;
-  fileName?: string | null;
-  fileSize?: number | null;
-  duration?: number | null;
-  thumbnailUrl?: string | null;
-}
-
-export interface WebSocketConfig {
-  baseUrl: string;
-  token: string;
-  courseId: string;
-  onMessage: (message: ChatMessage) => void;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: any) => void;
-  onReconnect?: () => void;
-}
 
 export class WebSocketService {
   private client: Client | null = null;
