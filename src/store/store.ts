@@ -6,7 +6,7 @@ import { paymentApi } from "@/services/paymentApi";
 import { studentApi } from "@/services/student/studentApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
 import { profileApi } from "@/services/common/profileApi";
-import { chatApi } from "@/services/chatApi";
+import { chatApi } from "@/services/websocket/chatApi";
 
 // Instructor
 import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
