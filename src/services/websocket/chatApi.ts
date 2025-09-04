@@ -57,7 +57,7 @@ export const chatApi = createApi({
         body: messageData,
       }),
       // Don't invalidate tags since we're using WebSocket for real-time updates
-      // invalidatesTags: ["ChatMessage"], 
+      // invalidatesTags: ["ChatMessage"],
     }),
 
     // Get chat messages for a course (paginated)
