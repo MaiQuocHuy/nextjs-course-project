@@ -1,4 +1,4 @@
-import { ChatMessage, WebSocketConfig } from ".";
+import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { webSocketService } from "./webSocketService";
 
 export interface ChatWebSocketManagerConfig {
