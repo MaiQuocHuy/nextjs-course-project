@@ -53,13 +53,13 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
   // RTK Query hooks
   const { data: messagesData, isLoading: isLoadingMessages } =
     useGetCourseMessagesQuery(
-      { courseId, page: 0, size: 50 },
+      { courseId, page: 1, size: 50 },
       { skip: !courseId }
     );
 
   // Combine initial messages from API with real-time messages from WebSocket
   const allMessages = useMemo(() => {
-    const initialMessages = messagesData?.data?.content || [];
+    const initialMessages = messagesData?.data?.messages || [];
     const wsMessages = messages || [];
 
     console.log("🔍 Initial messages:", initialMessages.length);
@@ -89,7 +89,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
-  }, [messagesData?.data?.content, messages]);
+  }, [messagesData?.data?.messages, messages]);
 
   console.log(
     "🐛 All messages debug:",
@@ -97,7 +97,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       id: msg.id,
       tempId: (msg as any).tempId,
       status: (msg as any).status,
-      content: msg.textContent || (msg as any).content,
+      content: msg.content || (msg as any).content,
       senderName: msg.senderName,
     }))
   );
@@ -189,105 +189,111 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
         {wsError && <p className="text-sm text-red-500 mt-1">{wsError}</p>}
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-4 pt-0">
+      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         {/* Messages Area */}
-        <ScrollArea className="flex-1 mb-4">
-          <div className="space-y-3">
-            {isLoadingMessages ? (
-              <div className="text-center text-sm text-muted-foreground">
-                Loading messages...
-              </div>
-            ) : allMessages.length === 0 ? (
-              <div className="text-center text-sm text-muted-foreground">
-                No messages yet. Start the conversation!
-              </div>
-            ) : (
-              allMessages.map((message, index) => (
-                <div key={index} className="flex gap-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback>
-                      {message.senderName?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">
-                        {message.senderName}
-                      </span>
-                      <Badge
-                        variant={
-                          message.senderRole === "INSTRUCTOR"
-                            ? "default"
-                            : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {message.senderRole}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {/* {formatDistanceToNow(new Date(message.createdAt), {
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full p-4">
+            <div className="space-y-3">
+              {isLoadingMessages ? (
+                <div className="text-center text-sm text-muted-foreground">
+                  Loading messages...
+                </div>
+              ) : allMessages.length === 0 ? (
+                <div className="text-center text-sm text-muted-foreground">
+                  No messages yet. Start the conversation!
+                </div>
+              ) : (
+                allMessages.map((message, index) => (
+                  <div key={index} className="flex gap-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage
+                        src={message.senderThumbnailUrl}
+                        alt={message.senderName}
+                      />
+                      <AvatarFallback>
+                        {message.senderName?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">
+                          {message.senderName}
+                        </span>
+                        <Badge
+                          variant={
+                            message.senderRole === "INSTRUCTOR"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {message.senderRole}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {/* {formatDistanceToNow(new Date(message.createdAt), {
                             addSuffix: true,
                           })} */}
-                      </span>
-                    </div>
-                    <div className="text-sm break-words">
-                      {message.type === "TEXT" ? (
-                        message.textContent
-                      ) : message.type === "FILE" ? (
-                        <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                          <Upload className="w-4 h-4" />
-                          <a
-                            href={message.fileUrl}
-                            download={message.fileName}
-                            className="text-blue-500 hover:underline"
-                          >
-                            {message.fileName}
-                          </a>
-                          {message.fileSize && (
-                            <span className="text-xs text-muted-foreground">
-                              ({(message.fileSize / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
+                      <div className="text-sm break-words">
+                        {message.type === "text" ? (
+                          message.content
+                        ) : message.type === "FILE" ? (
+                          <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                            <Upload className="w-4 h-4" />
+                            <a
+                              href={message.fileUrl}
+                              download={message.fileName}
+                              className="text-blue-500 hover:underline"
+                            >
+                              {message.fileName}
+                            </a>
+                            {message.fileSize && (
+                              <span className="text-xs text-muted-foreground">
+                                ({(message.fileSize / 1024).toFixed(1)} KB)
+                              </span>
+                            )}
+                          </div>
+                        ) : message.type === "AUDIO" ? (
+                          <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                            <span className="text-green-600">
+                              🎵 {message.fileName}
                             </span>
-                          )}
-                        </div>
-                      ) : message.type === "AUDIO" ? (
-                        <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                          <span className="text-green-600">
-                            🎵 {message.fileName}
-                          </span>
-                          {message.duration && (
-                            <span className="text-xs text-muted-foreground">
-                              ({Math.floor(message.duration / 60)}:
-                              {(message.duration % 60)
-                                .toString()
-                                .padStart(2, "0")}
-                              )
+                            {message.duration && (
+                              <span className="text-xs text-muted-foreground">
+                                ({Math.floor(message.duration / 60)}:
+                                {(message.duration % 60)
+                                  .toString()
+                                  .padStart(2, "0")}
+                                )
+                              </span>
+                            )}
+                          </div>
+                        ) : message.type === "VIDEO" ? (
+                          <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                            <span className="text-red-600">
+                              🎥 {message.fileName}
                             </span>
-                          )}
-                        </div>
-                      ) : message.type === "VIDEO" ? (
-                        <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                          <span className="text-red-600">
-                            🎥 {message.fileName}
-                          </span>
-                          {message.duration && (
-                            <span className="text-xs text-muted-foreground">
-                              ({Math.floor(message.duration / 60)}:
-                              {(message.duration % 60)
-                                .toString()
-                                .padStart(2, "0")}
-                              )
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
+                            {message.duration && (
+                              <span className="text-xs text-muted-foreground">
+                                ({Math.floor(message.duration / 60)}:
+                                {(message.duration % 60)
+                                  .toString()
+                                  .padStart(2, "0")}
+                                )
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        </div>
 
         {/* Message Input */}
         <div className="flex gap-2">

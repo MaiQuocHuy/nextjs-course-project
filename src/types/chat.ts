@@ -3,15 +3,19 @@ export interface ChatMessage {
   courseId: string;
   senderId: string;
   senderName: string;
+  senderThumbnailUrl?: string;
   senderRole: "STUDENT" | "INSTRUCTOR";
   type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
-  textContent?: string;
+  content?: string;
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
+  mimeType?: string;
   duration?: number;
   thumbnailUrl?: string;
   createdAt: string;
+  status?: "PENDING" | "SUCCESS" | "ERROR";
+  tempId?: string;
 }
 
 export interface SendMessageData {
@@ -52,11 +56,30 @@ export interface SendMessageResponse {
   timestamp: string;
 }
 
+export interface UpdateMessageRequest {
+  messageId: string;
+  content: string;
+}
+
+export interface UpdateMessageResponse {
+  statusCode: number;
+  message: string;
+  data: ChatMessage;
+  timestamp: string;
+}
+
+export interface DeleteMessageResponse {
+  statusCode: number;
+  message: string;
+  data: null;
+  timestamp: string;
+}
+
 export interface GetMessagesResponse {
   statusCode: number;
   message: string;
   data: {
-    content: ChatMessage[];
+    messages: ChatMessage[];
     page: {
       number: number;
       size: number;
@@ -74,4 +97,27 @@ export interface ApiErrorResponse {
   message: string;
   data: null;
   timestamp: string;
+}
+
+export interface UseChatWebSocketConfig {
+  accessToken: string;
+  courseId: string;
+  autoConnect?: boolean;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onError?: (error: any) => void;
+  onReconnect?: () => void;
+}
+
+export interface UseChatWebSocketReturn {
+  messages: ChatMessage[];
+  isConnected: boolean;
+  connectionState: string;
+  error: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  switchCourse: (courseId: string) => Promise<void>;
+  reconnect: () => Promise<void>;
+  clearMessages: () => void;
+  addMessage: (message: ChatMessage) => void;
 }

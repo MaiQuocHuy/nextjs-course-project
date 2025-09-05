@@ -1,34 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ChatMessage } from "../services/websocket/webSocketService";
 import {
   chatWebSocketManager,
   ChatWebSocketManagerConfig,
   getChatConnectionStatus,
 } from "../services/websocket/chatWebSocketManager";
 import { getSession } from "next-auth/react";
-
-export interface UseChatWebSocketConfig {
-  accessToken: string;
-  courseId: string;
-  autoConnect?: boolean;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: any) => void;
-  onReconnect?: () => void;
-}
-
-export interface UseChatWebSocketReturn {
-  messages: ChatMessage[];
-  isConnected: boolean;
-  connectionState: string;
-  error: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  switchCourse: (courseId: string) => Promise<void>;
-  reconnect: () => Promise<void>;
-  clearMessages: () => void;
-  addMessage: (message: ChatMessage) => void;
-}
+import {
+  ChatMessage,
+  UseChatWebSocketConfig,
+  UseChatWebSocketReturn,
+} from "@/types/chat";
 
 export const useChatWebSocket = (
   config: UseChatWebSocketConfig

@@ -4,6 +4,9 @@ import {
   GetMessagesResponse,
   SendMessageRequest,
   SendMessageResponse,
+  UpdateMessageRequest,
+  UpdateMessageResponse,
+  DeleteMessageResponse,
 } from "@/types/chat";
 
 export const chatApi = createApi({
@@ -43,7 +46,35 @@ export const chatApi = createApi({
       },
       providesTags: ["ChatMessage"],
     }),
+
+    // Update a message
+    updateMessage: builder.mutation<
+      UpdateMessageResponse,
+      UpdateMessageRequest
+    >({
+      query: ({ messageId, content }) => ({
+        url: `/chat/messages/${messageId}`,
+        method: "PATCH",
+        body: { content },
+      }),
+    }),
+
+    // Delete a message
+    deleteMessage: builder.mutation<
+      DeleteMessageResponse,
+      { messageId: string }
+    >({
+      query: ({ messageId }) => ({
+        url: `/chat/messages/${messageId}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useSendMessageMutation, useGetCourseMessagesQuery } = chatApi;
+export const {
+  useSendMessageMutation,
+  useGetCourseMessagesQuery,
+  useUpdateMessageMutation,
+  useDeleteMessageMutation,
+} = chatApi;
