@@ -57,6 +57,8 @@ export const chatApi = createApi({
         method: "PATCH",
         body: { type, content },
       }),
+      // Invalidate cache to refetch messages after update
+      invalidatesTags: ["ChatMessage"],
     }),
 
     // Delete a message
@@ -68,6 +70,8 @@ export const chatApi = createApi({
         url: `/chat/${courseId}/messages/${messageId}`,
         method: "DELETE",
       }),
+      // Invalidate cache to refetch messages after delete
+      invalidatesTags: ["ChatMessage"],
     }),
   }),
 });

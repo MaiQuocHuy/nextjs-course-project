@@ -57,6 +57,12 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const [editingText, setEditingText] = useState("");
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [deletingMessages, setDeletingMessages] = useState<Set<string>>(
+    new Set()
+  );
+  const [updatingMessages, setUpdatingMessages] = useState<Set<string>>(
+    new Set()
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +136,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   // RTK Query hooks
   const { data: messagesData, isLoading: isLoadingMessages } =
     useGetCourseMessagesQuery(
-      { courseId, page: 1, size: 50 },
+      { courseId, page: 0, size: 50 },
       { skip: !courseId || !isOpen }
     );
 
@@ -181,12 +187,22 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     const realMessages = Array.from(messageMap.values());
     const allCombined = [...realMessages, ...pendingMessages];
 
+    // Filter out messages that are being deleted
+    const filteredMessages = allCombined.filter(
+      (msg) => !deletingMessages.has(msg.id)
+    );
+
     // Sort by timestamp
-    return allCombined.sort(
+    return filteredMessages.sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
-  }, [messagesData?.data?.messages, messages, pendingMessages]);
+  }, [
+    messagesData?.data?.messages,
+    messages,
+    pendingMessages,
+    deletingMessages,
+  ]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -236,28 +252,55 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const handleEditMessage = async (messageId: string) => {
     if (!editingText.trim()) return;
 
+    // Add to updating messages for optimistic update
+    setUpdatingMessages((prev) => new Set(prev).add(messageId));
+
     try {
-      await updateMessage({
+      const result = await updateMessage({
         courseId,
         messageId,
         type: "TEXT",
         content: editingText.trim(),
       }).unwrap();
 
+      console.log("✅ Message updated successfully:", result);
       setEditingMessageId(null);
       setEditingText("");
+
+      // The cache will be invalidated automatically and data will refetch
     } catch (error) {
-      console.error("Failed to update message:", error);
+      console.error("❌ Failed to update message:", error);
+    } finally {
+      // Remove from updating messages
+      setUpdatingMessages((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(messageId);
+        return newSet;
+      });
     }
   };
 
   // Handle delete message
   const handleDeleteMessage = async (messageId: string) => {
+    // Add to deleting messages for optimistic update
+    setDeletingMessages((prev) => new Set(prev).add(messageId));
+
     try {
-      await deleteMessage({ courseId, messageId }).unwrap();
+      const result = await deleteMessage({ courseId, messageId }).unwrap();
+      console.log("✅ Message deleted successfully:", result);
+
+      // The cache will be invalidated automatically and data will refetch
     } catch (error) {
-      console.error("Failed to delete message:", error);
+      console.error("❌ Failed to delete message:", error);
+      // Remove from deleting messages if error occurred
+      setDeletingMessages((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(messageId);
+        return newSet;
+      });
     }
+    // Note: We don't remove from deletingMessages on success because
+    // the message will be removed from the list by refetch
   };
 
   // Handle file upload
@@ -282,6 +325,12 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   };
 
   const startEditing = (message: ChatMessage) => {
+    // Only allow editing TEXT messages
+    if (message.type.toUpperCase() !== "TEXT") {
+      console.warn("Only TEXT messages can be edited");
+      return;
+    }
+
     setEditingMessageId(message.id);
     setEditingText(message.content || "");
   };
@@ -289,6 +338,18 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const cancelEditing = () => {
     setEditingMessageId(null);
     setEditingText("");
+  };
+
+  // Check if message can be edited (only TEXT messages by current user)
+  const canEditMessage = (message: ChatMessage) => {
+    return (
+      isCurrentUser(message) &&
+      message.type.toUpperCase() === "TEXT" &&
+      message.status !== "PENDING" &&
+      message.status !== "ERROR" &&
+      !updatingMessages.has(message.id) &&
+      !deletingMessages.has(message.id)
+    );
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -353,13 +414,16 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     const isOwn = isCurrentUser(message);
     const isPending = (message as ChatMessage).status === "PENDING";
     const isError = (message as ChatMessage).status === "ERROR";
+    const isDeleting = deletingMessages.has(message.id);
+    const isUpdating = updatingMessages.has(message.id);
 
     return (
       <div
         key={message.id || (message as ChatMessage).tempId}
         className={cn(
-          "flex gap-2 group",
-          isOwn ? "justify-end" : "justify-start"
+          "flex gap-2 group transition-opacity duration-200",
+          isOwn ? "justify-end" : "justify-start",
+          isDeleting && "opacity-50 pointer-events-none"
         )}
       >
         {!isOwn && (
@@ -418,13 +482,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               <>
                 <div
                   className={cn(
-                    "p-3 rounded-2xl shadow-sm",
+                    "p-3 rounded-2xl shadow-sm relative",
                     message.type.toUpperCase() === "TEXT" &&
                       (isOwn
                         ? "bg-blue-500 text-white"
                         : "bg-muted text-foreground"),
                     isPending && "opacity-70",
-                    isError && "bg-red-100 border border-red-300"
+                    isError && "bg-red-100 border border-red-300",
+                    isUpdating && "opacity-70"
                   )}
                 >
                   {message.type.toUpperCase() === "TEXT" ? (
@@ -444,6 +509,16 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                       {isPending && (
                         <span className="text-xs opacity-70 ml-2">
                           sending...
+                        </span>
+                      )}
+                      {isUpdating && (
+                        <span className="text-xs opacity-70 ml-2">
+                          updating...
+                        </span>
+                      )}
+                      {isDeleting && (
+                        <span className="text-xs opacity-70 ml-2">
+                          deleting...
                         </span>
                       )}
                       {isError && (
@@ -516,7 +591,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                 </div>
 
                 {/* Message actions */}
-                {isOwn && message.type === "TEXT" && !isPending && !isError && (
+                {canEditMessage(message) && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 right-0">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
