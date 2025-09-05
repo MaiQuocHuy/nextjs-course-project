@@ -9,7 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Upload, Users, Wifi, WifiOff, Loader2 } from "lucide-react";
+import {
+  Send,
+  Upload,
+  Users,
+  Wifi,
+  WifiOff,
+  Loader2,
+  Download,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { getSession } from "next-auth/react";
@@ -104,12 +112,12 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
   const allMessages = useMemo(() => {
     // Start with loaded messages (from infinite scroll)
     const combinedMessages = [...loadedMessages];
-    
+
     // Add new WebSocket messages that aren't already in loaded messages
     if (wsMessages && wsMessages.length > 0) {
-      const loadedMessageIds = new Set(loadedMessages.map(msg => msg.id));
-      
-      wsMessages.forEach(wsMsg => {
+      const loadedMessageIds = new Set(loadedMessages.map((msg) => msg.id));
+
+      wsMessages.forEach((wsMsg) => {
         if (wsMsg.id && !loadedMessageIds.has(wsMsg.id)) {
           // Add new message at the beginning (newest first in display order)
           combinedMessages.unshift(wsMsg);
@@ -119,7 +127,8 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
 
     // Sort by createdAt (newest first for display)
     return combinedMessages.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }, [loadedMessages, wsMessages]);
 
@@ -140,7 +149,8 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
     setShouldScrollToBottom(true);
   }, [courseId, resetMessages]);
 
-  const [sendMessage, { isLoading: isSendingMessage }] = useSendMessageMutation();
+  const [sendMessage, { isLoading: isSendingMessage }] =
+    useSendMessageMutation();
 
   // Auto scroll to bottom for new messages
   useEffect(() => {
@@ -156,7 +166,10 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
 
     const tempMessage = messageText.trim();
     console.log("🚀 Sending message:", tempMessage);
-    console.log("🚀 Before sending - wsMessages count:", wsMessages?.length || 0);
+    console.log(
+      "🚀 Before sending - wsMessages count:",
+      wsMessages?.length || 0
+    );
 
     try {
       const result = await sendMessage({
@@ -167,7 +180,10 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       }).unwrap();
 
       console.log("🚀 Message sent successfully:", result);
-      console.log("🚀 After sending - wsMessages count:", wsMessages?.length || 0);
+      console.log(
+        "🚀 After sending - wsMessages count:",
+        wsMessages?.length || 0
+      );
 
       // Message will be added via WebSocket when received from server
       // No need for optimistic update here since WebSocket handles real-time updates
@@ -273,10 +289,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
         {/* Messages Area */}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full p-4">
-            <div 
-              className="space-y-3" 
-              ref={scrollAreaViewportRef}
-            >
+            <div className="space-y-3" ref={scrollAreaViewportRef}>
               {/* Loading indicator for fetching older messages */}
               {isFetchingNextPage && (
                 <div className="text-center py-2">
@@ -286,7 +299,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                   </p>
                 </div>
               )}
-              
+
               {/* No more messages indicator */}
               {!hasNextPage && allMessages.length > 0 && (
                 <div className="text-center py-2">
@@ -311,9 +324,11 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                   const isCurrentUser = message.senderId === userId;
 
                   return (
-                    <div 
-                      key={message.id || index} 
-                      className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}
+                    <div
+                      key={message.id || index}
+                      className={`flex gap-3 ${
+                        isCurrentUser ? "flex-row-reverse" : ""
+                      }`}
                     >
                       {!isCurrentUser && (
                         <Avatar className="w-8 h-8">
@@ -322,12 +337,21 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                             alt={message.senderName}
                           />
                           <AvatarFallback>
-                            {message.senderName?.charAt(0)?.toUpperCase() || "U"}
+                            {message.senderName?.charAt(0)?.toUpperCase() ||
+                              "U"}
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      <div className={`flex-1 min-w-0 ${isCurrentUser ? 'text-right' : ''}`}>
-                        <div className={`flex items-center gap-2 mb-1 ${isCurrentUser ? 'justify-end' : ''}`}>
+                      <div
+                        className={`flex-1 min-w-0 ${
+                          isCurrentUser ? "text-right" : ""
+                        }`}
+                      >
+                        <div
+                          className={`flex items-center gap-2 mb-1 ${
+                            isCurrentUser ? "justify-end" : ""
+                          }`}
+                        >
                           <span className="text-sm font-medium">
                             {message.senderName}
                           </span>
@@ -347,60 +371,245 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                             })}
                           </span>
                         </div>
-                        <div className={`inline-block max-w-xs ${isCurrentUser ? 'ml-auto' : ''}`}>
+                        <div
+                          className={`inline-block max-w-xs ${
+                            isCurrentUser ? "ml-auto" : ""
+                          }`}
+                        >
                           {message.type === "TEXT" ? (
-                            <div className={`p-3 rounded-lg text-sm break-words ${
-                              isCurrentUser 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted'
-                            }`}>
+                            <div
+                              className={`p-3 rounded-lg text-sm break-words ${
+                                isCurrentUser
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              }`}
+                            >
                               {message.content || "[No content]"}
                             </div>
                           ) : message.type === "FILE" ? (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                              <Upload className="w-4 h-4" />
-                              <a
-                                href={message.fileUrl}
-                                download={message.fileName}
-                                className="text-blue-500 hover:underline"
-                              >
-                                {message.fileName}
-                              </a>
-                              {message.fileSize && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({(message.fileSize / 1024).toFixed(1)} KB)
-                                </span>
-                              )}
-                            </div>
-                          ) : message.type === "AUDIO" ? (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                              <span className="text-green-600">
-                                🎵 {message.fileName}
-                              </span>
-                              {message.duration && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({Math.floor(message.duration / 60)}:
-                                  {(message.duration % 60)
-                                    .toString()
-                                    .padStart(2, "0")}
-                                  )
-                                </span>
-                              )}
-                            </div>
-                          ) : message.type === "VIDEO" ? (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                              <span className="text-red-600">
-                                🎥 {message.fileName}
-                              </span>
-                              {message.duration && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({Math.floor(message.duration / 60)}:
-                                  {(message.duration % 60)
-                                    .toString()
-                                    .padStart(2, "0")}
-                                  )
-                                </span>
-                              )}
+                            <div className="max-w-xs">
+                              {(() => {
+                                const mimeType =
+                                  message.mimeType?.toLowerCase() || "";
+                                const fileName =
+                                  message.fileName || "Unknown file";
+                                const isImage =
+                                  mimeType.startsWith("image/") ||
+                                  /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(
+                                    fileName
+                                  );
+                                const isPdf =
+                                  mimeType === "application/pdf" ||
+                                  fileName.toLowerCase().endsWith(".pdf");
+                                const isDoc =
+                                  mimeType.includes("document") ||
+                                  mimeType.includes("word") ||
+                                  mimeType.includes("msword") ||
+                                  /\.(doc|docx|txt|rtf)$/i.test(fileName);
+
+                                const formatFileSize = (
+                                  bytes: number
+                                ): string => {
+                                  const sizes = ["Bytes", "KB", "MB", "GB"];
+                                  if (bytes === 0) return "0 Byte";
+                                  const i = parseInt(
+                                    Math.floor(
+                                      Math.log(bytes) / Math.log(1024)
+                                    ).toString()
+                                  );
+                                  return (
+                                    Math.round(
+                                      (bytes / Math.pow(1024, i)) * 100
+                                    ) /
+                                      100 +
+                                    " " +
+                                    sizes[i]
+                                  );
+                                };
+
+                                if (isImage) {
+                                  return (
+                                    <div className="space-y-2">
+                                      {/* Image preview */}
+                                      {message.fileUrl && (
+                                        <div className="relative rounded-lg overflow-hidden bg-muted/20">
+                                          <img
+                                            src={
+                                              message.thumbnailUrl ||
+                                              message.fileUrl
+                                            }
+                                            alt={fileName}
+                                            className="max-w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                            onClick={() =>
+                                              window.open(
+                                                message.fileUrl,
+                                                "_blank"
+                                              )
+                                            }
+                                          />
+                                          <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                            <div className="bg-black/50 text-white px-2 py-1 rounded text-xs">
+                                              Click to view full size
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      {/* File info and download */}
+                                      <div className="flex items-center gap-2 p-2 bg-muted/20 rounded">
+                                        <div className="text-lg">🖼️</div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium text-xs truncate">
+                                            {fileName}
+                                          </div>
+                                          {message.fileSize && (
+                                            <div className="text-xs opacity-70">
+                                              {formatFileSize(message.fileSize)}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {message.fileUrl && (
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            asChild
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <a
+                                              href={message.fileUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              title="Download image"
+                                            >
+                                              <Download className="w-3 h-3" />
+                                            </a>
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                } else if (isPdf) {
+                                  return (
+                                    <div className="flex items-center gap-3 p-3 bg-muted/20 rounded border">
+                                      <div className="text-2xl">📄</div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-sm truncate">
+                                          {fileName}
+                                        </div>
+                                        <div className="text-xs opacity-70 flex items-center gap-1">
+                                          <span>PDF Document</span>
+                                          {message.fileSize && (
+                                            <>
+                                              <span>•</span>
+                                              <span>
+                                                {formatFileSize(
+                                                  message.fileSize
+                                                )}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {message.fileUrl && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          asChild
+                                        >
+                                          <a
+                                            href={message.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="Open PDF in new tab"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                          </a>
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                } else if (isDoc) {
+                                  return (
+                                    <div className="flex items-center gap-3 p-3 bg-muted/20 rounded border">
+                                      <div className="text-2xl">📝</div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-sm truncate">
+                                          {fileName}
+                                        </div>
+                                        <div className="text-xs opacity-70 flex items-center gap-1">
+                                          <span>Document</span>
+                                          {message.fileSize && (
+                                            <>
+                                              <span>•</span>
+                                              <span>
+                                                {formatFileSize(
+                                                  message.fileSize
+                                                )}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {message.fileUrl && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          asChild
+                                        >
+                                          <a
+                                            href={message.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="Download document"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                          </a>
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                } else {
+                                  // Generic file
+                                  return (
+                                    <div className="flex items-center gap-3 p-3 bg-muted/20 rounded border">
+                                      <div className="text-2xl">📎</div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-sm truncate">
+                                          {fileName}
+                                        </div>
+                                        <div className="text-xs opacity-70 flex items-center gap-1">
+                                          <span>File</span>
+                                          {message.fileSize && (
+                                            <>
+                                              <span>•</span>
+                                              <span>
+                                                {formatFileSize(
+                                                  message.fileSize
+                                                )}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {message.fileUrl && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          asChild
+                                        >
+                                          <a
+                                            href={message.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="Download file"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                          </a>
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                              })()}
                             </div>
                           ) : null}
                         </div>
@@ -412,7 +621,8 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                             alt={message.senderName}
                           />
                           <AvatarFallback>
-                            {message.senderName?.charAt(0)?.toUpperCase() || "U"}
+                            {message.senderName?.charAt(0)?.toUpperCase() ||
+                              "U"}
                           </AvatarFallback>
                         </Avatar>
                       )}
@@ -443,7 +653,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
             type="file"
             onChange={handleFileUpload}
             className="hidden"
-            accept="image/*,.pdf,.doc,.docx,.txt"
+            accept="image/*,.pdf,.doc,.docx,.txt,.rtf"
           />
 
           <Button

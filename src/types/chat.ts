@@ -5,7 +5,7 @@ export interface ChatMessage {
   senderName: string;
   senderThumbnailUrl?: string;
   senderRole: "STUDENT" | "INSTRUCTOR";
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
+  type: "TEXT" | "FILE";
   content?: string;
   fileUrl?: string;
   fileName?: string;
@@ -19,7 +19,7 @@ export interface ChatMessage {
 }
 
 export interface SendMessageData {
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
+  type: "TEXT" | "FILE";
   content: string;
   fileName?: string | null;
   fileSize?: number | null;
@@ -52,7 +52,7 @@ export interface WebSocketConfig {
 export interface SendMessageRequest {
   courseId: string;
   tempId: string;
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
+  type: "TEXT" | "FILE";
   content: string;
   fileName?: string | null;
   fileSize?: number | null;
