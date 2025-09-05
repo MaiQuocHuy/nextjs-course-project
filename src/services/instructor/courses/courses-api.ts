@@ -1,8 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
-import type { Course, CourseDetail } from '@/types/instructor/courses';
+import type { Course, CourseDetail, CoursesFilter } from '@/types/instructor/courses';
 import { ApiResponse, PaginatedData } from '@/types/common';
-import { CoursesFilter } from '@/types/common';
 
 const errorsHandler = (response: { status: number; data: any }) => {
   let errorMessage = 'Failed to create course';
@@ -25,12 +24,55 @@ export const coursesInstSlice = createApi({
   endpoints: (builder) => ({
     // Fetch courses for instructor
     getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
-      query: (courseParams) => ({
-        url: `/instructor/courses?page=${courseParams.page || 0}&size=${
+      query: (courseParams) => {        
+        let url = `/instructor/courses?page=${courseParams.page || 0}&size=${
           courseParams.size || 10
-        }&sort=${courseParams.sort || 'createdAt,desc'}`,
-        method: 'GET',
-      }),
+        }&sort=${courseParams.sort || 'createdAt,desc'}`;
+        
+        // Add search term if provided
+        if (courseParams.search) {          
+          url += `&search=${encodeURIComponent(courseParams.search)}`;
+        }
+        
+        // Add status filter if provided
+        if (courseParams.status) {
+          url += `&status=${encodeURIComponent(courseParams.status)}`;
+        }
+        
+        // Add category IDs if provided
+        if (courseParams.categoryIds && courseParams.categoryIds.length > 0) {
+          courseParams.categoryIds.forEach(categoryId => {
+            url += `&categoryIds=${encodeURIComponent(categoryId)}`;
+          });
+        }
+        
+        // Add price range filters if provided
+        if (courseParams.minPrice !== undefined) {
+          url += `&minPrice=${courseParams.minPrice}`;
+        }
+        
+        if (courseParams.maxPrice !== undefined) {
+          url += `&maxPrice=${courseParams.maxPrice}`;
+        }
+        
+        if (courseParams.rating) {
+          url += `&rating=${encodeURIComponent(courseParams.rating)}`;
+        }
+
+        if (courseParams.level) {
+          url += `&level=${encodeURIComponent(courseParams.level)}`;
+        }
+
+        if (courseParams.isPublished !== undefined) {
+          url += `&isPublished=${encodeURIComponent(courseParams.isPublished)}`;
+        }
+        console.log('Constructed URL:', url);
+        
+        return {
+          url,
+          method: 'GET',
+        };
+      },
       transformResponse: (response: ApiResponse<PaginatedData<Course>>) => {
         // console.log('Response data:', response);
         return response.data;

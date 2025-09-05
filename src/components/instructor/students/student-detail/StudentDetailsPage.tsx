@@ -1,42 +1,53 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getStudentQuizResults } from '@/app/data/mockStudentDetail';
-import { QuizResults } from '@/types/student';
-import { useGetStudentDetailsQuery } from '@/services/instructor/students/students-ins-api';
+import {
+  useGetStudentDetailsQuery,
+  useGetStudentQuizResultsQuery,
+} from '@/services/instructor/students/students-ins-api';
 import { ErrorComponent } from '../../commom/ErrorComponents';
 import { EnrolledCourses } from './EnrolledCourses';
 import { StudentInfo } from './StudentInfo';
 import { StudentQuizResults } from './StudentQuizResults';
-import { useQuizResults } from '@/hooks/student/useQuizResults';
 import { StudentDetailsSkeleton } from './StudentDetailsSkeleton';
+import { Pagination } from '@/components/common/Pagination';
+
+const defaultParams = {
+  page: 0,
+  size: 10,
+  sort: 'completedAt,desc',
+};
 
 const StudentDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
+  const [enrolledCoursesPagination, setEnrolledCoursesPagination] =
+    useState(defaultParams);
+  const [quizScoresPagination, setQuizScoresPagination] =
+    useState(defaultParams);
+
   const {
     data: studentDetails,
     isLoading: isLoadingStudentDetails,
     error: studentDetailsError,
-  } = useGetStudentDetailsQuery(id, { skip: !id });
+  } = useGetStudentDetailsQuery(
+    { studentId: id, ...enrolledCoursesPagination },
+    { skip: !id }
+  );
+
   const {
     data: quizResults,
     isLoading: isLoadingQuizResults,
     error: quizResultsError,
-  } = useQuizResults();
-
-  // const [quizResults, setQuizResults] = useState<QuizResults[]>([]);
-  // useEffect(() => {
-  //   if (id) {
-  //     const fetchedQuizResults = getStudentQuizResults();
-  //     setQuizResults(fetchedQuizResults);
-  //   }
-  // }, [id]);
+  } = useGetStudentQuizResultsQuery(
+    { studentId: id, ...quizScoresPagination },
+    { skip: !id }
+  );
 
   if (isLoadingStudentDetails || isLoadingQuizResults) {
     return <StudentDetailsSkeleton />;
@@ -72,7 +83,6 @@ const StudentDetailsPage = () => {
       <StudentInfo
         studentDetails={studentDetails}
         quizResults={quizResults?.content}
-        // quizResults={quizResults}
       />
 
       <Tabs defaultValue="courses" className="w-full">
@@ -83,13 +93,50 @@ const StudentDetailsPage = () => {
 
         {/* Enrolled Courses */}
         <TabsContent value="courses" className="space-y-6">
-          <EnrolledCourses enrolledCourses={studentDetails.enrolledCourses} />
+          {studentDetails.enrolledCourses.content.length > 0 && (
+            <EnrolledCourses
+              enrolledCourses={studentDetails.enrolledCourses.content}
+            />
+          )}
+
+          {studentDetails.enrolledCourses.page.totalPages > 1 && (
+            <Pagination
+              currentPage={enrolledCoursesPagination.page}
+              itemsPerPage={enrolledCoursesPagination.size}
+              pageInfo={studentDetails.enrolledCourses.page}
+              onPageChange={(page) => {
+                setEnrolledCoursesPagination((prev) => ({
+                  ...prev,
+                  page,
+                }));
+              }}
+              onItemsPerPageChange={(size) => {
+                setEnrolledCoursesPagination((prev) => ({ ...prev, size }));
+              }}
+            />
+          )}
         </TabsContent>
 
         {/* Quiz Results */}
         <TabsContent value="quizzes" className="space-y-6">
           <StudentQuizResults quizResults={quizResults?.content} />
-          {/* <StudentQuizResults quizResults={quizResults} /> */}
+
+          {quizResults && quizResults.page.totalPages > 1 && (
+            <Pagination
+              currentPage={quizScoresPagination.page}
+              itemsPerPage={quizScoresPagination.size}
+              pageInfo={quizResults?.page}
+              onPageChange={(page) => {
+                setQuizScoresPagination((prev) => ({
+                  ...prev,
+                  page,
+                }));
+              }}
+              onItemsPerPageChange={(size) => {
+                setQuizScoresPagination((prev) => ({ ...prev, size }));
+              }}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

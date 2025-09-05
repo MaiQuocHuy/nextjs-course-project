@@ -803,16 +803,16 @@ export function CreateCourseBasicInforPage({
                                   <h3 className="text-lg font-semibold">
                                     {isDragOver
                                       ? 'Drop files here'
-                                      : 'Upload media files'}
+                                      : 'Upload Image File'}
                                   </h3>
                                   <p className="text-muted-foreground">
-                                    Drag and drop your images or videos, or{' '}
+                                    Drag and drop your image file, or{' '}
                                     <span className="text-primary font-medium">
-                                      browse files
+                                      browse file
                                     </span>
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Supports images and videos up to {maxSize}
+                                    Supports image up to {maxSize}
                                     MB each
                                   </p>
                                 </div>
