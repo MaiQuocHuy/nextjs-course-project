@@ -19,6 +19,7 @@ interface UseChatInfiniteScrollReturn {
   resetMessages: () => void;
   addNewMessage: (message: ChatMessage) => void;
   updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void;
+  removeMessage: (messageId: string) => void;
   preserveScrollPosition: (
     element: HTMLElement,
     previousHeight: number
@@ -208,6 +209,9 @@ export const useChatInfiniteScroll = ({
     resetMessages,
     addNewMessage,
     updateMessage,
+    removeMessage: (messageId: string) => {
+      setAllMessages((prev) => prev.filter((m) => m.id !== messageId));
+    },
     preserveScrollPosition,
     isInitialized,
     // Disable infinite scroll when loading initial data or when not initialized

@@ -101,6 +101,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     resetMessages,
     addNewMessage,
     updateMessage: updateInfiniteScrollMessage,
+    removeMessage,
     isInitialized,
     infiniteScrollDisabled,
   } = useChatInfiniteScroll({
@@ -327,6 +328,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     setUpdatingMessages((prev) => new Set(prev).add(messageId));
 
     try {
+      // Optimistically update local messages first
+      updateInfiniteScrollMessage(messageId, { content: editingText.trim() });
+
       const result = await updateMessage({
         courseId,
         messageId,
@@ -338,7 +342,10 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       setEditingMessageId(null);
       setEditingText("");
 
-      // The cache will be invalidated automatically and data will refetch
+      // Ensure hook cache is in sync (in case server returns different data)
+      if (result?.data) {
+        updateInfiniteScrollMessage(messageId, result.data);
+      }
     } catch (error) {
       console.error("❌ Failed to update message:", error);
     } finally {
@@ -357,10 +364,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     setDeletingMessages((prev) => new Set(prev).add(messageId));
 
     try {
+      // Optimistically remove from local messages first
+      removeMessage(messageId);
+
       const result = await deleteMessage({ courseId, messageId }).unwrap();
       console.log("✅ Message deleted successfully:", result);
 
-      // The cache will be invalidated automatically and data will refetch
+      // If server did not actually delete, we could re-add or refetch, but
+      // assume success; RTK Query cache will sync on its own
     } catch (error) {
       console.error("❌ Failed to delete message:", error);
       // Remove from deleting messages if error occurred
@@ -370,8 +381,12 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         return newSet;
       });
     }
-    // Note: We don't remove from deletingMessages on success because
-    // the message will be removed from the list by refetch
+    // Remove from deletingMessages on success
+    setDeletingMessages((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(messageId);
+      return newSet;
+    });
   };
 
   // Handle file upload
