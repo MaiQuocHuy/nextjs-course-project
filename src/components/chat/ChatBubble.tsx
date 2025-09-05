@@ -36,8 +36,9 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
-import { ChatMessage } from "@/types/chat";
+import { ChatMessage, UserStatusMessage } from "@/types/chat";
 import { useAuth } from "@/hooks/useAuth";
+import { getSession } from "next-auth/react";
 
 interface ChatBubbleProps {
   courseId: string;
@@ -55,6 +56,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,15 +66,28 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const { user } = useAuth();
   const currentUserId = user?.id;
 
+  // Get user ID from session
+  useEffect(() => {
+    const getUserId = async () => {
+      const session = await getSession();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+      }
+    };
+    getUserId();
+  }, []);
+
   // WebSocket hook
   const {
     messages,
     isConnected,
     connectionState,
     error: wsError,
+    userStatus,
   } = useChatWebSocket({
     accessToken,
     courseId,
+    userId: userId || undefined,
     autoConnect: isOpen,
     onConnect: () => {
       console.log("Chat bubble connected for course:", courseId);
@@ -82,6 +97,27 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     },
     onError: (error: any) => {
       console.error("Chat bubble WebSocket error:", error);
+    },
+    onUserStatus: (status: UserStatusMessage) => {
+      console.log("Chat bubble user status update:", status);
+      // Handle different status types
+      if (status.type === "MESSAGE_SENT" && status.status === "success") {
+        console.log("Chat bubble message sent successfully:", status.messageId);
+        // Remove pending message on success
+        setPendingMessages((prev) =>
+          prev.filter((pending) => pending.tempId !== status.messageId)
+        );
+      } else if (status.status === "error") {
+        console.error("Chat bubble message error:", status.error);
+        // Mark pending message as error
+        setPendingMessages((prev) =>
+          prev.map((pending) =>
+            pending.tempId === status.messageId
+              ? { ...pending, status: "ERROR" }
+              : pending
+          )
+        );
+      }
     },
     onReconnect: () => {
       // Remove pending message if this is a confirmation
@@ -181,7 +217,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       const result = await sendMessage({
         courseId,
         content: tempMessage,
-        type: "text",
+        type: "TEXT",
         tempId: uuidv4(),
       }).unwrap();
 
@@ -202,7 +238,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
     try {
       await updateMessage({
+        courseId,
         messageId,
+        type: "TEXT",
         content: editingText.trim(),
       }).unwrap();
 
@@ -216,7 +254,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   // Handle delete message
   const handleDeleteMessage = async (messageId: string) => {
     try {
-      await deleteMessage({ messageId }).unwrap();
+      await deleteMessage({ courseId, messageId }).unwrap();
     } catch (error) {
       console.error("Failed to delete message:", error);
     }
@@ -262,6 +300,53 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
   const isCurrentUser = (message: ChatMessage) => {
     return message.senderId === currentUserId;
+  };
+
+  // Render user status component
+  const renderUserStatus = () => {
+    if (!userStatus) return null;
+
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case "success":
+          return "text-green-600";
+        case "error":
+          return "text-red-600";
+        default:
+          return "text-muted-foreground";
+      }
+    };
+
+    const getStatusText = (type: string) => {
+      switch (type) {
+        case "MESSAGE_SENT":
+          return "Message sent";
+        case "MESSAGE_DELIVERED":
+          return "Message delivered";
+        case "MESSAGE_READ":
+          return "Message read";
+        default:
+          return type;
+      }
+    };
+
+    return (
+      <div className="text-xs px-2 py-1 bg-muted/20 border-t">
+        <span className={`${getStatusColor(userStatus.status)} font-medium`}>
+          {getStatusText(userStatus.type)}
+        </span>
+        {userStatus.status === "success" && (
+          <span className="text-muted-foreground ml-2">
+            {formatDistanceToNow(new Date(userStatus.timestamp), {
+              addSuffix: true,
+            })}
+          </span>
+        )}
+        {userStatus.error && (
+          <span className="text-red-500 ml-2">Error: {userStatus.error}</span>
+        )}
+      </div>
+    );
   };
 
   const renderMessage = (message: ChatMessage) => {
@@ -344,7 +429,18 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                 >
                   {message.type.toUpperCase() === "TEXT" ? (
                     <div className="text-sm whitespace-pre-wrap break-words">
-                      {message.content}
+                      {(() => {
+                        console.log("🎯 ChatBubble rendering message:", {
+                          id: message.id,
+                          type: message.type,
+                          content: message.content,
+                          senderName: message.senderName,
+                          hasContent: !!message.content,
+                          contentType: typeof message.content,
+                          fullMessage: message,
+                        });
+                        return message.content || "[No content available]";
+                      })()}
                       {isPending && (
                         <span className="text-xs opacity-70 ml-2">
                           sending...
@@ -596,10 +692,13 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
               {/* Connection Status */}
               {!isConnected && (
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="text-xs text-muted-foreground mt-2 px-2">
                   Connecting to chat server...
                 </p>
               )}
+
+              {/* User Status Display */}
+              {userStatus && renderUserStatus()}
             </div>
           </CardContent>
         </Card>

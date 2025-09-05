@@ -7,6 +7,7 @@ import {
 import { getSession } from "next-auth/react";
 import {
   ChatMessage,
+  UserStatusMessage,
   UseChatWebSocketConfig,
   UseChatWebSocketReturn,
 } from "@/types/chat";
@@ -18,6 +19,7 @@ export const useChatWebSocket = (
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState("DISCONNECTED");
   const [error, setError] = useState<string | null>(null);
+  const [userStatus, setUserStatus] = useState<UserStatusMessage | null>(null);
 
   const configRef = useRef(config);
   const isInitializedRef = useRef(false);
@@ -31,6 +33,10 @@ export const useChatWebSocket = (
   const handleMessage = useCallback(
     (message: ChatMessage) => {
       console.log("🔥 Received message via hook:", message);
+      console.log("🔥 Message content:", message.content);
+      console.log("🔥 Message senderName:", message.senderName);
+      console.log("🔥 Message senderThumbnailUrl:", message.senderThumbnailUrl);
+      console.log("🔥 Message type:", message.type);
       console.log("🔥 Current messages count:", messages.length);
 
       setMessages((prev) => {
@@ -50,6 +56,32 @@ export const useChatWebSocket = (
       });
     },
     [messages.length]
+  );
+
+  // Handle user status updates
+  const handleUserStatus = useCallback(
+    (status: UserStatusMessage) => {
+      console.log("🔥 Received user status:", status);
+      setUserStatus(status);
+      
+      // Handle different status types
+      switch (status.type) {
+        case 'MESSAGE_SENT':
+          console.log(`Message ${status.messageId} sent successfully`);
+          // Update message status in UI if needed
+          configRef.current.onUserStatus?.(status);
+          break;
+        case 'MESSAGE_DELIVERED':
+          console.log(`Message ${status.messageId} delivered`);
+          configRef.current.onUserStatus?.(status);
+          break;
+        case 'MESSAGE_READ':
+          console.log(`Message ${status.messageId} read`);
+          configRef.current.onUserStatus?.(status);
+          break;
+      }
+    },
+    []
   );
 
   // Connection event handlers
@@ -89,7 +121,9 @@ export const useChatWebSocket = (
         baseUrl:
           process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:8080",
         token: configRef.current.accessToken,
+        userId: configRef.current.userId,
         onMessage: handleMessage,
+        onUserStatus: handleUserStatus,
         onConnect: handleConnect,
         onDisconnect: handleDisconnect,
         onError: handleError,
@@ -112,6 +146,7 @@ export const useChatWebSocket = (
     }
   }, [
     handleMessage,
+    handleUserStatus,
     handleConnect,
     handleDisconnect,
     handleError,
@@ -229,6 +264,7 @@ export const useChatWebSocket = (
     isConnected,
     connectionState,
     error,
+    userStatus,
     connect,
     disconnect,
     switchCourse,

@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Upload, Users, Wifi, WifiOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
+import { getSession } from "next-auth/react";
 
 interface ChatComponentProps {
   courseId: string;
@@ -24,9 +25,21 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
   accessToken,
 }) => {
   const [messageText, setMessageText] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Get user ID from session
+  useEffect(() => {
+    const getUserId = async () => {
+      const session = await getSession();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+      }
+    };
+    getUserId();
+  }, []);
 
   // WebSocket hook with updated API
   const {
@@ -34,10 +47,12 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
     isConnected,
     connectionState,
     error: wsError,
+    userStatus,
     addMessage,
   } = useChatWebSocket({
     accessToken,
     courseId,
+    userId: userId || undefined,
     autoConnect: true,
     onConnect: () => {
       console.log("Chat connected for course:", courseId);
@@ -47,6 +62,17 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
     },
     onError: (error: any) => {
       console.error("Chat WebSocket error:", error);
+    },
+    onUserStatus: (status) => {
+      console.log("User status update:", status);
+      // Show toast notification for message status
+      if (status.type === "MESSAGE_SENT" && status.status === "success") {
+        console.log("Message sent successfully:", status.messageId);
+        // Optional: Show success toast
+      } else if (status.status === "error") {
+        console.error("Message error:", status.error);
+        // Optional: Show error toast
+      }
     },
   });
 
@@ -97,7 +123,8 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       id: msg.id,
       tempId: (msg as any).tempId,
       status: (msg as any).status,
-      content: msg.content || (msg as any).content,
+      content: msg.content,
+      rawMessage: msg, // Log toàn bộ object
       senderName: msg.senderName,
     }))
   );
@@ -129,7 +156,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       const result = await sendMessage({
         courseId,
         content: tempMessage,
-        type: "text",
+        type: "TEXT",
         tempId: uuidv4(),
       }).unwrap();
 
@@ -160,6 +187,53 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       event.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // Render user status component
+  const renderUserStatus = () => {
+    if (!userStatus) return null;
+
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case "success":
+          return "text-green-600";
+        case "error":
+          return "text-red-600";
+        default:
+          return "text-muted-foreground";
+      }
+    };
+
+    const getStatusText = (type: string) => {
+      switch (type) {
+        case "MESSAGE_SENT":
+          return "Message sent";
+        case "MESSAGE_DELIVERED":
+          return "Message delivered";
+        case "MESSAGE_READ":
+          return "Message read";
+        default:
+          return type;
+      }
+    };
+
+    return (
+      <div className="text-xs px-4 py-2 bg-muted/20 border-t">
+        <span className={`${getStatusColor(userStatus.status)} font-medium`}>
+          {getStatusText(userStatus.type)}
+        </span>
+        {userStatus.status === "success" && (
+          <span className="text-muted-foreground ml-2">
+            {formatDistanceToNow(new Date(userStatus.timestamp), {
+              addSuffix: true,
+            })}
+          </span>
+        )}
+        {userStatus.error && (
+          <span className="text-red-500 ml-2">Error: {userStatus.error}</span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -203,92 +277,102 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                   No messages yet. Start the conversation!
                 </div>
               ) : (
-                allMessages.map((message, index) => (
-                  <div key={index} className="flex gap-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage
-                        src={message.senderThumbnailUrl}
-                        alt={message.senderName}
-                      />
-                      <AvatarFallback>
-                        {message.senderName?.charAt(0)?.toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">
-                          {message.senderName}
-                        </span>
-                        <Badge
-                          variant={
-                            message.senderRole === "INSTRUCTOR"
-                              ? "default"
-                              : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {message.senderRole}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {/* {formatDistanceToNow(new Date(message.createdAt), {
-                            addSuffix: true,
-                          })} */}
-                        </span>
-                      </div>
-                      <div className="text-sm break-words">
-                        {message.type === "text" ? (
-                          message.content
-                        ) : message.type === "FILE" ? (
-                          <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                            <Upload className="w-4 h-4" />
-                            <a
-                              href={message.fileUrl}
-                              download={message.fileName}
-                              className="text-blue-500 hover:underline"
-                            >
-                              {message.fileName}
-                            </a>
-                            {message.fileSize && (
-                              <span className="text-xs text-muted-foreground">
-                                ({(message.fileSize / 1024).toFixed(1)} KB)
+                allMessages.map((message, index) => {
+                  console.log("🎯 Rendering message:", {
+                    id: message.id,
+                    type: message.type,
+                    content: message.content,
+                    senderName: message.senderName,
+                    senderThumbnailUrl: message.senderThumbnailUrl,
+                  });
+
+                  return (
+                    <div key={index} className="flex gap-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage
+                          src={message.senderThumbnailUrl}
+                          alt={message.senderName}
+                        />
+                        <AvatarFallback>
+                          {message.senderName?.charAt(0)?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium">
+                            {message.senderName}
+                          </span>
+                          <Badge
+                            variant={
+                              message.senderRole === "INSTRUCTOR"
+                                ? "default"
+                                : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {message.senderRole}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {/* {formatDistanceToNow(new Date(message.createdAt), {
+                              addSuffix: true,
+                            })} */}
+                          </span>
+                        </div>
+                        <div className="text-sm break-words">
+                          {message.type === "TEXT" ? (
+                            message.content || "[No content]"
+                          ) : message.type === "FILE" ? (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                              <Upload className="w-4 h-4" />
+                              <a
+                                href={message.fileUrl}
+                                download={message.fileName}
+                                className="text-blue-500 hover:underline"
+                              >
+                                {message.fileName}
+                              </a>
+                              {message.fileSize && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({(message.fileSize / 1024).toFixed(1)} KB)
+                                </span>
+                              )}
+                            </div>
+                          ) : message.type === "AUDIO" ? (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                              <span className="text-green-600">
+                                🎵 {message.fileName}
                               </span>
-                            )}
-                          </div>
-                        ) : message.type === "AUDIO" ? (
-                          <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                            <span className="text-green-600">
-                              🎵 {message.fileName}
-                            </span>
-                            {message.duration && (
-                              <span className="text-xs text-muted-foreground">
-                                ({Math.floor(message.duration / 60)}:
-                                {(message.duration % 60)
-                                  .toString()
-                                  .padStart(2, "0")}
-                                )
+                              {message.duration && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({Math.floor(message.duration / 60)}:
+                                  {(message.duration % 60)
+                                    .toString()
+                                    .padStart(2, "0")}
+                                  )
+                                </span>
+                              )}
+                            </div>
+                          ) : message.type === "VIDEO" ? (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                              <span className="text-red-600">
+                                🎥 {message.fileName}
                               </span>
-                            )}
-                          </div>
-                        ) : message.type === "VIDEO" ? (
-                          <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                            <span className="text-red-600">
-                              🎥 {message.fileName}
-                            </span>
-                            {message.duration && (
-                              <span className="text-xs text-muted-foreground">
-                                ({Math.floor(message.duration / 60)}:
-                                {(message.duration % 60)
-                                  .toString()
-                                  .padStart(2, "0")}
-                                )
-                              </span>
-                            )}
-                          </div>
-                        ) : null}
+                              {message.duration && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({Math.floor(message.duration / 60)}:
+                                  {(message.duration % 60)
+                                    .toString()
+                                    .padStart(2, "0")}
+                                  )
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -337,10 +421,13 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
 
         {/* Connection Status */}
         {!isConnected && (
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-2 px-4">
             Connecting to chat server...
           </p>
         )}
+
+        {/* User Status Display */}
+        {userStatus && renderUserStatus()}
       </CardContent>
     </Card>
   );

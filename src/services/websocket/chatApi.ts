@@ -30,7 +30,7 @@ export const chatApi = createApi({
       GetMessagesResponse,
       {
         courseId: string;
-        type?: "text" | "file" | "audio" | "video";
+        type?: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
         page?: number;
         size?: number;
       }
@@ -52,20 +52,20 @@ export const chatApi = createApi({
       UpdateMessageResponse,
       UpdateMessageRequest
     >({
-      query: ({ messageId, content }) => ({
-        url: `/chat/messages/${messageId}`,
+      query: ({ courseId, messageId, type, content }) => ({
+        url: `/chat/${courseId}/messages/${messageId}`,
         method: "PATCH",
-        body: { content },
+        body: { type, content },
       }),
     }),
 
     // Delete a message
     deleteMessage: builder.mutation<
       DeleteMessageResponse,
-      { messageId: string }
+      { courseId: string; messageId: string }
     >({
-      query: ({ messageId }) => ({
-        url: `/chat/messages/${messageId}`,
+      query: ({ courseId, messageId }) => ({
+        url: `/chat/${courseId}/messages/${messageId}`,
         method: "DELETE",
       }),
     }),

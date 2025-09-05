@@ -27,11 +27,22 @@ export interface SendMessageData {
   thumbnailUrl?: string | null;
 }
 
+export interface UserStatusMessage {
+  type: "MESSAGE_SENT" | "MESSAGE_DELIVERED" | "MESSAGE_READ";
+  messageId: string;
+  userId: string;
+  timestamp: string;
+  status: "success" | "error";
+  error?: string;
+}
+
 export interface WebSocketConfig {
   baseUrl: string;
   token: string;
   courseId: string;
+  userId?: string;
   onMessage: (message: ChatMessage) => void;
+  onUserStatus?: (status: UserStatusMessage) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: any) => void;
@@ -41,7 +52,7 @@ export interface WebSocketConfig {
 export interface SendMessageRequest {
   courseId: string;
   tempId: string;
-  type: "text" | "file" | "audio" | "video";
+  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
   content: string;
   fileName?: string | null;
   fileSize?: number | null;
@@ -57,7 +68,9 @@ export interface SendMessageResponse {
 }
 
 export interface UpdateMessageRequest {
+  courseId: string;
   messageId: string;
+  type: "TEXT";
   content: string;
 }
 
@@ -102,11 +115,13 @@ export interface ApiErrorResponse {
 export interface UseChatWebSocketConfig {
   accessToken: string;
   courseId: string;
+  userId?: string;
   autoConnect?: boolean;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: any) => void;
   onReconnect?: () => void;
+  onUserStatus?: (status: UserStatusMessage) => void;
 }
 
 export interface UseChatWebSocketReturn {
@@ -114,6 +129,7 @@ export interface UseChatWebSocketReturn {
   isConnected: boolean;
   connectionState: string;
   error: string | null;
+  userStatus: UserStatusMessage | null;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   switchCourse: (courseId: string) => Promise<void>;

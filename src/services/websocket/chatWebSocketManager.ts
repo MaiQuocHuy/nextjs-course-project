@@ -1,10 +1,12 @@
-import { ChatMessage, WebSocketConfig } from "@/types/chat";
+import { ChatMessage, WebSocketConfig, UserStatusMessage } from "@/types/chat";
 import { webSocketService } from "./webSocketService";
 
 export interface ChatWebSocketManagerConfig {
   baseUrl: string;
   token: string;
+  userId?: string;
   onMessage: (message: ChatMessage) => void;
+  onUserStatus?: (status: UserStatusMessage) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: any) => void;
@@ -61,8 +63,16 @@ export class ChatWebSocketManager {
       }
 
       const wsConfig: WebSocketConfig = {
-        ...config,
+        baseUrl: config.baseUrl,
+        token: config.token,
         courseId,
+        userId: config.userId,
+        onMessage: config.onMessage,
+        onUserStatus: config.onUserStatus,
+        onConnect: config.onConnect,
+        onDisconnect: config.onDisconnect,
+        onError: config.onError,
+        onReconnect: config.onReconnect,
       };
 
       await webSocketService.connect(wsConfig);
