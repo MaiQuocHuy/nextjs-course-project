@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import {
   Card,
@@ -23,7 +22,6 @@ export const EnrolledStudentList = ({
   enrolledStudents,
   searchTerm,
 }: EnrolledStudentListProps) => {
-  const router = useRouter();
 
   const getAverageProgress = (enrolledCourses: EnrolledCourse[]) => {
     const progressValues = enrolledCourses.map((course) => course.progress);
@@ -124,7 +122,7 @@ export const EnrolledStudentList = ({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          router.push(`/instructor/students/${student.id}`);
+                          window.open(`/instructor/students/${student.id}`, '_blank');
                         }}
                       >
                         View Student

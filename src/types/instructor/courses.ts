@@ -138,3 +138,17 @@ export interface Courses {
   content: Course[];
   page: PageType;
 }
+
+export interface CoursesFilter {
+  page?: number;
+  size?: number;
+  sort?: string;
+  search?: string;
+  status?: 'PENDING' | 'APPROVED' | 'DENIED' | 'RESUBMITTED';
+  categoryIds?: string[];
+  rating?: 'THREE' | 'FOUR' | 'FIVE';
+  minPrice?: number;
+  maxPrice?: number;
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' ;
+  isPublished?: boolean;
+}

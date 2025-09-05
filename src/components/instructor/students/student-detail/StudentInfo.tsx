@@ -1,11 +1,11 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Mail } from 'lucide-react';
-import { Students } from '@/types/instructor/students';
+import { StudentDetails } from '@/types/instructor/students';
 import type { QuizResults } from '@/types/student';
 
 interface StudentInfoProps {
-  studentDetails: Students;
+  studentDetails: StudentDetails;
   quizResults?: QuizResults[];
 }
 
@@ -44,7 +44,7 @@ export const StudentInfo = ({
                   Enrolled Courses
                 </span>
                 <span className="font-medium text-lg">
-                  {studentDetails.enrolledCourses.length}
+                  {studentDetails.enrolledCourses.content.length}
                 </span>
               </div>
               <div className="flex flex-col">
