@@ -604,7 +604,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                         </span>
                       )}
                     </div>
-                  ) : message.type === "FILE" ? (
+                  ) : message.type.toUpperCase() === "FILE" ? (
                     <div className="flex items-center gap-3 p-2 bg-background/10 rounded-lg">
                       <div className="text-2xl">📎</div>
                       <div className="flex-1 min-w-0">
@@ -630,7 +630,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                         </Button>
                       )}
                     </div>
-                  ) : message.type === "AUDIO" ? (
+                  ) : message.type.toUpperCase() === "AUDIO" ? (
                     <div className="flex items-center gap-3 p-2">
                       <span className="text-2xl">🎵</span>
                       <div className="flex-1">
@@ -647,7 +647,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                         )}
                       </div>
                     </div>
-                  ) : message.type === "VIDEO" ? (
+                  ) : message.type.toUpperCase() === "VIDEO" ? (
                     <div className="flex items-center gap-3 p-2">
                       <span className="text-2xl">🎥</span>
                       <div className="flex-1">
