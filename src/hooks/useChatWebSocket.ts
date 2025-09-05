@@ -22,7 +22,8 @@ export const useChatWebSocket = (
   const [userStatus, setUserStatus] = useState<UserStatusMessage | null>(null);
 
   const configRef = useRef(config);
-  const isInitializedRef = useRef(false);
+  // Guard to prevent overlapping connect attempts
+  const connectingRef = useRef(false);
 
   // Update config ref when config changes
   useEffect(() => {
@@ -59,30 +60,27 @@ export const useChatWebSocket = (
   );
 
   // Handle user status updates
-  const handleUserStatus = useCallback(
-    (status: UserStatusMessage) => {
-      console.log("🔥 Received user status:", status);
-      setUserStatus(status);
-      
-      // Handle different status types
-      switch (status.type) {
-        case 'MESSAGE_SENT':
-          console.log(`Message ${status.messageId} sent successfully`);
-          // Update message status in UI if needed
-          configRef.current.onUserStatus?.(status);
-          break;
-        case 'MESSAGE_DELIVERED':
-          console.log(`Message ${status.messageId} delivered`);
-          configRef.current.onUserStatus?.(status);
-          break;
-        case 'MESSAGE_READ':
-          console.log(`Message ${status.messageId} read`);
-          configRef.current.onUserStatus?.(status);
-          break;
-      }
-    },
-    []
-  );
+  const handleUserStatus = useCallback((status: UserStatusMessage) => {
+    console.log("🔥 Received user status:", status);
+    setUserStatus(status);
+
+    // Handle different status types
+    switch (status.type) {
+      case "MESSAGE_SENT":
+        console.log(`Message ${status.messageId} sent successfully`);
+        // Update message status in UI if needed
+        configRef.current.onUserStatus?.(status);
+        break;
+      case "MESSAGE_DELIVERED":
+        console.log(`Message ${status.messageId} delivered`);
+        configRef.current.onUserStatus?.(status);
+        break;
+      case "MESSAGE_READ":
+        console.log(`Message ${status.messageId} read`);
+        configRef.current.onUserStatus?.(status);
+        break;
+    }
+  }, []);
 
   // Connection event handlers
   const handleConnect = useCallback(() => {
@@ -115,6 +113,13 @@ export const useChatWebSocket = (
   // Connect function
   const connect = useCallback(async () => {
     try {
+      // Prevent concurrent connect attempts
+      if (connectingRef.current) {
+        console.log("connect() already in progress, skipping duplicate call");
+        return;
+      }
+      connectingRef.current = true;
+
       setError(null);
 
       const wsConfig: ChatWebSocketManagerConfig = {
@@ -130,19 +135,34 @@ export const useChatWebSocket = (
         onReconnect: handleReconnect,
       };
 
-      await chatWebSocketManager.connectToCourse(
-        configRef.current.courseId,
-        wsConfig
-      );
+      // If manager already knows about this course but reports disconnected,
+      // try a reconnect flow instead of a fresh connect to avoid stale state.
+      const status = getChatConnectionStatus();
+      if (
+        status.currentCourseId === configRef.current.courseId &&
+        !status.isConnected
+      ) {
+        console.log(
+          "Manager has course but is disconnected — attempting reconnect"
+        );
+        await chatWebSocketManager.reconnect();
+      } else {
+        await chatWebSocketManager.connectToCourse(
+          configRef.current.courseId,
+          wsConfig
+        );
+      }
 
       // Update connection state
-      const status = getChatConnectionStatus();
-      setIsConnected(status.isConnected);
-      setConnectionState(status.connectionState);
+      const statusAfter = getChatConnectionStatus();
+      setIsConnected(statusAfter.isConnected);
+      setConnectionState(statusAfter.connectionState);
     } catch (error: any) {
       console.error("Failed to connect to chat:", error);
       setError(error?.message || "Failed to connect");
       setIsConnected(false);
+    } finally {
+      connectingRef.current = false;
     }
   }, [
     handleMessage,
@@ -228,25 +248,30 @@ export const useChatWebSocket = (
     });
   }, []);
 
-  // Auto-connect effect
+  // Auto-connect / auto-disconnect when config.autoConnect changes
   useEffect(() => {
-    if (config.autoConnect !== false && !isInitializedRef.current) {
-      isInitializedRef.current = true;
+    const shouldAutoConnect = config.autoConnect !== false;
+
+    if (shouldAutoConnect) {
+      // If autoConnect enabled, ensure we are connected
       connect().catch((error) => {
         console.error("Auto-connect failed:", error);
       });
+    } else {
+      // If autoConnect disabled, disconnect if connected
+      disconnect().catch((error) => {
+        console.error("Auto-disconnect failed:", error);
+      });
     }
 
-    // Cleanup on unmount
+    // Cleanup on unmount: always attempt to disconnect
     return () => {
-      if (isInitializedRef.current) {
-        disconnect().catch((error) => {
-          console.error("Cleanup disconnect failed:", error);
-        });
-      }
+      disconnect().catch((error) => {
+        console.error("Cleanup disconnect failed:", error);
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.autoConnect]); // Only depend on autoConnect, not the functions
+  }, [config.autoConnect]);
 
   // Update connection state periodically
   useEffect(() => {
