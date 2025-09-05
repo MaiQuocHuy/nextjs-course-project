@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
-import {
-  useGetCourseMessagesQuery,
-  useSendMessageMutation,
-} from "@/services/websocket/chatApi";
+import { useChatInfiniteScroll } from "@/hooks/useChatInfiniteScroll";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useSendMessageMutation } from "@/services/websocket/chatApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Upload, Users, Wifi, WifiOff } from "lucide-react";
+import { Send, Upload, Users, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { getSession } from "next-auth/react";
@@ -26,8 +25,10 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
 }) => {
   const [messageText, setMessageText] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get user ID from session
@@ -41,9 +42,27 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
     getUserId();
   }, []);
 
-  // WebSocket hook with updated API
+  // Infinite scroll hook for loading messages
   const {
-    messages,
+    messages: loadedMessages,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isLoading,
+    error,
+    fetchNextPage,
+    resetMessages,
+    addNewMessage,
+    updateMessage,
+  } = useChatInfiniteScroll({
+    courseId,
+    pageSize: 20,
+    enabled: true,
+  });
+
+  // WebSocket hook for real-time messaging
+  const {
+    messages: wsMessages,
     isConnected,
     connectionState,
     error: wsError,
@@ -65,84 +84,71 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
     },
     onUserStatus: (status) => {
       console.log("User status update:", status);
-      // Show toast notification for message status
       if (status.type === "MESSAGE_SENT" && status.status === "success") {
         console.log("Message sent successfully:", status.messageId);
-        // Optional: Show success toast
       } else if (status.status === "error") {
         console.error("Message error:", status.error);
-        // Optional: Show error toast
       }
     },
   });
 
-  // RTK Query hooks
-  const { data: messagesData, isLoading: isLoadingMessages } =
-    useGetCourseMessagesQuery(
-      { courseId, page: 1, size: 50 },
-      { skip: !courseId }
-    );
+  // Setup infinite scroll
+  useInfiniteScroll(scrollAreaViewportRef, {
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    threshold: 100,
+  });
 
-  // Combine initial messages from API with real-time messages from WebSocket
+  // Combine loaded messages with WebSocket messages
   const allMessages = useMemo(() => {
-    const initialMessages = messagesData?.data?.messages || [];
-    const wsMessages = messages || [];
+    // Start with loaded messages (from infinite scroll)
+    const combinedMessages = [...loadedMessages];
+    
+    // Add new WebSocket messages that aren't already in loaded messages
+    if (wsMessages && wsMessages.length > 0) {
+      const loadedMessageIds = new Set(loadedMessages.map(msg => msg.id));
+      
+      wsMessages.forEach(wsMsg => {
+        if (wsMsg.id && !loadedMessageIds.has(wsMsg.id)) {
+          // Add new message at the beginning (newest first in display order)
+          combinedMessages.unshift(wsMsg);
+        }
+      });
+    }
 
-    console.log("🔍 Initial messages:", initialMessages.length);
-    console.log("🔍 WebSocket messages:", wsMessages.length);
-
-    // Merge and deduplicate messages by ID, but exclude pending messages
-    const messageMap = new Map();
-
-    // Add initial messages first (only real messages with ID)
-    initialMessages.forEach((msg) => {
-      if (msg.id && !(msg as any).tempId) {
-        // Only real messages
-        messageMap.set(msg.id, msg);
-      }
-    });
-
-    // Add WebSocket messages (only real messages with ID)
-    wsMessages.forEach((msg) => {
-      if (msg.id && !(msg as any).tempId) {
-        // Only real messages
-        messageMap.set(msg.id, msg);
-      }
-    });
-
-    // Convert back to array and sort by timestamp
-    return Array.from(messageMap.values()).sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    // Sort by createdAt (newest first for display)
+    return combinedMessages.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [messagesData?.data?.messages, messages]);
+  }, [loadedMessages, wsMessages]);
 
-  console.log(
-    "🐛 All messages debug:",
-    allMessages.map((msg) => ({
-      id: msg.id,
-      tempId: (msg as any).tempId,
-      status: (msg as any).status,
-      content: msg.content,
-      rawMessage: msg, // Log toàn bộ object
-      senderName: msg.senderName,
-    }))
-  );
-
-  const [sendMessage, { isLoading: isSendingMessage }] =
-    useSendMessageMutation();
-
-  // Load initial messages - not needed since useChatWebSocket handles this
-  // useEffect(() => {
-  //   if (messagesData?.data?.content) {
-  //     // Initial messages are handled by the WebSocket hook
-  //   }
-  // }, [messagesData]);
-
-  // Scroll to bottom when new messages arrive
+  // Handle new WebSocket messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [allMessages]);
+    if (wsMessages && wsMessages.length > 0) {
+      const latestWsMessage = wsMessages[wsMessages.length - 1];
+      if (latestWsMessage?.id) {
+        addNewMessage(latestWsMessage);
+        setShouldScrollToBottom(true);
+      }
+    }
+  }, [wsMessages, addNewMessage]);
+
+  // Reset messages when course changes
+  useEffect(() => {
+    resetMessages();
+    setShouldScrollToBottom(true);
+  }, [courseId, resetMessages]);
+
+  const [sendMessage, { isLoading: isSendingMessage }] = useSendMessageMutation();
+
+  // Auto scroll to bottom for new messages
+  useEffect(() => {
+    if (shouldScrollToBottom && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      setShouldScrollToBottom(false);
+    }
+  }, [allMessages, shouldScrollToBottom]);
 
   // Handle sending message
   const handleSendMessage = async () => {
@@ -150,7 +156,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
 
     const tempMessage = messageText.trim();
     console.log("🚀 Sending message:", tempMessage);
-    console.log("🚀 Before sending - messages count:", messages.length);
+    console.log("🚀 Before sending - wsMessages count:", wsMessages?.length || 0);
 
     try {
       const result = await sendMessage({
@@ -161,7 +167,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
       }).unwrap();
 
       console.log("🚀 Message sent successfully:", result);
-      console.log("🚀 After sending - messages count:", messages.length);
+      console.log("🚀 After sending - wsMessages count:", wsMessages?.length || 0);
 
       // Message will be added via WebSocket when received from server
       // No need for optimistic update here since WebSocket handles real-time updates
@@ -267,9 +273,32 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
         {/* Messages Area */}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full p-4">
-            <div className="space-y-3">
-              {isLoadingMessages ? (
+            <div 
+              className="space-y-3" 
+              ref={scrollAreaViewportRef}
+            >
+              {/* Loading indicator for fetching older messages */}
+              {isFetchingNextPage && (
+                <div className="text-center py-2">
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Loading older messages...
+                  </p>
+                </div>
+              )}
+              
+              {/* No more messages indicator */}
+              {!hasNextPage && allMessages.length > 0 && (
+                <div className="text-center py-2">
+                  <p className="text-xs text-muted-foreground">
+                    No more messages
+                  </p>
+                </div>
+              )}
+
+              {isLoading ? (
                 <div className="text-center text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
                   Loading messages...
                 </div>
               ) : allMessages.length === 0 ? (
@@ -277,28 +306,28 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                   No messages yet. Start the conversation!
                 </div>
               ) : (
-                allMessages.map((message, index) => {
-                  console.log("🎯 Rendering message:", {
-                    id: message.id,
-                    type: message.type,
-                    content: message.content,
-                    senderName: message.senderName,
-                    senderThumbnailUrl: message.senderThumbnailUrl,
-                  });
+                // Reverse messages for display (oldest to newest)
+                [...allMessages].reverse().map((message, index) => {
+                  const isCurrentUser = message.senderId === userId;
 
                   return (
-                    <div key={index} className="flex gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage
-                          src={message.senderThumbnailUrl}
-                          alt={message.senderName}
-                        />
-                        <AvatarFallback>
-                          {message.senderName?.charAt(0)?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                    <div 
+                      key={message.id || index} 
+                      className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}
+                    >
+                      {!isCurrentUser && (
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage
+                            src={message.senderThumbnailUrl}
+                            alt={message.senderName}
+                          />
+                          <AvatarFallback>
+                            {message.senderName?.charAt(0)?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={`flex-1 min-w-0 ${isCurrentUser ? 'text-right' : ''}`}>
+                        <div className={`flex items-center gap-2 mb-1 ${isCurrentUser ? 'justify-end' : ''}`}>
                           <span className="text-sm font-medium">
                             {message.senderName}
                           </span>
@@ -313,14 +342,20 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                             {message.senderRole}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {/* {formatDistanceToNow(new Date(message.createdAt), {
+                            {formatDistanceToNow(new Date(message.createdAt), {
                               addSuffix: true,
-                            })} */}
+                            })}
                           </span>
                         </div>
-                        <div className="text-sm break-words">
+                        <div className={`inline-block max-w-xs ${isCurrentUser ? 'ml-auto' : ''}`}>
                           {message.type === "TEXT" ? (
-                            message.content || "[No content]"
+                            <div className={`p-3 rounded-lg text-sm break-words ${
+                              isCurrentUser 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-muted'
+                            }`}>
+                              {message.content || "[No content]"}
+                            </div>
                           ) : message.type === "FILE" ? (
                             <div className="flex items-center gap-2 p-2 bg-muted rounded">
                               <Upload className="w-4 h-4" />
@@ -370,6 +405,17 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({
                           ) : null}
                         </div>
                       </div>
+                      {isCurrentUser && (
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage
+                            src={message.senderThumbnailUrl}
+                            alt={message.senderName}
+                          />
+                          <AvatarFallback>
+                            {message.senderName?.charAt(0)?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
                   );
                 })

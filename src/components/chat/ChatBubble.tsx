@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
+import { useChatInfiniteScroll } from "@/hooks/useChatInfiniteScroll";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import {
   useGetCourseMessagesQuery,
   useSendMessageMutation,
@@ -26,6 +28,7 @@ import {
   X,
   Check,
   Download,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,8 +66,11 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const [updatingMessages, setUpdatingMessages] = useState<Set<string>>(
     new Set()
   );
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -83,9 +89,38 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     getUserId();
   }, []);
 
+  // Infinite scroll hook for loading messages
+  const {
+    messages: loadedMessages,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isLoading,
+    error,
+    fetchNextPage,
+    resetMessages,
+    addNewMessage,
+    updateMessage: updateInfiniteScrollMessage,
+    isInitialized,
+    infiniteScrollDisabled,
+  } = useChatInfiniteScroll({
+    courseId,
+    pageSize: 20,
+    enabled: isOpen,
+  });
+
+  // Setup infinite scroll
+  const { setAutoScrolling } = useInfiniteScroll(scrollAreaRef, {
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    threshold: 100,
+    disabled: infiniteScrollDisabled,
+  });
+
   // WebSocket hook
   const {
-    messages,
+    messages: wsMessages,
     isConnected,
     connectionState,
     error: wsError,
@@ -133,85 +168,115 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     },
   });
 
-  // RTK Query hooks
-  const { data: messagesData, isLoading: isLoadingMessages } =
-    useGetCourseMessagesQuery(
-      { courseId, page: 0, size: 50 },
-      { skip: !courseId || !isOpen }
+  // Combine loaded messages with WebSocket messages
+  const allMessages = useMemo(() => {
+    // Start with loaded messages (from infinite scroll)
+    const combinedMessages = [...loadedMessages];
+
+    // Add new WebSocket messages that aren't already in loaded messages
+    if (wsMessages && wsMessages.length > 0) {
+      const loadedMessageIds = new Set(loadedMessages.map((msg) => msg.id));
+
+      wsMessages.forEach((wsMsg) => {
+        if (wsMsg.id && !loadedMessageIds.has(wsMsg.id)) {
+          // Add new message at the beginning (newest first in display order)
+          combinedMessages.unshift(wsMsg);
+        }
+      });
+    }
+
+    // Add pending messages
+    const pendingWithoutDuplicates = pendingMessages.filter(
+      (pending) => !combinedMessages.some((msg) => msg.id === pending.id)
     );
+
+    // Sort by createdAt (newest first for display)
+    return [...combinedMessages, ...pendingWithoutDuplicates].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [loadedMessages, wsMessages, pendingMessages]);
+
+  // Handle new WebSocket messages
+  useEffect(() => {
+    if (wsMessages && wsMessages.length > 0) {
+      const latestWsMessage = wsMessages[wsMessages.length - 1];
+      if (latestWsMessage?.id) {
+        addNewMessage(latestWsMessage);
+        // Auto scroll to bottom for new messages
+        setShouldScrollToBottom(true);
+      }
+    }
+  }, [wsMessages, addNewMessage]);
+
+  // Reset messages when course changes or chat opens
+  useEffect(() => {
+    if (isOpen) {
+      resetMessages();
+      // Don't auto scroll immediately, wait for messages to load
+    }
+  }, [courseId, isOpen, resetMessages]);
 
   const [sendMessage, { isLoading: isSendingMessage }] =
     useSendMessageMutation();
   const [updateMessage] = useUpdateMessageMutation();
   const [deleteMessage] = useDeleteMessageMutation();
 
-  // Handle new messages from WebSocket
+  // Auto scroll to bottom only when necessary
   useEffect(() => {
-    if (messages && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
-      // Remove pending message if this is a confirmation
-      setPendingMessages((prev) =>
-        prev.filter(
-          (pending) =>
-            pending.tempId !== latestMessage.id &&
-            pending.content !== latestMessage.content
-        )
-      );
-    }
-  }, [messages]);
+    if (isOpen && allMessages.length > 0 && shouldScrollToBottom) {
+      // Mark as auto scrolling
+      setAutoScrolling(true);
 
-  // Combine all messages
-  const allMessages = useMemo(() => {
-    const initialMessages = messagesData?.data?.messages || [];
-    console.log("Initial messages:", initialMessages);
-    const wsMessages = messages || [];
-
-    // Create message map to deduplicate
-    const messageMap = new Map<string, ChatMessage>();
-
-    // Add initial messages
-    initialMessages.forEach((msg) => {
-      if (msg.id) {
-        messageMap.set(msg.id, msg);
-      }
-    });
-
-    // Add WebSocket messages
-    wsMessages.forEach((msg) => {
-      if (msg.id) {
-        messageMap.set(msg.id, msg);
-      }
-    });
-
-    // Combine real messages with pending messages
-    const realMessages = Array.from(messageMap.values());
-    const allCombined = [...realMessages, ...pendingMessages];
-
-    // Filter out messages that are being deleted
-    const filteredMessages = allCombined.filter(
-      (msg) => !deletingMessages.has(msg.id)
-    );
-
-    // Sort by timestamp
-    return filteredMessages.sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-  }, [
-    messagesData?.data?.messages,
-    messages,
-    pendingMessages,
-    deletingMessages,
-  ]);
-
-  // Auto scroll to bottom
-  useEffect(() => {
-    if (isOpen) {
+      // Wait for DOM to update
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+          setShouldScrollToBottom(false);
+        }
+      }, 300); // Longer delay to avoid triggering infinite scroll
     }
-  }, [allMessages, isOpen]);
+  }, [allMessages.length, shouldScrollToBottom, isOpen, setAutoScrolling]);
+
+  // Auto scroll when first opening chat (after messages loaded)
+  useEffect(() => {
+    if (
+      isOpen &&
+      isInitialized &&
+      allMessages.length > 0 &&
+      !shouldScrollToBottom
+    ) {
+      // Only scroll to bottom on first load
+      const isFirstLoad = allMessages.length <= 20; // Assuming first load is ≤ 20 messages
+      if (isFirstLoad) {
+        setAutoScrolling(true);
+        setTimeout(() => {
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "instant" }); // Instant to avoid triggering scroll events
+          }
+        }, 200); // Shorter delay for first load
+      }
+    }
+  }, [isOpen, isInitialized, allMessages.length, setAutoScrolling]);
+
+  // Debug infinite scroll state
+  useEffect(() => {
+    console.log("🔍 Infinite scroll state:", {
+      hasNextPage,
+      isFetchingNextPage,
+      isLoading,
+      loadedMessagesCount: loadedMessages.length,
+      allMessagesCount: allMessages.length,
+      isOpen,
+    });
+  }, [
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    loadedMessages.length,
+    allMessages.length,
+    isOpen,
+  ]);
 
   // Auto resize textarea
   useEffect(() => {
@@ -227,7 +292,10 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
     const tempMessage = messageText.trim();
     console.log("🚀 Sending message:", tempMessage);
-    console.log("🚀 Before sending - messages count:", messages.length);
+    console.log(
+      "🚀 Before sending - wsMessages count:",
+      wsMessages?.length || 0
+    );
 
     try {
       const result = await sendMessage({
@@ -238,7 +306,10 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       }).unwrap();
 
       console.log("🚀 Message sent successfully:", result);
-      console.log("🚀 After sending - messages count:", messages.length);
+      console.log(
+        "🚀 After sending - wsMessages count:",
+        wsMessages?.length || 0
+      );
 
       // Message will be added via WebSocket when received from server
       // No need for optimistic update here since WebSocket handles real-time updates
@@ -495,15 +566,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                   {message.type.toUpperCase() === "TEXT" ? (
                     <div className="text-sm whitespace-pre-wrap break-words">
                       {(() => {
-                        console.log("🎯 ChatBubble rendering message:", {
-                          id: message.id,
-                          type: message.type,
-                          content: message.content,
-                          senderName: message.senderName,
-                          hasContent: !!message.content,
-                          contentType: typeof message.content,
-                          fullMessage: message,
-                        });
                         return message.content || "[No content available]";
                       })()}
                       {isPending && (
@@ -698,10 +760,30 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
             {/* Messages Area */}
             <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full p-4">
-                <div className="space-y-4">
-                  {isLoadingMessages ? (
+              <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
+                <div className="space-y-4" ref={scrollAreaViewportRef}>
+                  {/* Loading indicator for fetching older messages */}
+                  {isFetchingNextPage && (
+                    <div className="text-center py-2">
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Loading older messages...
+                      </p>
+                    </div>
+                  )}
+
+                  {/* No more messages indicator */}
+                  {!hasNextPage && allMessages.length > 0 && (
+                    <div className="text-center py-2">
+                      <p className="text-xs text-muted-foreground">
+                        No more messages
+                      </p>
+                    </div>
+                  )}
+
+                  {isLoading ? (
                     <div className="text-center text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
                       Loading messages...
                     </div>
                   ) : allMessages.length === 0 ? (
@@ -709,7 +791,10 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                       No messages yet. Start the conversation!
                     </div>
                   ) : (
-                    allMessages.map((message) => renderMessage(message))
+                    // Reverse messages for display (oldest to newest)
+                    [...allMessages]
+                      .reverse()
+                      .map((message) => renderMessage(message))
                   )}
                   <div ref={messagesEndRef} />
                 </div>

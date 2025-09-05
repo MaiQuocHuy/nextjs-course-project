@@ -2,6 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "@/lib/baseQueryWithReauth";
 import {
   GetMessagesResponse,
+  GetMessagesRequest,
   SendMessageRequest,
   SendMessageResponse,
   UpdateMessageRequest,
@@ -25,19 +26,13 @@ export const chatApi = createApi({
       // invalidatesTags: ["ChatMessage"],
     }),
 
-    // Get chat messages for a course (paginated)
-    getCourseMessages: builder.query<
-      GetMessagesResponse,
-      {
-        courseId: string;
-        type?: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
-        page?: number;
-        size?: number;
-      }
-    >({
-      query: ({ courseId, type, page = 0, size = 20 }) => {
-        const params: any = { page, size };
+    // Get chat messages for a course (with infinite scroll support)
+    getCourseMessages: builder.query<GetMessagesResponse, GetMessagesRequest>({
+      query: ({ courseId, type, page, size = 20, beforeMessageId }) => {
+        const params: any = { size };
         if (type) params.type = type;
+        if (page !== undefined) params.page = page;
+        if (beforeMessageId) params.beforeMessageId = beforeMessageId;
 
         return {
           url: `/chat/${courseId}/messages`,

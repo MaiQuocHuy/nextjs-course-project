@@ -93,16 +93,20 @@ export interface GetMessagesResponse {
   message: string;
   data: {
     messages: ChatMessage[];
-    page: {
-      number: number;
-      size: number;
-      totalElements: number;
-      totalPages: number;
-      first: boolean;
-      last: boolean;
-    };
+    page: number | null;
+    size: number;
+    totalElements: number | null;
+    totalPages: number | null;
   };
   timestamp: string;
+}
+
+export interface GetMessagesRequest {
+  courseId: string;
+  type?: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
+  page?: number;
+  size?: number;
+  beforeMessageId?: string;
 }
 
 export interface ApiErrorResponse {
