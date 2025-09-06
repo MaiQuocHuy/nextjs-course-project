@@ -17,11 +17,17 @@ export const chatApi = createApi({
   endpoints: (builder) => ({
     // Send a message via REST API
     sendMessage: builder.mutation<SendMessageResponse, SendMessageRequest>({
-      query: ({ courseId, ...messageData }) => ({
-        url: `/chat/${courseId}/messages`,
-        method: "POST",
-        body: messageData,
-      }),
+      query: ({ courseId, ...messageData }) => {
+        const url = `/chat/${courseId}/messages`;
+
+        // Backend expects JSON with fileUrl for file messages (client should pre-upload files),
+        // so always send JSON body here.
+        return {
+          url,
+          method: "POST",
+          body: messageData,
+        };
+      },
       // Don't invalidate tags since we're using WebSocket for real-time updates
       // invalidatesTags: ["ChatMessage"],
     }),

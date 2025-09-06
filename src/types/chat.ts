@@ -20,9 +20,11 @@ export interface ChatMessage {
 
 export interface SendMessageData {
   type: "TEXT" | "FILE";
-  content: string;
+  content?: string | null;
+  fileUrl?: string | null;
   fileName?: string | null;
   fileSize?: number | null;
+  mimeType?: string | null;
   duration?: number | null;
   thumbnailUrl?: string | null;
 }
@@ -53,9 +55,12 @@ export interface SendMessageRequest {
   courseId: string;
   tempId: string;
   type: "TEXT" | "FILE";
-  content: string;
+  content?: string | null;
+  fileUrl?: string | null;
+  file?: File | null;
   fileName?: string | null;
   fileSize?: number | null;
+  mimeType?: string | null;
   duration?: number | null;
   thumbnailUrl?: string | null;
 }

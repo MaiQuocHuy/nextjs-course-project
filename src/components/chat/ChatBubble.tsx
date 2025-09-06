@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { ChatMessage, UserStatusMessage } from "@/types/chat";
 import { useAuth } from "@/hooks/useAuth";
 import { getSession } from "next-auth/react";
+import { validateFile, formatFileSize } from "@/lib/websocket/config";
 
 interface ChatBubbleProps {
   courseId: string;
@@ -394,8 +395,92 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // TODO: Implement file upload
-    console.log("File upload:", file.name);
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      console.error("File validation failed:", validation.error);
+      return;
+    }
+
+    const tempId = uuidv4();
+
+    // Helper: upload to Cloudinary if env vars are present
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    const uploadToCloudinary = async (file: File): Promise<string> => {
+      if (!cloudName || !uploadPreset) {
+        throw new Error(
+          "Cloudinary config missing (NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME / NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET)"
+        );
+      }
+
+      const isImage = file.type.startsWith("image/");
+
+      const endpoint = isImage
+        ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+        : `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
+
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", uploadPreset);
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: fd,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          `Cloudinary upload failed: ${res.status} ${JSON.stringify(err)}`
+        );
+      }
+
+      const data = await res.json();
+      // Cloudinary returns secure_url for uploaded files
+      const fileUrl = (data.secure_url || data.url) as string;
+
+      // Upload complete — send message with fileUrl (server expects fileUrl)
+      try {
+        await sendMessage({
+          courseId,
+          tempId,
+          type: "FILE",
+          fileUrl,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        }).unwrap();
+
+        console.log(
+          "File message (with fileUrl) sent, awaiting WS confirmation:",
+          file.name
+        );
+      } catch (error) {
+        console.error("Failed to send file message after upload:", error);
+        setPendingMessages((prev) =>
+          prev.map((m) => (m.tempId === tempId ? { ...m, status: "ERROR" } : m))
+        );
+      }
+
+      // Clear input value so same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Return the uploaded file URL for callers (keep Promise<string> contract)
+      return fileUrl;
+    };
+
+    // Start upload and handle top-level errors
+    uploadToCloudinary(file).catch((err) => {
+      console.error("File upload failed:", err);
+      setPendingMessages((prev) =>
+        prev.map((m) => (m.tempId === tempId ? { ...m, status: "ERROR" } : m))
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    });
   };
 
   // Handle key press
@@ -436,13 +521,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       !updatingMessages.has(message.id) &&
       !deletingMessages.has(message.id)
     );
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    if (bytes === 0) return "0 Byte";
-    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
   };
 
   const isCurrentUser = (message: ChatMessage) => {
@@ -609,12 +687,15 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                       {(() => {
                         const mimeType = message.mimeType?.toLowerCase() || "";
                         const fileName = message.fileName || "Unknown file";
-                        const isImage = mimeType.startsWith("image/") || 
+                        const isImage =
+                          mimeType.startsWith("image/") ||
                           /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileName);
-                        const isPdf = mimeType === "application/pdf" || 
+                        const isPdf =
+                          mimeType === "application/pdf" ||
                           fileName.toLowerCase().endsWith(".pdf");
-                        const isDoc = mimeType.includes("document") || 
-                          mimeType.includes("word") || 
+                        const isDoc =
+                          mimeType.includes("document") ||
+                          mimeType.includes("word") ||
                           mimeType.includes("msword") ||
                           /\.(doc|docx|txt|rtf)$/i.test(fileName);
 
@@ -625,10 +706,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                               {message.fileUrl && (
                                 <div className="relative rounded-lg overflow-hidden bg-background/10">
                                   <img
-                                    src={message.thumbnailUrl || message.fileUrl}
+                                    src={
+                                      message.thumbnailUrl || message.fileUrl
+                                    }
                                     alt={fileName}
                                     className="max-w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => window.open(message.fileUrl, '_blank')}
+                                    onClick={() =>
+                                      window.open(message.fileUrl, "_blank")
+                                    }
                                   />
                                   <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
                                     <div className="bg-black/50 text-white px-2 py-1 rounded text-xs">
@@ -657,8 +742,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                     asChild
                                     className="text-current hover:bg-background/20 h-8 w-8 p-0"
                                   >
-                                    <a 
-                                      href={message.fileUrl} 
+                                    <a
+                                      href={message.fileUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       title="Download image"
@@ -683,7 +768,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                   {message.fileSize && (
                                     <>
                                       <span>•</span>
-                                      <span>{formatFileSize(message.fileSize)}</span>
+                                      <span>
+                                        {formatFileSize(message.fileSize)}
+                                      </span>
                                     </>
                                   )}
                                 </div>
@@ -695,8 +782,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                   asChild
                                   className="text-current hover:bg-background/20"
                                 >
-                                  <a 
-                                    href={message.fileUrl} 
+                                  <a
+                                    href={message.fileUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     title="Open PDF in new tab"
@@ -720,7 +807,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                   {message.fileSize && (
                                     <>
                                       <span>•</span>
-                                      <span>{formatFileSize(message.fileSize)}</span>
+                                      <span>
+                                        {formatFileSize(message.fileSize)}
+                                      </span>
                                     </>
                                   )}
                                 </div>
@@ -732,8 +821,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                   asChild
                                   className="text-current hover:bg-background/20"
                                 >
-                                  <a 
-                                    href={message.fileUrl} 
+                                  <a
+                                    href={message.fileUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     title="Download document"
@@ -758,7 +847,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                   {message.fileSize && (
                                     <>
                                       <span>•</span>
-                                      <span>{formatFileSize(message.fileSize)}</span>
+                                      <span>
+                                        {formatFileSize(message.fileSize)}
+                                      </span>
                                     </>
                                   )}
                                 </div>
@@ -770,8 +861,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                                   asChild
                                   className="text-current hover:bg-background/20"
                                 >
-                                  <a 
-                                    href={message.fileUrl} 
+                                  <a
+                                    href={message.fileUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     title="Download file"
