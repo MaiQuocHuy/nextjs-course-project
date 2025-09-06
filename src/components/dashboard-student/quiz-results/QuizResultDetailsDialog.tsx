@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useParams, usePathname } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuizResultDetails } from "@/hooks/student/useQuizResults";
-import type { QuizResults } from "@/types/student";
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useQuizResultDetails } from '@/hooks/student/useQuizResults';
+import type { QuizResults } from '@/types/student';
 import {
   CheckCircle,
   XCircle,
@@ -26,7 +26,8 @@ import {
   Book,
   Target,
   RotateCcw,
-} from "lucide-react";
+} from 'lucide-react';
+import { useGetStudentQuizResultsDetailsQuery } from '@/services/instructor/students/students-ins-api';
 
 interface QuizResultDetailsDialogProps {
   isOpen: boolean;
@@ -38,19 +39,19 @@ interface QuizResultDetailsDialogProps {
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 function getScoreColor(score: number) {
-  if (score >= 80) return "text-green-600";
-  if (score >= 40) return "text-yellow-600";
-  return "text-red-600";
+  if (score >= 80) return 'text-green-600';
+  if (score >= 40) return 'text-yellow-600';
+  return 'text-red-600';
 }
 
 function QuizResultDetailsContent({
@@ -60,11 +61,22 @@ function QuizResultDetailsContent({
   quizResult: QuizResults;
   onTryAgain?: () => void;
 }) {
+  const pathname = usePathname();
+  const { id } = useParams<{ id: string }>();
+
   const {
     data: quizDetails,
     isLoading,
     error,
-  } = useQuizResultDetails(quizResult.id);
+  } = pathname.includes('instructor/students')
+    ? useGetStudentQuizResultsDetailsQuery(
+        {
+          studentId: id,
+          quizResultId: quizResult.id,
+        },
+        { skip: !id }
+      )
+    : useQuizResultDetails(quizResult.id);
 
   if (isLoading) {
     return (
@@ -198,7 +210,7 @@ function QuizResultDetailsContent({
                   <span className="flex-1 leading-relaxed">
                     <span className="font-medium text-muted-foreground">
                       Q{index + 1}:
-                    </span>{" "}
+                    </span>{' '}
                     {question.questionText}
                   </span>
                   <div className="flex-shrink-0 mt-1">
@@ -220,7 +232,7 @@ function QuizResultDetailsContent({
                       if (!options) return [];
 
                       if (
-                        typeof options === "object" &&
+                        typeof options === 'object' &&
                         !Array.isArray(options)
                       ) {
                         // Object format like { "A": "Database management", "B": "Building user interfaces" }
@@ -237,19 +249,19 @@ function QuizResultDetailsContent({
                               key={key}
                               className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
                                 isStudentAnswer && !isCorrectAnswer
-                                  ? "border-red-500 bg-red-50 text-red-800"
+                                  ? 'border-red-500 bg-red-50 text-red-800'
                                   : isStudentAnswer && isCorrectAnswer
-                                  ? "border-green-500 bg-green-50 text-green-800"
-                                  : "border-gray-200 bg-gray-50"
+                                  ? 'border-green-500 bg-green-50 text-green-800'
+                                  : 'border-gray-200 bg-gray-50'
                               }`}
                             >
                               <div
                                 className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
                                   isStudentAnswer && !isCorrectAnswer
-                                    ? "bg-red-600 text-white"
+                                    ? 'bg-red-600 text-white'
                                     : isStudentAnswer && isCorrectAnswer
-                                    ? "bg-green-600 text-white"
-                                    : "bg-gray-300 text-gray-600"
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-300 text-gray-600'
                                 }`}
                               >
                                 {optionLetter}
@@ -263,8 +275,8 @@ function QuizResultDetailsContent({
                                     variant="secondary"
                                     className={`text-xs px-1 py-0 ${
                                       isCorrectAnswer
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-red-100 text-red-800"
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
                                     }`}
                                   >
                                     Your Answer
@@ -292,19 +304,19 @@ function QuizResultDetailsContent({
                               key={optionIndex}
                               className={`p-2 rounded-lg border flex items-start gap-2 text-sm ${
                                 isStudentAnswer && !isCorrectAnswer
-                                  ? "border-red-500 bg-red-50 text-red-800"
+                                  ? 'border-red-500 bg-red-50 text-red-800'
                                   : isStudentAnswer && isCorrectAnswer
-                                  ? "border-green-500 bg-green-50 text-green-800"
-                                  : "border-gray-200 bg-gray-50"
+                                  ? 'border-green-500 bg-green-50 text-green-800'
+                                  : 'border-gray-200 bg-gray-50'
                               }`}
                             >
                               <div
                                 className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${
                                   isStudentAnswer && !isCorrectAnswer
-                                    ? "bg-red-600 text-white"
+                                    ? 'bg-red-600 text-white'
                                     : isStudentAnswer && isCorrectAnswer
-                                    ? "bg-green-600 text-white"
-                                    : "bg-gray-300 text-gray-600"
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-300 text-gray-600'
                                 }`}
                               >
                                 {optionLetter}
@@ -318,8 +330,8 @@ function QuizResultDetailsContent({
                                     variant="secondary"
                                     className={`text-xs px-1 py-0 ${
                                       isCorrectAnswer
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-red-100 text-red-800"
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
                                     }`}
                                   >
                                     Your Answer
@@ -380,29 +392,33 @@ function QuizResultDetailsContent({
         </div>
 
         {/* Recommendations - Mobile Optimized */}
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <h5 className="font-medium text-blue-900 mb-2 text-sm">
-            Recommendations
-          </h5>
-          <div className="space-y-1 text-xs text-blue-800 leading-relaxed">
-            {quizResult.score >= 80 ? (
-              <>
-                <p>• Great job! You've passed this quiz.</p>
-                <p>• Continue to the next lesson to build on this knowledge.</p>
-                {quizResult.score < 90 && (
-                  <p>• Review missed questions for deeper understanding.</p>
-                )}
-              </>
-            ) : (
-              <>
-                <p>• Review course materials and focus on missed areas.</p>
-                <p>• Practice similar problems to reinforce understanding.</p>
-                <p>• Consider retaking the quiz after additional study.</p>
-                <p>• Don't hesitate to ask for help if needed.</p>
-              </>
-            )}
+        {!pathname.includes('instructor/students') && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <h5 className="font-medium text-blue-900 mb-2 text-sm">
+              Recommendations
+            </h5>
+            <div className="space-y-1 text-xs text-blue-800 leading-relaxed">
+              {quizResult.score >= 80 ? (
+                <>
+                  <p>• Great job! You've passed this quiz.</p>
+                  <p>
+                    • Continue to the next lesson to build on this knowledge.
+                  </p>
+                  {quizResult.score < 90 && (
+                    <p>• Review missed questions for deeper understanding.</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p>• Review course materials and focus on missed areas.</p>
+                  <p>• Practice similar problems to reinforce understanding.</p>
+                  <p>• Consider retaking the quiz after additional study.</p>
+                  <p>• Don't hesitate to ask for help if needed.</p>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -431,7 +447,7 @@ export function QuizResultDetailsDialog({
                   quizResult={quizResult}
                   onTryAgain={onTryAgain}
                 />
-                <div className="h-4" />{" "}
+                <div className="h-4" />{' '}
                 {/* Bottom padding for better scrolling */}
               </ScrollArea>
             </div>

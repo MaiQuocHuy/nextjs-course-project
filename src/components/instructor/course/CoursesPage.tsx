@@ -1,4 +1,4 @@
-import { MouseEventHandler, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
   Card,
@@ -41,12 +41,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-
 import {
   useDeleteCourseMutation,
   useGetCoursesQuery,
 } from '@/services/instructor/courses/courses-api';
-import { Course } from '@/types/instructor/courses';
+import { Course, CoursesFilter } from '@/types/instructor/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';
@@ -55,11 +54,16 @@ import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import WarningAlert from '../commom/WarningAlert';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
+import { ErrorComponent } from '../commom/ErrorComponents';
+import { CoursesSkeleton } from './CoursesSkeleton';
+import { Pagination } from '@/components/common/Pagination';
 
-const coursesParams = {
+const coursesParams: CoursesFilter = {
   page: 0,
-  size: 12,
+  size: 10,
   sort: 'createdAt,DESC',
+  minPrice: 0,
+  maxPrice: 1000,
 };
 
 export const CoursesPage = () => {
@@ -80,6 +84,8 @@ export const CoursesPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [filters2, setFilters2] = useState(coursesParams);
+  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 1000 });
 
   const router = useRouter();
   const dispatch: AppDispatch = useDispatch();
@@ -87,36 +93,28 @@ export const CoursesPage = () => {
   const {
     data: courses,
     isLoading: isFetchingCourses,
-    isError: isFetchCoursesError,
     error: errorFetchCourse,
-  } = useGetCoursesQuery(coursesParams);
+  } = useGetCoursesQuery(filters2);
+
   const {
     data: categories,
     isLoading: isFetchingCategories,
-    isError: isFetchCategoriesError,
     error: errorFetchCategories,
   } = useGetCategoriesQuery();
+
   const [deleteCourse] = useDeleteCourseMutation();
 
-  // Loading animation
+  // Initialize price range when courses data is fetched
   useEffect(() => {
-    if (isFetchingCourses || isFetchingCategories) {
-      loadingAnimation(true, dispatch);
-    } else {
-      loadingAnimation(false, dispatch);
-    }
-
-    return () => {
-      loadingAnimation(false, dispatch);
-    };
-  }, [isFetchingCourses, isFetchingCategories]);
-
-  useEffect(() => {
-    if (courses && courses.content && courses.content.length > 0) {
-      setFilterdCourses(courses.content);
-
+    if (
+      courses &&
+      courses.content &&
+      courses.content.length > 0 &&
+      !priceRangeInit.current.isInit
+    ) {
       // Get course that have the most min and max price
       getPriceRange(courses.content);
+      priceRangeInit.current.isInit = true;
     }
   }, [courses]);
 
@@ -218,33 +216,64 @@ export const CoursesPage = () => {
     const coursePrices = courses.map((course) => course.price);
     const minPrice = Math.min(...coursePrices);
     const maxPrice = Math.max(...coursePrices);
-    const newPriceRange = {
-      minPrice,
-      maxPrice,
-      value: [minPrice, maxPrice],
-    };
-    initFilterValues.current.priceRange = newPriceRange;
-    setFilters(initFilterValues.current);
+    priceRangeInit.current.minPrice = minPrice;
+    priceRangeInit.current.maxPrice = maxPrice;
+
+    setFilters2((prev) => ({
+      ...prev,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+    }));
   };
 
   const resetRangePrice = () => {
-    const originPriceRage = initFilterValues.current.priceRange;
-    handleFilterCourse('priceRange', originPriceRage.value);
+    const minPrice = priceRangeInit.current.minPrice;
+    const maxPrice = priceRangeInit.current.maxPrice;
+    handleFilterCourseWithPriceRange([minPrice, maxPrice]);
+  };
+
+  const handleFilterCourseWithStatus = (filterField: string, value: any) => {
+    if (value === 'DRAFT') {
+      filterField = 'isPublished';
+      value = false;
+    } else {
+      setFilters2((prev) => ({ ...prev, isPublished: undefined }));
+    }
+    handleFilterCourse(filterField, value);
+  };
+
+  const handleFilterCourseWithCategories = (
+    filterField: string,
+    value: any
+  ) => {
+    let categoryIds = [];
+    if (value !== 'ALL') {
+      categoryIds.push(value);
+    }
+    handleFilterCourse(filterField, categoryIds);
+  };
+
+  const handleFilterCourseWithPriceRange = (value: any) => {
+    const minPrice = value[0];
+    const maxPrice = value[1];
+    setFilters2((prev) => {
+      return { ...prev, minPrice, maxPrice };
+    });
   };
 
   const handleFilterCourse = (filterField: string, value: any) => {
-    // console.log(filterField, value);
-    setFilters((prev) => {
-      // Set value for price range filter
-      if (Array.isArray(value)) {
-        value = { ...prev.priceRange, value };
+    setFilters2((prev) => {
+      if (value === 'ALL') {
+        value = undefined;
       }
       return { ...prev, [filterField]: value };
     });
   };
 
   const handleClearFilters = () => {
-    setFilters(initFilterValues.current);
+    const minPrice = priceRangeInit.current.minPrice;
+    const maxPrice = priceRangeInit.current.maxPrice;
+    setFilters2({ ...coursesParams, minPrice, maxPrice });
   };
 
   const handleDeleteCourse = async (id: string) => {
@@ -263,11 +292,11 @@ export const CoursesPage = () => {
   };
 
   if (isFetchingCourses || isFetchingCategories) {
-    return <></>;
+    return <CoursesSkeleton />;
   }
 
   if (errorFetchCourse || errorFetchCategories) {
-    return <p className="text-red-500 font-semibold">Error!</p>;
+    return <ErrorComponent />;
   }
 
   return (
@@ -297,10 +326,8 @@ export const CoursesPage = () => {
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search courses by title or description"
-                value={filters.searchTerm}
-                onChange={(e) =>
-                  handleFilterCourse('searchTerm', e.target.value)
-                }
+                value={filters2.search}
+                onChange={(e) => handleFilterCourse('search', e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -309,38 +336,66 @@ export const CoursesPage = () => {
             <div className="flex gap-2">
               {/* Filter by status */}
               <Select
-                value={filters.status}
-                onValueChange={(value) => handleFilterCourse('status', value)}
+                value={
+                  filters2.status
+                    ? filters2.status
+                    : filters2.isPublished === false
+                    ? 'DRAFT'
+                    : 'ALL'
+                }
+                onValueChange={(value) =>
+                  handleFilterCourseWithStatus('status', value)
+                }
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="unpublished">Unpublished</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="ALL" className="cursor-pointer">
+                    All Status
+                  </SelectItem>
+                  <SelectItem value="APPROVED" className="cursor-pointer">
+                    Approved
+                  </SelectItem>
+                  <SelectItem value="PENDING" className="cursor-pointer">
+                    Pending
+                  </SelectItem>
+                  <SelectItem value="DENIED" className="cursor-pointer">
+                    Denied
+                  </SelectItem>
+                  <SelectItem value="RESUBMITTED" className="cursor-pointer">
+                    Resubmitted
+                  </SelectItem>
+                  <SelectItem value="DRAFT" className="cursor-pointer">
+                    Draft
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
               {/* Filter by category */}
               <Select
-                value={filters.category}
-                onValueChange={(value) => handleFilterCourse('category', value)}
+                value={
+                  !filters2.categoryIds || filters2.categoryIds?.length === 0
+                    ? 'ALL'
+                    : filters2.categoryIds?.at(0)
+                }
+                onValueChange={(value) =>
+                  handleFilterCourseWithCategories('categoryIds', value)
+                }
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="ALL">All Categories</SelectItem>
                   {categories &&
                     categories.length > 0 &&
                     categories.map((category) => {
                       return (
                         <SelectItem
                           key={category.id}
-                          value={category.name.toLowerCase()}
-                          className="capitalize"
+                          value={category.id}
+                          className="capitalize cursor-pointer"
                         >
                           {category.name}
                         </SelectItem>
@@ -363,130 +418,170 @@ export const CoursesPage = () => {
           {showFilters && (
             <div className="mt-4 p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center justify-between gap-4">
+                {/* Filter by price */}
+                {filters2.minPrice !== undefined &&
+                  filters2.maxPrice !== undefined && (
+                    <div className="flex-1 max-w-[300px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium ">
+                          Price Range
+                        </span>
+                        <Button variant="outline" onClick={resetRangePrice}>
+                          Reset
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
+                          ${filters2.minPrice}
+                        </span>
+                        <span className="text-muted-foreground">-</span>
+                        <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
+                          ${filters2.maxPrice}
+                        </span>
+                      </div>
+
+                      <SliderPrimitive.Root
+                        className={cn(
+                          'relative flex w-full touch-none select-none items-center my-3'
+                        )}
+                        value={[filters2.minPrice, filters2.maxPrice]}
+                        onValueChange={(value) =>
+                          handleFilterCourseWithPriceRange(value)
+                        }
+                        min={priceRangeInit.current.minPrice}
+                        max={priceRangeInit.current.maxPrice}
+                        step={0.01}
+                      >
+                        <SliderPrimitive.Track
+                          className="relative h-1 w-full grow overflow-hidden rounded-full bg-slider-track shadow-inner"
+                          style={{
+                            boxShadow: 'inset 0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                          }}
+                        >
+                          <SliderPrimitive.Range
+                            className="absolute h-full rounded-full"
+                            style={{
+                              background:
+                                'linear-gradient(135deg, hsl(var(--slider-range)), hsl(var(--slider-range) / 0.8))',
+                              boxShadow:
+                                '0 1px 3px 0 hsl(var(--slider-range) / 0.3)',
+                            }}
+                          />
+                        </SliderPrimitive.Track>
+
+                        <SliderPrimitive.Thumb
+                          className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                          style={{
+                            transition: 'var(--transition-smooth)',
+                            boxShadow: 'var(--shadow-elegant)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                            e.currentTarget.style.borderColor =
+                              'hsl(var(--slider-thumb-hover))';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.borderColor =
+                              'hsl(var(--slider-thumb))';
+                          }}
+                        />
+
+                        <SliderPrimitive.Thumb
+                          className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                          style={{
+                            transition: 'var(--transition-smooth)',
+                            boxShadow: 'var(--shadow-elegant)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.1)';
+                            e.currentTarget.style.borderColor =
+                              'hsl(var(--slider-thumb-hover))';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.borderColor =
+                              'hsl(var(--slider-thumb))';
+                          }}
+                        />
+                      </SliderPrimitive.Root>
+
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>${filters2.minPrice}</span>
+                        <span>${filters2.maxPrice}</span>
+                      </div>
+                    </div>
+                  )}
+
                 {/* Rating */}
                 <div>
                   <label className="text-sm font-medium">Rating</label>
                   <Select
-                    value={filters.rating?.toString()}
+                    value={filters2.rating ? filters2.rating : 'ALL'}
                     onValueChange={(value) =>
-                      handleFilterCourse('rating', parseInt(value))
+                      handleFilterCourse('rating', value)
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="All stars" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">All stars</SelectItem>
-                      <SelectItem value="5">5 stars</SelectItem>
-                      <SelectItem value="4">4+ stars</SelectItem>
-                      <SelectItem value="3">3+ stars</SelectItem>
+                      <SelectItem value="ALL" className="cursor-pointer">
+                        All stars
+                      </SelectItem>
+                      <SelectItem value="FIVE" className="cursor-pointer">
+                        5 stars
+                      </SelectItem>
+                      <SelectItem value="FOUR" className="cursor-pointer">
+                        4+ stars
+                      </SelectItem>
+                      <SelectItem value="THREE" className="cursor-pointer">
+                        3+ stars
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Filter by price */}
-                <div className="flex-1 max-w-[300px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium ">Price Range</span>
-                    <Button variant="outline" onClick={resetRangePrice}>
-                      Reset
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                      ${filters.priceRange.value[0]}
-                    </span>
-                    <span className="text-muted-foreground">-</span>
-                    <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                      ${filters.priceRange.value[1]}
-                    </span>
-                  </div>
-
-                  <SliderPrimitive.Root
-                    className={cn(
-                      'relative flex w-full touch-none select-none items-center my-3'
-                    )}
-                    value={filters.priceRange.value}
-                    onValueChange={(value) =>
-                      handleFilterCourse('priceRange', value)
-                    }
-                    max={filters.priceRange.maxPrice}
-                    min={filters.priceRange.minPrice}
-                    step={0.01}
+                {/* Filter by Levels */}
+                <div>
+                  <label className="text-sm font-medium">Levels</label>
+                  <Select
+                    value={filters2.level ? filters2.level : 'ALL'}
+                    onValueChange={(value) => handleFilterCourse('level', value)}
                   >
-                    <SliderPrimitive.Track
-                      className="relative h-1 w-full grow overflow-hidden rounded-full bg-slider-track shadow-inner"
-                      style={{
-                        boxShadow: 'inset 0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                      }}
-                    >
-                      <SliderPrimitive.Range
-                        className="absolute h-full rounded-full"
-                        style={{
-                          background:
-                            'linear-gradient(135deg, hsl(var(--slider-range)), hsl(var(--slider-range) / 0.8))',
-                          boxShadow:
-                            '0 1px 3px 0 hsl(var(--slider-range) / 0.3)',
-                        }}
-                      />
-                    </SliderPrimitive.Track>
-
-                    <SliderPrimitive.Thumb
-                      className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                      style={{
-                        transition: 'var(--transition-smooth)',
-                        boxShadow: 'var(--shadow-elegant)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                        e.currentTarget.style.borderColor =
-                          'hsl(var(--slider-thumb-hover))';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.borderColor =
-                          'hsl(var(--slider-thumb))';
-                      }}
-                    />
-
-                    <SliderPrimitive.Thumb
-                      className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                      style={{
-                        transition: 'var(--transition-smooth)',
-                        boxShadow: 'var(--shadow-elegant)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.1)';
-                        e.currentTarget.style.borderColor =
-                          'hsl(var(--slider-thumb-hover))';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.borderColor =
-                          'hsl(var(--slider-thumb))';
-                      }}
-                    />
-                  </SliderPrimitive.Root>
-
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>${filters.priceRange.minPrice}</span>
-                    <span>${filters.priceRange.maxPrice}</span>
-                  </div>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="All Levels" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL" className="cursor-pointer">
+                        All Levels
+                      </SelectItem>
+                      <SelectItem value="BEGINNER" className="cursor-pointer">
+                        Beginner
+                      </SelectItem>
+                      <SelectItem value="INTERMEDIATE" className="cursor-pointer">
+                        Intermediate
+                      </SelectItem>
+                      <SelectItem value="ADVANCED" className="cursor-pointer">
+                        Advanced
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Filter by Date */}
                 <div>
                   <label className="text-sm font-medium">Created Date</label>
                   <Select
-                    value={filters.date}
-                    onValueChange={(value) => handleFilterCourse('date', value)}
+                    value={filters2.sort}
+                    onValueChange={(value) => handleFilterCourse('sort', value)}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Latest Date" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="latest">Latest Date</SelectItem>
-                      <SelectItem value="oldest">Oldest Date</SelectItem>
+                      <SelectItem value="createdAt,DESC" className='cursor-pointer'>Latest Date</SelectItem>
+                      <SelectItem value="createdAt,ASC" className='cursor-pointer'>Oldest Date</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -504,174 +599,193 @@ export const CoursesPage = () => {
       </Card>
 
       {/* Courses Grid */}
-      {filteredCourses && filteredCourses.length > 0 ? (
+      {courses && courses.content.length > 0 ? (
         <div className="space-y-2">
           {/* Total courses */}
           <div>
             <span className="text-base">Total Courses:</span>{' '}
             <span className="text-lg font-semibold">
-              {filteredCourses ? filteredCourses.length : 0}
+              {courses.content.length}
             </span>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.map((course) => (
-              <Card
-                key={course.id}
-                className="shadow-card cursor-pointer hover:shadow-elegant transition-shadow"
-                onClick={() => router.push(`/instructor/courses/${course.id}`)}
-              >
-                <div className="relative">
-                  <img
-                    src={course.thumbnailUrl}
-                    alt={course.title}
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <span
-                    className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                      course.statusReview
-                    )}`}
-                  >
-                    {course.statusReview ? course.statusReview : 'Draft'}
-                  </span>
-
-                  {/* Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-3 right-3 bg-white/90 hover:bg-white"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-
-                      {/* View course detail button */}
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/instructor/courses/${course.id}`);
-                        }}
-                      >
-                        <Eye className="mr-1 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-
-                      {/* Button edit course */}
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(
-                            `/instructor/courses/${course.id}/edit-course`
-                          );
-                        }}
-                      >
-                        <Edit className="mr-1 h-4 w-4" />
-                        Edit Course
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-
-                      {/* Button delete course */}
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsDeleteDialogOpen(true);
-                          setSelectedCourse(course);
-                        }}
-                      >
-                        <Trash2 className="mr-1 h-4 w-4" />
-                        Delete Course
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                <CardHeader>
-                  <CardTitle className="line-clamp-2">{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2 min-h-[40px]">
-                    {course.description}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Categories */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        {course.categories.slice(0, 2).map((category) => {
-                          return (
-                            <Badge key={category.id} variant="outline">
-                              {category.name}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-
-                      {course.categories.length > 2 && <ArrowRight />}
-                    </div>
-
-                    {/* Total students and sections */}
-                    <div className="flex items-center justify-between text-sm border-t-1 pt-2">
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{`${course.totalStudents} student(s)`}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        <span>{course.sectionCount} section(s)</span>
-                      </div>
-                    </div>
-
-                    {/* Rating and created date */}
-                    <div
-                      className={`flex items-center text-sm ${
-                        course.averageRating > 0
-                          ? 'justify-between'
-                          : 'justify-end'
-                      }`}
+          <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {courses.content.map((course) => (
+                <Card
+                  key={course.id}
+                  className="shadow-card cursor-pointer hover:shadow-elegant transition-shadow"
+                  onClick={() =>
+                    router.push(`/instructor/courses/${course.id}`)
+                  }
+                >
+                  <div className="relative">
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
+                    <span
+                      className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
+                        course.statusReview
+                      )}`}
                     >
-                      {course.averageRating > 0 && (
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span>{course.averageRating}</span>
+                      {course.statusReview ? course.statusReview : 'Draft'}
+                    </span>
+
+                    {/* Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-3 right-3 bg-white/90 hover:bg-white"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+
+                        {/* View course detail button */}
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/instructor/courses/${course.id}`);
+                          }}
+                        >
+                          <Eye className="mr-1 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+
+                        {/* Button edit course */}
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(
+                              `/instructor/courses/${course.id}/edit-course`
+                            );
+                          }}
+                        >
+                          <Edit className="mr-1 h-4 w-4" />
+                          Edit Course
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+
+                        {/* Button delete course */}
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsDeleteDialogOpen(true);
+                            setSelectedCourse(course);
+                          }}
+                        >
+                          <Trash2 className="mr-1 h-4 w-4" />
+                          Delete Course
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <CardHeader>
+                    <CardTitle className="line-clamp-2">
+                      {course.title}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 min-h-[40px]">
+                      {course.description}
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Categories */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          {course.categories.slice(0, 2).map((category) => {
+                            return (
+                              <Badge key={category.id} variant="outline">
+                                {category.name}
+                              </Badge>
+                            );
+                          })}
                         </div>
-                      )}
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {new Date(course.createdAt).toLocaleDateString()}
+
+                        {course.categories.length > 2 && <ArrowRight />}
+                      </div>
+
+                      {/* Total students and sections */}
+                      <div className="flex items-center justify-between text-sm border-t-1 pt-2">
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span>{`${course.totalStudents} student(s)`}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <BookOpen className="h-4 w-4 text-muted-foreground" />
+                          <span>{course.sectionCount} section(s)</span>
+                        </div>
+                      </div>
+
+                      {/* Rating and created date */}
+                      <div
+                        className={`flex items-center text-sm ${
+                          course.averageRating > 0
+                            ? 'justify-between'
+                            : 'justify-end'
+                        }`}
+                      >
+                        {course.averageRating > 0 && (
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                            <span>{course.averageRating}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>
+                            {new Date(course.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Price and view detail course button */}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-2xl font-bold text-primary">
+                          {course.price > 0 ? '$' + course.price : 'Free'}
                         </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/instructor/courses/${course.id}`);
+                          }}
+                        >
+                          View Course
+                        </Button>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-                    {/* Price and view detail course button */}
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-2xl font-bold text-primary">
-                        {course.price > 0 ? '$' + course.price : 'Free'}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/instructor/courses/${course.id}`);
-                        }}
-                      >
-                        View Course
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {/* Pagination */}
+            {courses && courses.page && courses.page.totalPages >= 1 && (
+              <Pagination
+                currentPage={filters2.page ? filters2.page : 0}
+                itemsPerPage={filters2.size ? filters2.size : 10}
+                pageInfo={courses.page}
+                onPageChange={(page) => setFilters2({ ...filters2, page })}
+                onItemsPerPageChange={(size) =>
+                  setFilters2({ ...filters2, size })
+                }
+              />
+            )}
           </div>
         </div>
       ) : (
