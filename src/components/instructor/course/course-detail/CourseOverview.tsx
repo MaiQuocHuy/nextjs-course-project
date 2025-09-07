@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { CreateCourseBasicInforPage } from '../create-course/create-basic-infor/CreateCourseBasicInforPage';
 import { useRouter } from 'next/navigation';
 import { CourseDetail } from '@/types/instructor/courses';
-import { calculateTotalDuration } from '@/utils/instructor/course/cal-total-duration';
+import { calculateTotalDuration } from '@/utils/instructor/course/course-helper-functions';
 import {
   getStatusColor,
 } from '@/utils/instructor/course/handle-course-status';

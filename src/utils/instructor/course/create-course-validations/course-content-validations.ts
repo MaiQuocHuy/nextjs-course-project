@@ -10,10 +10,11 @@ export const documentSchema = z.object({
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.ms-excel',
+          'text/plain', // Adding text file support
         ];
         return allowedTypes.includes(file.type);
       },
-      { message: 'Only PDF, DOCX, and Excel files are allowed' }
+      { message: 'Only PDF, DOCX, Excel, and TXT files are allowed' }
     )
     .refine((file) => file.size <= 10 * 1024 * 1024, {
       message: 'File size must not exceed 10MB',
@@ -114,7 +115,7 @@ export const sectionSchema = z.object({
   isCollapsed: z.boolean().default(false).optional(),
 });
 
-export const courseCreationSchema = z.object({
+export const courseContentSchema = z.object({
   sections: z
     .array(sectionSchema)
     .min(1, 'Course must have at least one section'),
@@ -126,4 +127,4 @@ export type VideoType = z.infer<typeof videoSchema>;
 export type QuizQuestionType = z.infer<typeof quizQuestionSchema>;
 export type LessonType = z.infer<typeof lessonSchema>;
 export type SectionType = z.infer<typeof sectionSchema>;
-export type CourseCreationType = z.infer<typeof courseCreationSchema>;
+export type CourseContentType = z.infer<typeof courseContentSchema>;

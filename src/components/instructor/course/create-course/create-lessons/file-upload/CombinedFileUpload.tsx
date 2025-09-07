@@ -2,15 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   Upload,
   X,
@@ -20,10 +11,24 @@ import {
   Play,
   FileText,
   FileSpreadsheet,
+  Loader2,
 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { DocxViewer } from './DocxViewer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import type { DocumentType } from '@/utils/instructor/create-course-validations/lessons-validations';
+import type { DocumentType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
+import TxTViewer from './TxTViewer';
+import { VideoViewer } from './VideoViewer';
 
 interface CombinedFileUploadProps {
   documents?: DocumentType[];
@@ -49,7 +54,7 @@ export function CombinedFileUpload({
       const url = URL.createObjectURL(videoFile);
       setVideoPreviewUrl(url);
     }
-  }, [videoFile]);
+  }, [videoFile, videoPreviewUrl]);
 
   // Document Dropzone
   const onDocumentDrop = useCallback(
@@ -62,7 +67,7 @@ export function CombinedFileUpload({
           if (rejection.errors[0]?.code === 'file-too-large') {
             setUploadError(`File too large. Maximum size: 10MB`);
           } else if (rejection.errors[0]?.code === 'file-invalid-type') {
-            setUploadError('File type not supported');
+            setUploadError('Only PDF, DOCX, Excel, and TXT files are allowed');
           }
           return;
         }
@@ -92,6 +97,7 @@ export function CombinedFileUpload({
         '.xlsx',
       ],
       'application/vnd.ms-excel': ['.xls'],
+      'text/plain': ['.txt'],
     },
     maxSize: 10 * 1024 * 1024,
     multiple: true,
@@ -109,7 +115,9 @@ export function CombinedFileUpload({
         if (rejection.errors[0]?.code === 'file-too-large') {
           setUploadError(`Video too large. Maximum size: 100MB`);
         } else if (rejection.errors[0]?.code === 'file-invalid-type') {
-          setUploadError('Video type not supported');
+          setUploadError(
+            'Only MP4, MPEG, QuickTime, AVI, WMV, WebM, and OGG video files are allowed'
+          );
         }
         return;
       }
@@ -158,20 +166,39 @@ export function CombinedFileUpload({
   };
 
   const getFileIcon = (file: File) => {
-    if (file.type === 'application/pdf')
+    if (file.type === 'application/pdf') {
       return <FileText className="h-4 w-4 text-red-500" />;
-    if (file.type.includes('spreadsheet') || file.type.includes('excel'))
+    } else if (
+      file.type.includes('spreadsheet') ||
+      file.type.includes('excel')
+    ) {
       return <FileSpreadsheet className="h-4 w-4 text-green-500" />;
-    return <FileText className="h-4 w-4 text-blue-500" />;
+    } else {
+      return <FileText className="h-4 w-4 text-blue-500" />;
+    }
   };
 
-  const canPreviewDocument = (file: File) => {
-    return file.type === 'application/pdf';
+  const getPreviewContent = (file: File) => {
+    if (file.type === 'application/pdf') {
+      return (
+        <iframe
+          src={URL.createObjectURL(file)}
+          className="w-full h-full border rounded"
+          title="PDF Preview"
+        />
+      );
+    } else if (file.type === 'text/plain') {
+      return <TxTViewer file={file} />;
+    } else if (
+      file.type ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      return <DocxViewer file={file} />;
+    }
+    return null;
   };
 
   const renderDocumentPreview = (file: File) => {
-    if (!canPreviewDocument(file)) return null;
-
     return (
       <Dialog>
         <DialogTrigger asChild>
@@ -192,74 +219,12 @@ export function CombinedFileUpload({
             <DialogTitle>Document Preview - {file.name}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto" style={{ height: '85vh' }}>
-            <iframe
-              src={URL.createObjectURL(file)}
-              className="w-full h-full border rounded"
-              title="PDF Preview"
-            />
+            {getPreviewContent(file)}
           </div>
         </DialogContent>
       </Dialog>
     );
   };
-
-  // const renderVideoPreview = () => {
-  //   if (!videoFile || !videoPreviewUrl) return null;
-
-  //   return (
-  //     <Dialog>
-  //       <DialogTrigger asChild>
-  //         <Button variant="ghost" size="sm">
-  //           <Eye className="h-4 w-4 mr-2" />
-  //           Preview
-  //         </Button>
-  //       </DialogTrigger>
-  //       <DialogContent
-  //         style={{
-  //           width: '90vw',
-  //           maxWidth: '900px',
-  //           maxHeight: '95vh',
-  //           padding: '15px',
-  //           display: 'flex',
-  //           flexDirection: 'column',
-  //           alignItems: 'center',
-  //           justifyContent: 'center',
-  //         }}
-  //       >
-  //         <DialogHeader>
-  //           <DialogTitle>Video Preview</DialogTitle>
-  //         </DialogHeader>
-  //         <div
-  //           style={{
-  //             width: '100%',
-  //             height: '70vh',
-  //             display: 'flex',
-  //             alignItems: 'center',
-  //             justifyContent: 'center',
-  //             background: '#000',
-  //             borderRadius: '12px',
-  //             overflow: 'hidden',
-  //           }}
-  //         >
-  //           <video
-  //             src={videoPreviewUrl}
-  //             controls
-  //             style={{
-  //               width: '100%',
-  //               height: '100%',
-  //               objectFit: 'contain',
-  //               background: '#000',
-  //               borderRadius: '12px',
-  //             }}
-  //             preload="metadata"
-  //           >
-  //             Your browser does not support the video tag.
-  //           </video>
-  //         </div>
-  //       </DialogContent>
-  //     </Dialog>
-  //   );
-  // };
 
   return (
     <div className="space-y-3">
@@ -297,7 +262,8 @@ export function CombinedFileUpload({
                           : 'Drag & drop files or click to select'}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Supports PDF, DOCX, Excel files. Maximum size: 10MB each
+                        Supports PDF, DOCX, Excel, and TXT files. Maximum size:
+                        10MB each
                       </p>
                     </div>
                   </div>
@@ -391,7 +357,7 @@ export function CombinedFileUpload({
             </Card>
           ) : (
             <>
-              <VideoPreview
+              <VideoViewer
                 videoFile={videoFile}
                 videoPreviewUrl={videoPreviewUrl}
                 handleVideoRemove={handleVideoRemove}
@@ -404,7 +370,7 @@ export function CombinedFileUpload({
 
       {/* Display uploaded video */}
       {videoFile && !onVideoSelect && !onVideoRemove && (
-        <VideoPreview
+        <VideoViewer
           videoFile={videoFile}
           videoPreviewUrl={videoPreviewUrl}
           handleVideoRemove={handleVideoRemove}
@@ -420,94 +386,3 @@ export function CombinedFileUpload({
     </div>
   );
 }
-
-const VideoPreview = ({
-  videoFile,
-  videoPreviewUrl,
-  handleVideoRemove,
-  mode,
-}: {
-  videoFile: File;
-  videoPreviewUrl: string;
-  handleVideoRemove: () => void;
-  mode?: 'edit' | 'view';
-}) => {
-  return (
-    <>
-      {videoPreviewUrl ? (
-        <Card
-          className={` ${
-            mode === 'edit' &&
-            'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
-          }`}
-        >
-          <CardContent className="px-3">
-            <div className="space-y-3">
-              {/* Video Information */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Play className="h-4 w-4" />
-                  <span className="font-medium">
-                    {videoFile.name !== 'null'
-                      ? videoFile.name
-                      : 'Lesson video'}
-                  </span>
-                  <span className="text-muted-foreground">
-                    Size: {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
-                  </span>
-                  {mode && mode === 'edit' && (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  )}
-                </div>
-                {mode && mode === 'edit' && (
-                  // Video Remove Button
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleVideoRemove}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Video Preview */}
-              <div
-                style={{
-                  width: '100%',
-                  // maxHeight: '60vh',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: '#000',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                }}
-              >
-                <video
-                  src={videoPreviewUrl}
-                  controls
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    background: '#000',
-                    borderRadius: '12px',
-                  }}
-                  preload="metadata"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">Upload Video Failed!</p>
-        </div>
-      )}
-    </>
-  );
-};

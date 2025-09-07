@@ -21,7 +21,7 @@ export const geminiApi = createApi({
       {
         sectionId: string;
         lessonId: string;
-        text: string;
+        texts: string[];
         numQuestions: number;
       }
     >({

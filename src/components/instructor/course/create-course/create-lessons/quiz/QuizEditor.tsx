@@ -13,21 +13,21 @@ import {
   CollapsibleTrigger,
 } from '@/components/instructor/commom/Collapsible';
 import { Trash2, Plus, Edit3, ChevronRight } from 'lucide-react';
-import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/drag-drop-reorder';
-import type { QuizQuestionType } from '@/utils/instructor/create-course-validations/lessons-validations';
+import { DragDropReorder } from '@/components/instructor/course/create-course/create-lessons/DragDropReorder';
+import type { QuizQuestionType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
 
-interface EnhancedQuizEditorProps {
+interface QuizEditorProps {
   canEdit: boolean;
   questions: QuizQuestionType[];
   onQuestionsChange: (questions: QuizQuestionType[]) => void;
 }
 
-export function EnhancedQuizEditor({
+export function QuizEditor({
   canEdit,
   questions,
   onQuestionsChange,
-}: EnhancedQuizEditorProps) {
+}: QuizEditorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedQuestion, setSelectedQuestion] =
     useState<QuizQuestionType | null>(null);
@@ -179,37 +179,10 @@ export function EnhancedQuizEditor({
                                 65 + optionIndex
                               )}`}
                             />
-                          </div>
-
-                          {/* Remove button */}
-                          {/* {Object.keys(question.options).length > 2 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              removeOption(question.id, String.fromCharCode(65 + optionIndex))
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )} */}
+                          </div>                          
                         </div>
                       )
                     )}
-
-                    {/* Add Option button */}
-                    {/* {Object.keys(question.options).length < 4 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addOption(question.id)}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Option
-                      </Button>
-                    )} */}
                   </div>
                 </div>
 

@@ -6,11 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
   type CourseBasicInfoType,
-  getWordCount,
-  getCharacterCount,
   imageFileSchema,
   fullCourseSchema,
-} from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+} from '@/utils/instructor/course/create-course-validations/course-basic-info-validation';
+import {
+  getWordCount,
+  getCharacterCount,
+} from '@/utils/instructor/course/course-helper-functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,7 +66,7 @@ import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
 import { CourseDetail } from '@/types/instructor/courses';
-import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
+import { createFileFromUrl, createFilePreview } from '@/utils/instructor/course/create-file';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import {
   DialogDescription,
@@ -210,32 +212,6 @@ export function CreateCourseBasicInforPage({
         // Draft
         return 'text-blue-700 bg-blue-100 px-5 py-1 rounded-lg font-medium';
     }
-  };
-
-  const createFilePreview = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      } else {
-        // For videos, create a thumbnail
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => {
-          video.currentTime = 1;
-        };
-        video.onseeked = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(video, 0, 0);
-          resolve(canvas.toDataURL());
-        };
-        video.src = URL.createObjectURL(file);
-      }
-    });
   };
 
   const handleSubmit = (data: CourseBasicInfoType) => {

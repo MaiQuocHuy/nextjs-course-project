@@ -1,13 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
-import SectionsLessonsManager2 from '../SectionsLessonsManager2';
+
+import SectionsLessonsManager2 from '../create-course/create-lessons/CourseContent';
 import { useGetSectionsQuery } from '@/services/instructor/courses/sections-api';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { SectionDetail } from '@/types/instructor/courses';
-import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
-import { SectionType } from '@/utils/instructor/create-course-validations/lessons-validations';
+import { createFileFromUrl } from '@/utils/instructor/course/create-file';
+import { SectionType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
 import { Button } from '@/components/ui/button';
 
 interface CourseContentProps {
@@ -140,20 +140,11 @@ const CreateCourseContentForm = ({
   mode: 'create' | 'view';
 }) => {
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Course Content</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SectionsLessonsManager2
-            courseId={courseId}
-            mode={mode}
-            sections={sections}
-            canEditContent={true}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <SectionsLessonsManager2
+      courseId={courseId}
+      mode={mode}
+      sections={sections}
+      canEditContent={true}
+    />
   );
 };

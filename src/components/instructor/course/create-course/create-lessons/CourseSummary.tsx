@@ -2,9 +2,9 @@ import Image from 'next/image';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+import { CourseBasicInfoType } from '@/utils/instructor/course/create-course-validations/course-basic-info-validation';
 import { useEffect, useState } from 'react';
-import { createFilePreview } from '@/utils/instructor/create-file-preview';
+import { createFilePreview } from '@/utils/instructor/course/create-file';
 
 interface CourseSummaryProps {
   course: CourseBasicInfoType;

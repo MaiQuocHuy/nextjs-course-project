@@ -9,12 +9,12 @@ export const quizzesInstSlice = createApi({
     generateQuestions: builder.mutation<
       QuizQuestion[],
       {
-        text: string;
+        texts: string[];
         numQuestions: number;
       }
     >({
       query: (data) => ({
-        url: '/api/test-gemini',
+        url: '/api/gemini',
         method: 'POST',
         body: data
       }),

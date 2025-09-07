@@ -66,7 +66,6 @@ export const coursesInstSlice = createApi({
         if (courseParams.isPublished !== undefined) {
           url += `&isPublished=${encodeURIComponent(courseParams.isPublished)}`;
         }
-        console.log('Constructed URL:', url);
         
         return {
           url,

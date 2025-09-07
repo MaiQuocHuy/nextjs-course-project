@@ -3,11 +3,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req: Request) {
   try {
-    const { text } = await req.json();
+    const { texts } = await req.json();
 
-     if (!text) {
-      return NextResponse.json({ error: "Missing text" }, { status: 400 });
+    if (!texts || !Array.isArray(texts) || texts.length === 0) {
+      return NextResponse.json({ error: "Missing or invalid texts array" }, { status: 400 });
     }
+    
+    // Combine all texts with clear separation between documents
+    const combinedText = texts.join("\n\n--- NEW DOCUMENT ---\n\n");
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -37,13 +40,16 @@ export async function POST(req: Request) {
 
         Rules:
         - "id" is a unique identifier (can be uuid or incremental string).
+        - "questionText" must be between 10 and 1000 characters.
         - "correctAnswer" must match exactly one of the option keys ("A", "B", "C", "D").
+        - "explanation" cannot exceed 500 characters.
         - Do NOT include any commentary, explanations, or markdown formatting outside the JSON.
         - No trailing commas in JSON.
         - Ensure the JSON is syntactically valid.
+        - Base your questions on the entire content, which may contain multiple documents.
         
         Context:
-        ${text}
+        ${combinedText}
       `;
 
     const result = await model.generateContent(prompt);
@@ -62,8 +68,6 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-
-    console.log("Gemini raw output:", output);
 
     return NextResponse.json({ mcqs: parsed.questions || [] });
   } catch (error) {

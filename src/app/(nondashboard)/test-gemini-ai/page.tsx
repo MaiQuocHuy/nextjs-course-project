@@ -1,21 +1,23 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import {
   useGenerateQuestionsMutation,
   useSaveQuestionsMutation,
-} from "@/services/quiz/geminiApi";
-import type { QuestionType } from "@/services/quiz/geminiApi";
+} from '@/services/quiz/geminiApi';
+import type { QuestionType } from '@/services/quiz/geminiApi';
+import pdfToText from 'react-pdftotext';
 
 export default function TestGeminiAIPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [extractPreview, setExtractPreview] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [extractPreviews, setExtractPreviews] = useState<string[]>([]);
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [sectionId, setSectionId] = useState("001");
-  const [lessonId, setLessonId] = useState("001");
+  const [sectionId, setSectionId] = useState('001');
+  const [lessonId, setLessonId] = useState('001');
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [generateQuestions, { isLoading: generating }] =
     useGenerateQuestionsMutation();
@@ -24,43 +26,80 @@ export default function TestGeminiAIPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuestions([]);
     setError(null);
-    setFile(e.target.files?.[0] ?? null);
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    } else {
+      setFiles([]);
+    }
+  };
+
+  // Function to extract text from a file based on its type
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    try {
+      const fileType = file.name.split('.').pop()?.toLowerCase();
+
+      if (fileType === 'docx') {
+        const mammoth = (await import('mammoth')).default;
+        const arrayBuffer = await file.arrayBuffer();
+        const { value } = await mammoth.extractRawText({ arrayBuffer });
+        return value.trim();
+      } else if (fileType === 'txt') {
+        const text = await file.text();
+        return text.trim();
+      } else if (fileType === 'pdf') {
+        const parsedText = await pdfToText(file);
+        return parsedText;
+      } else {
+        throw new Error(`Unsupported file type: ${fileType}`);
+      }
+    } catch (error) {
+      console.error('Error extracting text from file:', error);
+      throw error;
+    }
   };
 
   const handleGenerate = async () => {
-    if (!file) {
-      alert("Please select a .docx file first.");
+    if (files.length === 0) {
+      alert('Please select at least one file (.docx, .txt, or .pdf).');
       return;
     }
     setError(null);
+    setIsProcessing(true);
 
     try {
-      const mammoth = (await import("mammoth")).default;
-      const arrayBuffer = await file.arrayBuffer();
-      const { value } = await mammoth.extractRawText({ arrayBuffer });
-      const cleanedText = value.trim();
-      setExtractPreview(cleanedText.substring(0, 5000));
+      const extractedTexts: string[] = [];
+      const previews: string[] = [];
 
+      // Process each file
+      for (const file of files) {
+        const extractedText = await extractTextFromFile(file);
+        extractedTexts.push(extractedText);
+        previews.push(`[${file.name}]: ${extractedText.substring(0, 1000)}...`);
+      }
+
+      setExtractPreviews(previews);
+
+      // @ts-ignore - We've updated the API but TypeScript might not have caught up
       const data = await generateQuestions({
         sectionId,
         lessonId,
-        text: cleanedText,
+        texts: extractedTexts,
         numQuestions: 5,
       }).unwrap();
 
-      console.log("Generated questions data:", data);
+      console.log('Generated questions data:', data);
 
       // Kiểm tra xem data có phải array không
       if (!Array.isArray(data)) {
-        console.error("Data is not an array:", data);
-        throw new Error("Invalid response format: expected array of questions");
+        console.error('Data is not an array:', data);
+        throw new Error('Invalid response format: expected array of questions');
       }
 
       const normalized: QuestionType[] = data.map((q: any, idx: number) => {
         // Chuyển đổi options thành format A, B, C, D
         const originalOptions = q.options ?? {};
         const standardOptions: Record<string, string> = {};
-        const optionLabels = ["A", "B", "C", "D", "E", "F"];
+        const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
 
         let labelIndex = 0;
         Object.entries(originalOptions).forEach(([key, value]) => {
@@ -71,7 +110,7 @@ export default function TestGeminiAIPage() {
         });
 
         // Tìm correct answer key mới
-        let newCorrectAnswer = q.correctAnswer ?? "";
+        let newCorrectAnswer = q.correctAnswer ?? '';
         if (originalOptions[newCorrectAnswer]) {
           const originalKeys = Object.keys(originalOptions);
           const originalIndex = originalKeys.indexOf(newCorrectAnswer);
@@ -82,42 +121,42 @@ export default function TestGeminiAIPage() {
 
         return {
           id: q.id || uuidv4(),
-          questionText: q.questionText ?? q.question ?? "",
+          questionText: q.questionText ?? q.question ?? '',
           options: standardOptions,
           correctAnswer: newCorrectAnswer,
-          explanation: q.explanation ?? "",
+          explanation: q.explanation ?? '',
         };
       });
 
       setQuestions(normalized);
     } catch (err: any) {
-      console.error("Generate error:", err);
-      console.error("Error details:", {
+      console.error('Generate error:', err);
+      console.error('Error details:', {
         message: err.message,
         stack: err.stack,
         originalError: err,
       });
-      setError(err?.data?.message || err?.message || "Generate failed");
+      setError(err?.data?.message || err?.message || 'Generate failed');
     }
   };
 
   const acceptAll = async () => {
     if (!sectionId || !lessonId) {
-      alert("Missing sectionId or lessonId.");
+      alert('Missing sectionId or lessonId.');
       return;
     }
     if (questions.length === 0) {
-      alert("No questions to save.");
+      alert('No questions to save.');
       return;
     }
     setError(null);
 
     try {
       await saveQuestions({ sectionId, lessonId, questions }).unwrap();
-      alert("Saved successfully!");
+      alert('Saved successfully!');
     } catch (err: any) {
-      console.error("Save error:", err);
-      setError(err.message || "Save failed");
+      console.error('Save error:', err);
+      setError(err.message || 'Save failed');
     }
   };
 
@@ -133,12 +172,12 @@ export default function TestGeminiAIPage() {
   const addNewOption = (qIndex: number) => {
     const copy = [...questions];
     const currentOptions = copy[qIndex].options;
-    const optionLabels = ["A", "B", "C", "D", "E", "F"];
+    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
     const usedLabels = Object.keys(currentOptions);
     const nextLabel = optionLabels.find((label) => !usedLabels.includes(label));
 
     if (nextLabel) {
-      copy[qIndex].options[nextLabel] = "";
+      copy[qIndex].options[nextLabel] = '';
       setQuestions(copy);
     }
   };
@@ -148,7 +187,7 @@ export default function TestGeminiAIPage() {
     delete copy[qIndex].options[optionKey];
     // Nếu đáp án đúng bị xóa, reset về rỗng
     if (copy[qIndex].correctAnswer === optionKey) {
-      copy[qIndex].correctAnswer = "";
+      copy[qIndex].correctAnswer = '';
     }
     setQuestions(copy);
   };
@@ -197,11 +236,12 @@ export default function TestGeminiAIPage() {
               <div className="flex-1">
                 <label className="block">
                   <div className="mb-2 text-sm font-medium text-gray-700">
-                    Upload Word Document
+                    Upload Documents (.docx, .txt, .pdf)
                   </div>
                   <input
                     type="file"
-                    accept=".docx"
+                    accept=".docx,.txt,.pdf"
+                    multiple
                     onChange={onFileChange}
                     className="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
@@ -209,7 +249,7 @@ export default function TestGeminiAIPage() {
               </div>
               <button
                 onClick={handleGenerate}
-                disabled={!file || generating}
+                disabled={files.length === 0 || generating}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 font-medium flex items-center gap-2"
               >
                 {generating ? (
@@ -218,7 +258,7 @@ export default function TestGeminiAIPage() {
                     Processing...
                   </>
                 ) : (
-                  "Generate MCQ"
+                  'Generate MCQ'
                 )}
               </button>
             </div>
@@ -233,15 +273,22 @@ export default function TestGeminiAIPage() {
           )}
         </div>
 
-        {extractPreview && (
+        {extractPreviews.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h4 className="font-semibold text-lg mb-3 text-gray-900">
-              Document Preview
+              Document Previews ({extractPreviews.length} files)
             </h4>
             <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 max-h-60 overflow-y-auto">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                {extractPreview}
-              </pre>
+              {extractPreviews.map((preview, index) => (
+                <div key={index} className="mb-4">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700">
+                    {preview}
+                  </pre>
+                  {index < extractPreviews.length - 1 && (
+                    <hr className="my-3" />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -337,7 +384,7 @@ export default function TestGeminiAIPage() {
                             {Object.keys(q.options).map((key) => (
                               <option key={key} value={key}>
                                 {key}: {q.options[key].substring(0, 50)}
-                                {q.options[key].length > 50 ? "..." : ""}
+                                {q.options[key].length > 50 ? '...' : ''}
                               </option>
                             ))}
                           </select>
@@ -397,15 +444,15 @@ export default function TestGeminiAIPage() {
                             key={k}
                             className={`flex items-start gap-3 p-2 rounded ${
                               k === q.correctAnswer
-                                ? "bg-green-50 border border-green-200"
-                                : "bg-gray-50"
+                                ? 'bg-green-50 border border-green-200'
+                                : 'bg-gray-50'
                             }`}
                           >
                             <div
                               className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${
                                 k === q.correctAnswer
-                                  ? "bg-green-500 text-white"
-                                  : "bg-blue-100 text-blue-800"
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-blue-100 text-blue-800'
                               }`}
                             >
                               {k}
@@ -452,7 +499,7 @@ export default function TestGeminiAIPage() {
                     Saving...
                   </>
                 ) : (
-                  "Accept All & Save to Database"
+                  'Accept All & Save to Database'
                 )}
               </button>
             </div>

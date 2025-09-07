@@ -88,16 +88,3 @@ export const fullCourseSchema = z.object({
 });
 
 export type CourseBasicInfoType = z.infer<typeof fullCourseSchema>;
-
-// Helper function to get word count
-export const getWordCount = (text: string): number => {
-  return text
-    .trim()
-    .split(/\s+/)
-    .filter((word) => word.length > 0).length;
-};
-
-// Helper function to get character count
-export const getCharacterCount = (text: string): number => {
-  return text.length;
-};
