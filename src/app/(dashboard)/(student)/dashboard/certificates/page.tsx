@@ -27,7 +27,7 @@ import {
 import { Certificate } from "@/types/certificate";
 import { Download, Eye, Award, Calendar, User, Search } from "lucide-react";
 import { formatDate } from "@/utils/formatDate";
-import CertificateDetailModal from "@/components/student/certificates/CertificateDetailModal";
+import CertificateDetailModal from "@/components/common/CertificateDetailModal";
 import { DashboardLayout } from "@/components/dashboard-student/DashboardLayout";
 
 export default function CertificatesPage() {

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Certificate } from "@/types/certificate";
-import { useGetCertificateByCodeQuery } from "@/services/common/certificateApi";
+import { useGetCertificateByIdQuery } from "@/services/common/certificateApi";
 import {
   Download,
   ExternalLink,
@@ -25,12 +25,14 @@ interface CertificateDetailModalProps {
   certificate: Certificate | null;
   isOpen: boolean;
   onClose: () => void;
+  isInstructorView?: boolean; // New prop to differentiate views
 }
 
 export default function CertificateDetailModal({
   certificate,
   isOpen,
   onClose,
+  isInstructorView = false,
 }: CertificateDetailModalProps) {
   const [copied, setCopied] = React.useState(false);
   const [showPreview, setShowPreview] = React.useState(false);
@@ -39,8 +41,8 @@ export default function CertificateDetailModal({
     data: certificateDetail,
     isLoading,
     error,
-  } = useGetCertificateByCodeQuery(certificate?.certificateCode || "", {
-    skip: !certificate?.certificateCode || !isOpen,
+  } = useGetCertificateByIdQuery(certificate?.id || "", {
+    skip: !certificate?.id || !isOpen,
   });
 
   const handleCopyCode = async () => {
@@ -74,9 +76,8 @@ export default function CertificateDetailModal({
   };
 
   const handleDownload = () => {
-    const certificateDetailData = certificateDetail?.data;
-    if (certificateDetailData?.fileUrl) {
-      const downloadUrl = getDownloadUrl(certificateDetailData.fileUrl);
+    if (certificateDetail?.fileUrl) {
+      const downloadUrl = getDownloadUrl(certificateDetail.fileUrl);
       window.open(downloadUrl, "_blank");
       toast.success("Certificate download started");
     } else {
@@ -87,7 +88,7 @@ export default function CertificateDetailModal({
   const handleViewPublic = () => {
     if (certificate?.certificateCode) {
       // Open public certificate view in new tab
-      const publicUrl = `${window.location.origin}/dashboard/certificates/${certificate.certificateCode}`;
+      const publicUrl = `${window.location.origin}/certificates/${certificate.certificateCode}`;
       window.open(publicUrl, "_blank");
     }
   };
@@ -121,8 +122,7 @@ export default function CertificateDetailModal({
     if (!certificate?.certificateCode) return null;
 
     // Get the fileUrl from the certificate detail API response
-    const certificateDetailData = certificateDetail?.data;
-    const previewUrl = certificateDetailData?.fileUrl;
+    const previewUrl = certificateDetail?.fileUrl;
 
     if (!previewUrl) return null;
 
@@ -135,18 +135,6 @@ export default function CertificateDetailModal({
                 <Award className="h-5 w-5 text-blue-600" />
                 Certificate Preview
               </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  className="flex items-center gap-1"
-                  disabled={!certificateDetail?.data?.fileUrl}
-                >
-                  <Download className="h-4 w-4" />
-                  Download
-                </Button>
-              </div>
             </DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6 flex-1 min-h-0">
@@ -154,7 +142,7 @@ export default function CertificateDetailModal({
               src={getViewUrl(previewUrl)}
               className="w-full h-full border rounded-lg"
               title="Certificate Preview"
-              onLoad={() => toast.success("Certificate loaded successfully")}
+              onLoad={() => toast.success("Certificate loaded successfully", { duration: 1000 })}
               onError={() => toast.error("Failed to load certificate preview")}
             />
           </div>
@@ -185,14 +173,14 @@ export default function CertificateDetailModal({
                 </div>
               ) : (
                 <>
-                  {certificate.fileStatus === "GENERATED" && certificateDetail?.data?.fileUrl && (
+                  {certificate.fileStatus === "GENERATED" && certificateDetail?.fileUrl && (
                     <Button onClick={handleViewCertificate} className="flex items-center gap-2">
                       <Eye className="h-4 w-4" />
                       View Certificate
                     </Button>
                   )}
 
-                  {certificate.fileStatus === "GENERATED" && certificateDetail?.data?.fileUrl && (
+                  {certificate.fileStatus === "GENERATED" && certificateDetail?.fileUrl && (
                     <Button
                       onClick={handleDownload}
                       variant="outline"
@@ -238,7 +226,7 @@ export default function CertificateDetailModal({
                   <User className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-600">Instructor:</span>
                   <span className="font-medium">
-                    {certificateDetail?.data?.course?.instructorName || certificate.instructorName}
+                    {certificateDetail?.course?.instructorName || certificate.instructorName}
                   </span>
                 </div>
               </div>
@@ -267,17 +255,19 @@ export default function CertificateDetailModal({
             {/* Recipient Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Recipient Name</label>
+                <label className="text-sm font-medium text-gray-700">
+                  {isInstructorView ? "Student Name" : "Recipient Name"}
+                </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
                   <User className="h-4 w-4 text-gray-500" />
-                  <span>{certificateDetail?.data?.user?.name || certificate.userName}</span>
+                  <span>{certificateDetail?.user?.name || certificate.userName}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Email Address</label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{certificateDetail?.data?.user?.email || certificate.userEmail}</span>
+                  <span>{certificateDetail?.user?.email || certificate.userEmail}</span>
                 </div>
               </div>
             </div>
@@ -286,15 +276,17 @@ export default function CertificateDetailModal({
               <label className="text-sm font-medium text-gray-700">Course Title</label>
               <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
                 <BookOpen className="h-4 w-4 text-gray-500" />
-                <span>{certificateDetail?.data?.course?.title || certificate.courseTitle}</span>
+                <span>{certificateDetail?.course?.title || certificate.courseTitle}</span>
               </div>
             </div>
 
             {/* Help Text */}
             <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
               <p>
-                <strong>Tip:</strong> You can share your certificate by copying the certificate code
-                and sending it to others, or by sharing the public certificate page link.
+                <strong>{isInstructorView ? "Note:" : "Tip:"}</strong>{" "}
+                {isInstructorView
+                  ? "This certificate was issued to a student who successfully completed your course. You can share the certificate code or public link with others for verification."
+                  : "You can share your certificate by copying the certificate code and sending it to others, or by sharing the public certificate page link."}
               </p>
             </div>
           </div>
