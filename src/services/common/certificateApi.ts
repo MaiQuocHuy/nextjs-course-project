@@ -5,11 +5,48 @@ import {
   CertificateDetailResponse,
   CertificateQueryParams,
 } from "@/types/certificate";
+import { ApiResponse, PaginatedData } from "@/types";
+// import { CertificateFilter, InstructorCertificate, InstructorCertificateDetail } from "../instructor/certificates/certificatesApi";
+
+export interface InstructorCertificate {
+  id: string;
+  certificateCode: string;
+  issuedAt: string;
+  userName: string;
+  userEmail: string;
+  courseTitle: string;
+  instructorName: string;
+  fileStatus: 'GENERATED' | 'PENDING';
+}
+
+export interface InstructorCertificateDetail {
+  id: string;
+  certificateCode: string;
+  issuedAt: string;
+  fileUrl?: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  course: {
+    id: string;
+    title: string;
+    instructorName: string;
+  };
+}
+
+export interface CertificateFilter {
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
 
 export const certificateApi = createApi({
   reducerPath: "certificateApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Certificate"],
+  tagTypes: ["Certificate",'InstructorCertificates', 'CourseCertificates'],
   endpoints: (builder) => ({
     // Get user's certificates (for authenticated users)
     getMyCertificates: builder.query<CertificatesResponse, CertificateQueryParams | void>({
@@ -25,6 +62,44 @@ export const certificateApi = createApi({
       },
       providesTags: ["Certificate"]
     }),
+
+    getCertificatesByCourse: builder.query<
+          PaginatedData<InstructorCertificate>,
+          { courseId: string } & CertificateFilter
+        >({
+          query: ({ courseId, page = 0, size = 10, sort = 'issuedAt,desc' }) => ({
+            url: `/certificates/course/${courseId}?page=${page}&size=${size}&sort=${sort}`,
+            method: 'GET',
+          }),
+          transformResponse: (response: ApiResponse<PaginatedData<InstructorCertificate>>) => {
+            return response.data;
+          },
+          providesTags: (result, error, { courseId }) =>
+            result
+              ? [
+                  ...result.content.map(({ id }) => ({
+                    type: 'CourseCertificates' as const,
+                    id,
+                  })),
+                  { type: 'CourseCertificates', id: `course-${courseId}` },
+                ]
+              : [{ type: 'CourseCertificates', id: `course-${courseId}` }],
+        }),
+    
+        // Get certificate details by ID
+        getCertificateById: builder.query<InstructorCertificateDetail, string>({
+          query: (certificateId) => ({
+            url: `/certificates/${certificateId}`,
+            method: 'GET',
+          }),
+          transformResponse: (response: ApiResponse<InstructorCertificateDetail>) => {
+            return response.data;
+          },
+          providesTags: (result, error, id) => [
+            { type: 'InstructorCertificates', id },
+          ],
+        }),
+        
   }),
 });
 
@@ -39,7 +114,8 @@ const publicCertificateApi = createApi({
   }),
 });
 
-export const { useGetMyCertificatesQuery } = certificateApi;
+export const { useGetMyCertificatesQuery,useGetCertificatesByCourseQuery,
+  useGetCertificateByIdQuery, } = certificateApi;
 export const { useGetCertificateByCodeQuery } = publicCertificateApi;
 
 // Export both APIs for store configuration
