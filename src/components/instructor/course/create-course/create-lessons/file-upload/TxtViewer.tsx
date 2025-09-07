@@ -6,7 +6,7 @@ type Props = {
   file: File;
 };
 
-const TxTViewer = ({ file }: Props) => {
+const TxtViewer = ({ file }: Props) => {
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,4 +58,4 @@ const TxTViewer = ({ file }: Props) => {
   );
 };
 
-export default TxTViewer;
+export default TxtViewer;

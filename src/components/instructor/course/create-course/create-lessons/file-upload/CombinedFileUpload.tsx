@@ -27,7 +27,7 @@ import { DocxViewer } from './DocxViewer';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import type { DocumentType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
-import TxTViewer from './TxTViewer';
+import TxtViewer from './TxtViewer';
 import { VideoViewer } from './VideoViewer';
 
 interface CombinedFileUploadProps {
@@ -50,11 +50,16 @@ export function CombinedFileUpload({
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>('');
 
   useEffect(() => {
-    if (videoFile && !videoPreviewUrl) {
-      const url = URL.createObjectURL(videoFile);
-      setVideoPreviewUrl(url);
+    if (!videoFile) {
+      setVideoPreviewUrl('');
+      return;
     }
-  }, [videoFile, videoPreviewUrl]);
+    const url = URL.createObjectURL(videoFile);
+    setVideoPreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [videoFile]);
 
   // Document Dropzone
   const onDocumentDrop = useCallback(
@@ -188,7 +193,7 @@ export function CombinedFileUpload({
         />
       );
     } else if (file.type === 'text/plain') {
-      return <TxTViewer file={file} />;
+      return <TxtViewer file={file} />;
     } else if (
       file.type ===
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

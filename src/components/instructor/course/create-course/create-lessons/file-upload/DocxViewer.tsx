@@ -1,6 +1,5 @@
 'use client';
 
-import mammoth from 'mammoth';
 import { useState, useEffect } from 'react';
 import { Loader2, AlertCircle, Download, AlertTriangle } from 'lucide-react';
 
@@ -24,28 +23,13 @@ export const DocxViewer = ({ file }: { file: File }) => {
     const renderDocument = async () => {
       try {
         setIsLoading(true);
-        // Get file as array buffer
         const arrayBuffer = await file.arrayBuffer();
 
-        try {
-          console.log('Converting with mammoth.js');
-          const result = await mammoth.convertToHtml({ arrayBuffer });
-
-          // Only update state if component is still mounted
-          if (mounted) {
-            setContent(result.value);
-            setIsLoading(false);
-          }
-        } catch (err) {
-          console.error('Failed to render with mammoth:', err);
-          if (mounted) {
-            setError(
-              `Failed to render document: ${
-                err instanceof Error ? err.message : 'Unknown error'
-              }`
-            );
-            setIsLoading(false);
-          }
+        const mammoth = await import('mammoth');
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        if (mounted) {
+          setContent(result.value);
+          setIsLoading(false);
         }
       } catch (err) {
         console.error('Document processing error:', err);
@@ -62,13 +46,9 @@ export const DocxViewer = ({ file }: { file: File }) => {
 
     renderDocument();
 
-    // Clean up function
     return () => {
       mounted = false;
-      // Revoke the object URL to avoid memory leaks
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
-      }
+      URL.revokeObjectURL(downloadUrl);
     };
   }, [file]);
 

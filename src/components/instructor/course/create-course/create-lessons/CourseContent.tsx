@@ -1617,12 +1617,12 @@ export default function CourseContent({
   };
 
   if (step === 'success') {
-    <CreateCourseSuccess />;
+    return <CreateCourseSuccess />;
   }
 
   if (step === 'review') {
     const sections = form.getValues('sections');
-    <ReviewCourse
+    return <ReviewCourse
       courseStatus={courseStatus}
       sections={sections}
       onBackToEdit={() => setStep('create')}
