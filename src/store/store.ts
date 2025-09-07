@@ -7,6 +7,7 @@ import { studentApi } from '@/services/student/studentApi';
 import { authSlice, logoutState } from './slices/auth/authSlice';
 import { profileApi } from '@/services/common/profileApi';
 import { chatApi } from "@/services/websocket/chatApi";
+import { certificateApi, publicCertificateApi } from '@/services/common/certificateApi';
 
 // Instructor
 import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
@@ -36,6 +37,8 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
     store.dispatch(paymentApi.util.resetApiState());
     store.dispatch(geminiApi.util.resetApiState());
     store.dispatch(chatApi.util.resetApiState());
+    store.dispatch(certificateApi.util.resetApiState());
+    store.dispatch(publicCertificateApi.util.resetApiState());
   }
 
   return result;
@@ -56,6 +59,8 @@ export const makeStore = () => {
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
       [chatApi.reducerPath]: chatApi.reducer,
+      [certificateApi.reducerPath]: certificateApi.reducer,
+      [publicCertificateApi.reducerPath]: publicCertificateApi.reducer,
 
       // Instructor
       loadingAnima: loadingAnimaSlice.reducer,
@@ -78,6 +83,8 @@ export const makeStore = () => {
         settingsApi.middleware,
         geminiApi.middleware,
         chatApi.middleware,
+        certificateApi.middleware,
+        publicCertificateApi.middleware,
         clearCacheOnLogout,
 
         // Instructor
