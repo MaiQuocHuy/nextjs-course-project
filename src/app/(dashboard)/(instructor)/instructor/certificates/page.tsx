@@ -15,10 +15,10 @@ import {
 import { useGetCoursesQuery } from "@/services/instructor/courses/courses-api";
 import { useGetCertificatesByCourseQuery } from "@/services/common/certificateApi";
 import { Course } from "@/types/instructor/courses";
-import { Award, Calendar, User, Eye, BookOpen, Users } from "lucide-react";
-import { formatDate } from "@/utils/formatDate";
+import { Award, User, Eye, BookOpen, Users, Search } from "lucide-react";
 import CertificateDetailModal from "@/components/common/CertificateDetailModal";
 import { Certificate } from "@/types/certificate";
+import { Input } from "@/components/ui/input";
 
 interface CertificateListItem {
   id: string;
@@ -35,6 +35,8 @@ export default function InstructorCertificatesPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [courseSearchQuery, setCourseSearchQuery] = useState("");
+  const [certificateSearchQuery, setCertificateSearchQuery] = useState("");
 
   // Helper function to convert instructor certificate to common certificate format
   const convertToCertificate = (instructorCert: CertificateListItem): Certificate => ({
@@ -67,6 +69,18 @@ export default function InstructorCertificatesPage() {
 
   const courses = coursesData?.content || [];
   const certificates = certificatesData?.content || [];
+
+  // Filter courses based on search query
+  const filteredCourses = courses.filter((course: Course) =>
+    course.title.toLowerCase().includes(courseSearchQuery.toLowerCase())
+  );
+
+  // Filter certificates based on search query
+  const filteredCertificates = certificates.filter(
+    (certificate: CertificateListItem) =>
+      certificate.certificateCode.toLowerCase().includes(certificateSearchQuery.toLowerCase()) ||
+      certificate.userName.toLowerCase().includes(certificateSearchQuery.toLowerCase())
+  );
 
   const handleViewCourseGraduates = (courseId: string) => {
     setSelectedCourseId(courseId);
@@ -140,19 +154,35 @@ export default function InstructorCertificatesPage() {
                 <BookOpen className="h-5 w-5" />
                 Your Courses
               </CardTitle>
+              {/* Course Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search courses..."
+                  value={courseSearchQuery}
+                  onChange={(e) => setCourseSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingCourses ? (
                 <div className="text-center py-4">Loading courses...</div>
-              ) : courses.length === 0 ? (
+              ) : filteredCourses.length === 0 ? (
                 <div className="text-center py-8">
                   <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No Courses</h3>
-                  <p className="text-gray-500">You haven't created any courses yet</p>
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">
+                    {courseSearchQuery ? "No courses found" : "No Courses"}
+                  </h3>
+                  <p className="text-gray-500">
+                    {courseSearchQuery
+                      ? "Try adjusting your search terms"
+                      : "You haven't created any courses yet"}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {courses.map((course: Course) => (
+                  {filteredCourses.map((course: Course) => (
                     <div
                       key={course.id}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
@@ -192,12 +222,24 @@ export default function InstructorCertificatesPage() {
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5" />
                 Course Certificates
-                {selectedCourseId && certificates.length > 0 && (
+                {selectedCourseId && filteredCertificates.length > 0 && (
                   <span className="text-sm font-normal text-gray-600 ml-2">
-                    ({certificates.length} certificates)
+                    ({filteredCertificates.length} certificates)
                   </span>
                 )}
               </CardTitle>
+              {/* Certificate Search Bar - only show when course is selected */}
+              {selectedCourseId && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search by certificate code or student name..."
+                    value={certificateSearchQuery}
+                    onChange={(e) => setCertificateSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {!selectedCourseId ? (
@@ -218,12 +260,16 @@ export default function InstructorCertificatesPage() {
                   </h3>
                   <p className="text-gray-600">Failed to load certificates for this course.</p>
                 </div>
-              ) : certificates.length === 0 ? (
+              ) : filteredCertificates.length === 0 ? (
                 <div className="text-center py-12">
                   <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No Certificates Yet</h3>
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">
+                    {certificateSearchQuery ? "No certificates found" : "No Certificates Yet"}
+                  </h3>
                   <p className="text-gray-500">
-                    No students have completed this course and received certificates yet.
+                    {certificateSearchQuery
+                      ? "Try adjusting your search terms"
+                      : "No students have completed this course and received certificates yet."}
                   </p>
                 </div>
               ) : (
@@ -239,7 +285,7 @@ export default function InstructorCertificatesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {certificates.map((certificate: CertificateListItem) => (
+                      {filteredCertificates.map((certificate: CertificateListItem) => (
                         <TableRow key={certificate.id}>
                           <TableCell className="font-mono text-sm">
                             {certificate.certificateCode}
