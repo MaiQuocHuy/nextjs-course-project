@@ -43,6 +43,7 @@ import { ChatMessage, UserStatusMessage } from "@/types/chat";
 import { useAuth } from "@/hooks/useAuth";
 import { getSession, useSession } from "next-auth/react";
 import { validateFile, formatFileSize } from "@/lib/websocket/config";
+import { toast } from "sonner";
 
 interface ChatBubbleProps {
   courseId: string;
@@ -73,10 +74,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get current user info
-  const { user } = useAuth();
-  const currentUserId = user?.id;
-
   const { data: session } = useSession();
 
   // Don't render if user is not authenticated
@@ -84,16 +81,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     return null;
   }
 
-  // Get user ID from session
-  useEffect(() => {
-    const getUserId = async () => {
-      const session = await getSession();
-      if (session?.user?.id) {
-        setUserId(session.user.id);
-      }
-    };
-    getUserId();
-  }, []);
+  // Get current user info
+  const currentUserId = session.user.id;
 
   // Infinite scroll hook for loading messages
   const {
@@ -137,26 +126,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     courseId,
     userId: userId || undefined,
     autoConnect: isOpen,
-    onConnect: () => {
-      console.log("Chat bubble connected for course:", courseId);
-    },
-    onDisconnect: () => {
-      console.log("Chat bubble disconnected for course:", courseId);
-    },
-    onError: (error: any) => {
-      console.error("Chat bubble WebSocket error:", error);
-    },
     onUserStatus: (status: UserStatusMessage) => {
-      console.log("Chat bubble user status update:", status);
       // Handle different status types
       if (status.type === "MESSAGE_SENT" && status.status === "success") {
-        console.log("Chat bubble message sent successfully:", status.messageId);
         // Remove pending message on success
         setPendingMessages((prev) =>
           prev.filter((pending) => pending.tempId !== status.messageId)
         );
       } else if (status.status === "error") {
-        console.error("Chat bubble message error:", status.error);
         // Mark pending message as error
         setPendingMessages((prev) =>
           prev.map((pending) =>
@@ -266,25 +243,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     }
   }, [isOpen, isInitialized, allMessages.length, setAutoScrolling]);
 
-  // Debug infinite scroll state
-  useEffect(() => {
-    console.log("🔍 Infinite scroll state:", {
-      hasNextPage,
-      isFetchingNextPage,
-      isLoading,
-      loadedMessagesCount: loadedMessages.length,
-      allMessagesCount: allMessages.length,
-      isOpen,
-    });
-  }, [
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    loadedMessages.length,
-    allMessages.length,
-    isOpen,
-  ]);
-
   // Auto resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -298,11 +256,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     if (!messageText.trim() || isSendingMessage) return;
 
     const tempMessage = messageText.trim();
-    console.log("🚀 Sending message:", tempMessage);
-    console.log(
-      "🚀 Before sending - wsMessages count:",
-      wsMessages?.length || 0
-    );
 
     try {
       const result = await sendMessage({
@@ -311,12 +264,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         type: "TEXT",
         tempId: uuidv4(),
       }).unwrap();
-
-      console.log("🚀 Message sent successfully:", result);
-      console.log(
-        "🚀 After sending - wsMessages count:",
-        wsMessages?.length || 0
-      );
 
       // Message will be added via WebSocket when received from server
       // No need for optimistic update here since WebSocket handles real-time updates
@@ -344,7 +291,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         content: editingText.trim(),
       }).unwrap();
 
-      console.log("✅ Message updated successfully:", result);
       setEditingMessageId(null);
       setEditingText("");
 
@@ -374,7 +320,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       removeMessage(messageId);
 
       const result = await deleteMessage({ courseId, messageId }).unwrap();
-      console.log("✅ Message deleted successfully:", result);
 
       // If server did not actually delete, we could re-add or refetch, but
       // assume success; RTK Query cache will sync on its own
@@ -403,7 +348,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     // Validate file
     const validation = validateFile(file);
     if (!validation.isValid) {
-      console.error("File validation failed:", validation.error);
+      toast.error(`File error: ${validation.error}`);
       return;
     }
 
@@ -457,11 +402,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           fileSize: file.size,
           mimeType: file.type,
         }).unwrap();
-
-        console.log(
-          "File message (with fileUrl) sent, awaiting WS confirmation:",
-          file.name
-        );
       } catch (error) {
         console.error("Failed to send file message after upload:", error);
         setPendingMessages((prev) =>
@@ -503,7 +443,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   const startEditing = (message: ChatMessage) => {
     // Only allow editing TEXT messages
     if (message.type.toUpperCase() !== "TEXT") {
-      console.warn("Only TEXT messages can be edited");
+      toast.error("Only text messages can be edited.");
       return;
     }
 
