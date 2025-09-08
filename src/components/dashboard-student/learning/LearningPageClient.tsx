@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { LearningLoadingSkeleton } from "../ui/Loading";
 import { LearningPageError } from "../ui";
-import { CourseChatBubble } from "@/components/chat";
+import { ChatBubble } from "@/components/chat";
 
 interface LearningPageClientProps {
   courseId: string;
@@ -171,7 +171,7 @@ export default function LearningPageClient({
       </div>
 
       {/* Course Chat Bubble */}
-      <CourseChatBubble courseId={courseId} />
+      <ChatBubble courseId={courseId} />
     </div>
   );
 }

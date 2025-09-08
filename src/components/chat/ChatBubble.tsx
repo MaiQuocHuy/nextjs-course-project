@@ -41,18 +41,16 @@ import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
 import { ChatMessage, UserStatusMessage } from "@/types/chat";
 import { useAuth } from "@/hooks/useAuth";
-import { getSession } from "next-auth/react";
+import { getSession, useSession } from "next-auth/react";
 import { validateFile, formatFileSize } from "@/lib/websocket/config";
 
 interface ChatBubbleProps {
   courseId: string;
-  accessToken: string;
   className?: string;
 }
 
 export const ChatBubble: React.FC<ChatBubbleProps> = ({
   courseId,
-  accessToken,
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -78,6 +76,13 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   // Get current user info
   const { user } = useAuth();
   const currentUserId = user?.id;
+
+  const { data: session } = useSession();
+
+  // Don't render if user is not authenticated
+  if (!session?.user?.accessToken || !courseId) {
+    return null;
+  }
 
   // Get user ID from session
   useEffect(() => {
@@ -128,7 +133,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     error: wsError,
     userStatus,
   } = useChatWebSocket({
-    accessToken,
+    accessToken: session.user.accessToken,
     courseId,
     userId: userId || undefined,
     autoConnect: isOpen,
