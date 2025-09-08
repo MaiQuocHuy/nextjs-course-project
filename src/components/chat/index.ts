@@ -1,2 +1,2 @@
 export { ChatBubble } from "./ChatBubble";
-export { ChatComponent } from "./ChatComponent";
+export { default as Chat } from "./Chat";
