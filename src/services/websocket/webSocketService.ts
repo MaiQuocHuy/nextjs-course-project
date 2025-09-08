@@ -111,9 +111,39 @@ export class WebSocketService {
   /**
    * Subscribe to course messages
    */
-  private subscribeToMessages(courseId: string) {
-    if (!this.client || !this.isConnected) {
-      console.error("WebSocket client not connected");
+  private async subscribeToMessages(courseId: string) {
+    if (!this.client) {
+      console.error("WebSocket client not initialized");
+      return;
+    }
+
+    // Wait for the underlying STOMP connection to be ready
+    const waitForStompConnected = async (timeoutMs = 5000) => {
+      const intervalMs = 100;
+      const start = Date.now();
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise<boolean>(async (resolve) => {
+        const check = () => {
+          if (this.client && (this.client as any).connected === true) {
+            resolve(true);
+            return;
+          }
+
+          if (Date.now() - start > timeoutMs) {
+            resolve(false);
+            return;
+          }
+
+          setTimeout(check, intervalMs);
+        };
+
+        check();
+      });
+    };
+
+    const connected = await waitForStompConnected(5000);
+    if (!connected) {
+      console.error("STOMP client not connected after wait - cannot subscribe");
       return;
     }
 
@@ -160,9 +190,40 @@ export class WebSocketService {
   /**
    * Subscribe to user's personal status updates
    */
-  private subscribeToUserStatus(userId: string) {
-    if (!this.client || !this.isConnected) {
-      console.error("WebSocket client not connected for user status");
+  private async subscribeToUserStatus(userId: string) {
+    if (!this.client) {
+      console.error("WebSocket client not initialized for user status");
+      return;
+    }
+
+    // Wait for STOMP underlying connection as well
+    const waitForStompConnected = async (timeoutMs = 5000) => {
+      const intervalMs = 100;
+      const start = Date.now();
+      return new Promise<boolean>((resolve) => {
+        const check = () => {
+          if (this.client && (this.client as any).connected === true) {
+            resolve(true);
+            return;
+          }
+
+          if (Date.now() - start > timeoutMs) {
+            resolve(false);
+            return;
+          }
+
+          setTimeout(check, intervalMs);
+        };
+
+        check();
+      });
+    };
+
+    const connected = await waitForStompConnected(5000);
+    if (!connected) {
+      console.error(
+        "STOMP client not connected after wait - cannot subscribe to user status"
+      );
       return;
     }
 

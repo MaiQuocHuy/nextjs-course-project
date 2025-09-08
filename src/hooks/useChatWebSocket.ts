@@ -273,6 +273,58 @@ export const useChatWebSocket = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.autoConnect]);
 
+  // When the requested courseId changes, switch subscription or connect as needed.
+  // This ensures that when the parent component changes the course, the
+  // WebSocket subscription follows and incoming messages for the new course
+  // will be delivered to this hook.
+  useEffect(() => {
+    // skip if no courseId provided
+    const newCourseId = config.courseId;
+    if (!newCourseId) return;
+
+    let cancelled = false;
+
+    const handleCourseChange = async () => {
+      try {
+        const status = getChatConnectionStatus();
+
+        // Always prefer the safe connect flow which will initialize manager
+        // and subscribe to the correct course. This avoids calling
+        // chatWebSocketManager.switchCourse when the manager isn't
+        // initialized (which throws).
+        // Ensure configRef has the new course id before connecting.
+        configRef.current = { ...configRef.current, courseId: newCourseId };
+
+        // Only call connect if either the current course differs or we're
+        // not connected. connect() is idempotent via connectingRef guard.
+        if (status.currentCourseId !== newCourseId || !status.isConnected) {
+          await connect();
+        }
+
+        if (!cancelled) {
+          const after = getChatConnectionStatus();
+          setIsConnected(after.isConnected);
+          setConnectionState(after.connectionState);
+          // clear local messages when course changes
+          setMessages([]);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error("Failed to switch/connect to new course:", err);
+          setError(err?.message || "Failed to switch course");
+        }
+      }
+    };
+
+    // Don't run this on initial mount if autoConnect is disabled
+    handleCourseChange();
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally depend on config.courseId only. connect/switchCourse are stable via useCallback.
+  }, [config.courseId]);
+
   // Update connection state periodically
   useEffect(() => {
     const interval = setInterval(() => {
