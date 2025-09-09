@@ -53,6 +53,7 @@ const PUBLIC_PATHS = [
   '/contact',
   '/courses',
   '/access-denied',
+  '/certificates'
 ];
 
 export async function middleware(req: NextRequest) {
