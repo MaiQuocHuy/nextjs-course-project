@@ -1,47 +1,14 @@
+import { ChatMessage, WebSocketConfig, UserStatusMessage } from "@/types/chat";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-
-export interface ChatMessage {
-  id: string;
-  courseId: string;
-  senderId: string;
-  senderName: string;
-  senderRole: "STUDENT" | "INSTRUCTOR";
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
-  textContent?: string;
-  fileUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  duration?: number;
-  thumbnailUrl?: string;
-  createdAt: string;
-}
-
-export interface SendMessageData {
-  type: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
-  content: string;
-  fileName?: string | null;
-  fileSize?: number | null;
-  duration?: number | null;
-  thumbnailUrl?: string | null;
-}
-
-export interface WebSocketConfig {
-  baseUrl: string;
-  token: string;
-  courseId: string;
-  onMessage: (message: ChatMessage) => void;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: any) => void;
-  onReconnect?: () => void;
-}
 
 export class WebSocketService {
   private client: Client | null = null;
   private config: WebSocketConfig | null = null;
   private isConnected = false;
   private subscription: any = null;
+  private userStatusSubscription: any = null;
+  private currentUserId: string | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
 
@@ -56,6 +23,7 @@ export class WebSocketService {
     return new Promise((resolve, reject) => {
       try {
         this.config = config;
+        this.currentUserId = config.userId || null;
 
         // Create SockJS socket
         const socket = new SockJS(`${config.baseUrl}/ws-chat`);
@@ -79,6 +47,11 @@ export class WebSocketService {
 
             // Subscribe to course messages
             this.subscribeToMessages(config.courseId);
+
+            // Subscribe to user status if userId provided
+            if (this.currentUserId) {
+              this.subscribeToUserStatus(this.currentUserId);
+            }
 
             config.onConnect?.();
             resolve();
@@ -138,9 +111,39 @@ export class WebSocketService {
   /**
    * Subscribe to course messages
    */
-  private subscribeToMessages(courseId: string) {
-    if (!this.client || !this.isConnected) {
-      console.error("WebSocket client not connected");
+  private async subscribeToMessages(courseId: string) {
+    if (!this.client) {
+      console.error("WebSocket client not initialized");
+      return;
+    }
+
+    // Wait for the underlying STOMP connection to be ready
+    const waitForStompConnected = async (timeoutMs = 5000) => {
+      const intervalMs = 100;
+      const start = Date.now();
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise<boolean>(async (resolve) => {
+        const check = () => {
+          if (this.client && (this.client as any).connected === true) {
+            resolve(true);
+            return;
+          }
+
+          if (Date.now() - start > timeoutMs) {
+            resolve(false);
+            return;
+          }
+
+          setTimeout(check, intervalMs);
+        };
+
+        check();
+      });
+    };
+
+    const connected = await waitForStompConnected(5000);
+    if (!connected) {
+      console.error("STOMP client not connected after wait - cannot subscribe");
       return;
     }
 
@@ -156,6 +159,18 @@ export class WebSocketService {
 
           const chatMessage: ChatMessage = JSON.parse(message.body);
           console.log("Parsed chat message:", chatMessage);
+          console.log("Message content:", chatMessage.content);
+          console.log("Message sender:", chatMessage.senderName);
+          console.log("Message type:", chatMessage.type);
+          console.log("Full message object keys:", Object.keys(chatMessage));
+          console.log("Full message object:", chatMessage);
+
+          // Validate that required fields are present
+          if (!chatMessage.content && chatMessage.type === "TEXT") {
+            console.warn("⚠️ Message missing content field:", chatMessage);
+            console.warn("⚠️ Available fields:", Object.keys(chatMessage));
+          }
+
           this.config?.onMessage(chatMessage);
         } catch (error) {
           console.error("Error parsing message:", error);
@@ -173,6 +188,80 @@ export class WebSocketService {
   }
 
   /**
+   * Subscribe to user's personal status updates
+   */
+  private async subscribeToUserStatus(userId: string) {
+    if (!this.client) {
+      console.error("WebSocket client not initialized for user status");
+      return;
+    }
+
+    // Wait for STOMP underlying connection as well
+    const waitForStompConnected = async (timeoutMs = 5000) => {
+      const intervalMs = 100;
+      const start = Date.now();
+      return new Promise<boolean>((resolve) => {
+        const check = () => {
+          if (this.client && (this.client as any).connected === true) {
+            resolve(true);
+            return;
+          }
+
+          if (Date.now() - start > timeoutMs) {
+            resolve(false);
+            return;
+          }
+
+          setTimeout(check, intervalMs);
+        };
+
+        check();
+      });
+    };
+
+    const connected = await waitForStompConnected(5000);
+    if (!connected) {
+      console.error(
+        "STOMP client not connected after wait - cannot subscribe to user status"
+      );
+      return;
+    }
+
+    try {
+      const destination = `/topic/users/${userId}/status`;
+      console.log(`Attempting to subscribe to user status: ${destination}`);
+
+      this.userStatusSubscription = this.client.subscribe(
+        destination,
+        (message) => {
+          try {
+            console.log("Raw user status message received:", message);
+            console.log("User status message headers:", message.headers);
+            console.log("User status message body:", message.body);
+
+            const statusMessage: UserStatusMessage = JSON.parse(message.body);
+            console.log("Parsed user status message:", statusMessage);
+            this.config?.onUserStatus?.(statusMessage);
+          } catch (error) {
+            console.error("Error parsing user status message:", error);
+            console.error("Raw user status message body:", message.body);
+          }
+        }
+      );
+
+      console.log(`Successfully subscribed to user ${userId} status`);
+      console.log(
+        "User status subscription object:",
+        this.userStatusSubscription
+      );
+      return this.userStatusSubscription;
+    } catch (error) {
+      console.error("Error subscribing to user status:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Unsubscribe from current subscription
    */
   unsubscribe() {
@@ -180,6 +269,17 @@ export class WebSocketService {
       this.subscription.unsubscribe();
       this.subscription = null;
       console.log("Unsubscribed from messages");
+    }
+  }
+
+  /**
+   * Unsubscribe from user status
+   */
+  unsubscribeFromUserStatus() {
+    if (this.userStatusSubscription) {
+      this.userStatusSubscription.unsubscribe();
+      this.userStatusSubscription = null;
+      console.log("Unsubscribed from user status");
     }
   }
 
@@ -216,13 +316,16 @@ export class WebSocketService {
   disconnect(): Promise<void> {
     return new Promise((resolve) => {
       if (this.client && this.isConnected) {
-        // Unsubscribe first
+        // Unsubscribe from both topics
         this.unsubscribe();
+        this.unsubscribeFromUserStatus();
 
         this.client.onDisconnect = () => {
           this.isConnected = false;
           this.client = null;
           this.config = null;
+          this.currentUserId = null;
+          this.userStatusSubscription = null;
           this.reconnectAttempts = 0;
           console.log("WebSocket disconnected");
           resolve();
