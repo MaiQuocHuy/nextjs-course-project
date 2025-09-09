@@ -22,11 +22,11 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const toggleChat = () => {
@@ -40,49 +40,50 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   return (
     <>
       {/* Chat Toggle Button */}
-      <div className={cn(
-        "fixed z-50",
-        // Desktop positioning
-        "md:bottom-6 md:right-6",
-        // Mobile positioning  
-        "bottom-4 right-4",
-        className
-      )}>
-        <Button
-          onClick={toggleChat}
-          size={isMobile ? "default" : "lg"}
-          className={cn(
-            "rounded-full shadow-lg transition-all duration-300 hover:scale-105",
-            // Desktop sizing
-            "md:h-14 md:w-14",
-            // Mobile sizing
-            "h-12 w-12",
-            isOpen ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"
-          )}
-        >
-          {isOpen ? (
-            <X className={cn("md:h-6 md:w-6 h-5 w-5")} />
-          ) : (
+      <div
+        className={cn(
+          "fixed z-50",
+          // Desktop positioning
+          "md:bottom-6 md:right-6",
+          // Mobile positioning
+          "bottom-4 right-4",
+          className
+        )}
+      >
+        {!isOpen && (
+          <Button
+            onClick={toggleChat}
+            size={isMobile ? "default" : "lg"}
+            className={cn(
+              "rounded-full shadow-lg transition-all duration-300 hover:scale-105 bg-blue-600 text-white hover:bg-blue-700",
+              // Desktop sizing
+              "md:h-14 md:w-14",
+              // Mobile sizing
+              "h-12 w-12"
+            )}
+          >
             <MessageCircle className={cn("md:h-6 md:w-6 h-5 w-5")} />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className={cn(
-          "fixed z-40",
-          // Desktop positioning
-          "md:bottom-24 md:right-6 md:top-auto md:left-auto",
-          // Tablet positioning  
-          "sm:bottom-20 sm:right-4 sm:top-auto sm:left-auto",
-          // Mobile positioning (fullscreen)
-          "bottom-0 right-0 top-0 left-0",
-          // Mobile specific
-          "md:max-w-none sm:max-w-none"
-        )}>
-          <ChatPanel 
-            initialCourseId={courseId} 
+        <div
+          className={cn(
+            "fixed z-100",
+            // Desktop positioning
+            "md:bottom-4 md:right-6 md:top-auto md:left-auto",
+            // Tablet positioning
+            "sm:bottom-20 sm:right-4 sm:top-auto sm:left-auto",
+            // Mobile positioning (fullscreen)
+            "bottom-0 right-0 top-0 left-0",
+            // Mobile specific
+            "md:max-w-none sm:max-w-none"
+          )}
+        >
+          <ChatPanel
+            initialCourseId={courseId}
             onClose={closeChat}
             isMobile={isMobile}
           />
@@ -91,7 +92,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
       {/* Mobile backdrop */}
       {isOpen && isMobile && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
           onClick={closeChat}
         />

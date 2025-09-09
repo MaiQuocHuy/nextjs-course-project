@@ -44,11 +44,17 @@ import { toast } from "sonner";
 
 interface ChatProps {
   courseId: string;
+  courseTitle?: string;
   onClose: () => void;
   isMobile?: boolean;
 }
 
-const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
+const Chat: React.FC<ChatProps> = ({
+  courseId,
+  courseTitle,
+  onClose,
+  isMobile = false,
+}) => {
   const [messageText, setMessageText] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -61,6 +67,7 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
     new Set()
   );
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -165,7 +172,17 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
 
   useEffect(() => {
     resetMessages();
+    setIsInitializing(true);
+    // Clear initializing state when we have data or finish loading
+    const timer = setTimeout(() => setIsInitializing(false), 300);
+    return () => clearTimeout(timer);
   }, [courseId, resetMessages]);
+
+  useEffect(() => {
+    if (isInitialized || !isLoading) {
+      setIsInitializing(false);
+    }
+  }, [isInitialized, isLoading]);
 
   const [sendMessage, { isLoading: isSendingMessage }] =
     useSendMessageMutation();
@@ -447,42 +464,41 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
         )}
       >
         {!isOwn && (
-          <Avatar className={cn(
-            "flex-shrink-0",
-            isMobile ? "w-7 h-7" : "w-8 h-8"
-          )}>
+          <Avatar
+            className={cn("flex-shrink-0", isMobile ? "w-7 h-7" : "w-8 h-8")}
+          >
             <AvatarImage
               src={message.senderThumbnailUrl}
               alt={message.senderName}
             />
-            <AvatarFallback className={cn(
-              isMobile ? "text-xs" : "text-xs"
-            )}>
+            <AvatarFallback className={cn(isMobile ? "text-xs" : "text-xs")}>
               {message.senderName?.charAt(0)?.toUpperCase() || "Y"}
             </AvatarFallback>
           </Avatar>
         )}
 
-        <div className={cn(
-          "flex flex-col",
-          isMobile ? "max-w-[85%]" : "max-w-[80%]",
-          isOwn && "items-end"
-        )}>
+        <div
+          className={cn(
+            "flex flex-col",
+            isMobile ? "max-w-[85%]" : "max-w-[80%]",
+            isOwn && "items-end"
+          )}
+        >
           {!isOwn && (
             <div className="flex items-center gap-2 mb-1">
-              <span className={cn(
-                "font-medium text-muted-foreground",
-                isMobile ? "text-xs" : "text-xs"
-              )}>
+              <span
+                className={cn(
+                  "font-medium text-muted-foreground",
+                  isMobile ? "text-xs" : "text-xs"
+                )}
+              >
                 {message.senderName}
               </span>
               <Badge
                 variant={
                   message.senderRole === "INSTRUCTOR" ? "default" : "secondary"
                 }
-                className={cn(
-                  isMobile ? "text-xs px-1.5 py-0.5" : "text-xs"
-                )}
+                className={cn(isMobile ? "text-xs px-1.5 py-0.5" : "text-xs")}
               >
                 {message.senderRole}
               </Badge>
@@ -491,10 +507,12 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
 
           <div className="relative">
             {editingMessageId === message.id ? (
-              <div className={cn(
-                "bg-muted rounded-2xl",
-                isMobile ? "p-2.5" : "p-3"
-              )}>
+              <div
+                className={cn(
+                  "bg-muted rounded-2xl",
+                  isMobile ? "p-2.5" : "p-3"
+                )}
+              >
                 <Textarea
                   value={editingText}
                   onChange={(e) => setEditingText(e.target.value)}
@@ -532,40 +550,50 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
                   )}
                 >
                   {message.type.toUpperCase() === "TEXT" ? (
-                    <div className={cn(
-                      "whitespace-pre-wrap break-words",
-                      isMobile ? "text-sm" : "text-sm"
-                    )}>
+                    <div
+                      className={cn(
+                        "whitespace-pre-wrap break-words",
+                        isMobile ? "text-sm" : "text-sm"
+                      )}
+                    >
                       {message.content || "[No content available]"}
                       {isPending && (
-                        <span className={cn(
-                          "opacity-70 ml-2",
-                          isMobile ? "text-xs" : "text-xs"
-                        )}>
+                        <span
+                          className={cn(
+                            "opacity-70 ml-2",
+                            isMobile ? "text-xs" : "text-xs"
+                          )}
+                        >
                           sending...
                         </span>
                       )}
                       {isUpdating && (
-                        <span className={cn(
-                          "opacity-70 ml-2",
-                          isMobile ? "text-xs" : "text-xs"
-                        )}>
+                        <span
+                          className={cn(
+                            "opacity-70 ml-2",
+                            isMobile ? "text-xs" : "text-xs"
+                          )}
+                        >
                           updating...
                         </span>
                       )}
                       {isDeleting && (
-                        <span className={cn(
-                          "opacity-70 ml-2",
-                          isMobile ? "text-xs" : "text-xs"
-                        )}>
+                        <span
+                          className={cn(
+                            "opacity-70 ml-2",
+                            isMobile ? "text-xs" : "text-xs"
+                          )}
+                        >
                           deleting...
                         </span>
                       )}
                       {isError && (
-                        <span className={cn(
-                          "text-red-600 ml-2",
-                          isMobile ? "text-xs" : "text-xs"
-                        )}>
+                        <span
+                          className={cn(
+                            "text-red-600 ml-2",
+                            isMobile ? "text-xs" : "text-xs"
+                          )}
+                        >
                           failed
                         </span>
                       )}
@@ -603,9 +631,9 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
                                     }
                                   />
                                   <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                                    <div className="bg-black/50 text-white px-2 py-1 rounded text-xs">
+                                    <button className="bg-black/50 text-white px-2 py-1 rounded text-xs hover:bg-black/70 transition-colors">
                                       Click to view full size
-                                    </div>
+                                    </button>
                                   </div>
                                 </div>
                               )}
@@ -796,10 +824,12 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
             )}
           </div>
 
-          <span className={cn(
-            "text-muted-foreground mt-1",
-            isMobile ? "text-xs" : "text-xs"
-          )}>
+          <span
+            className={cn(
+              "text-muted-foreground mt-1",
+              isMobile ? "text-xs" : "text-xs"
+            )}
+          >
             {formatDistanceToNow(new Date(message.createdAt), {
               addSuffix: true,
             })}
@@ -807,18 +837,19 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
         </div>
 
         {isOwn && (
-          <Avatar className={cn(
-            "flex-shrink-0",
-            isMobile ? "w-7 h-7" : "w-8 h-8"
-          )}>
+          <Avatar
+            className={cn("flex-shrink-0", isMobile ? "w-7 h-7" : "w-8 h-8")}
+          >
             <AvatarImage
               src={message.senderThumbnailUrl}
               alt={message.senderName}
             />
-            <AvatarFallback className={cn(
-              "bg-blue-500 text-white",
-              isMobile ? "text-xs" : "text-xs"
-            )}>
+            <AvatarFallback
+              className={cn(
+                "bg-blue-500 text-white",
+                isMobile ? "text-xs" : "text-xs"
+              )}
+            >
               {message.senderName?.charAt(0)?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -828,25 +859,32 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
   };
 
   return (
-    <Card className={cn(
-      "flex flex-col shadow-none border-0",
-      // Remove fixed sizing and let parent control size
-      "w-full h-full"
-    )}>
-      <CardHeader className={cn(
-        "pb-3 border-b bg-white",
-        // Responsive padding
-        isMobile ? "px-4 py-3" : "px-6 py-4"
-      )}>
+    <Card
+      className={cn(
+        "flex flex-col shadow-none border-0 gap-0 py-0",
+        // Remove fixed sizing and let parent control size
+        "w-full h-full"
+      )}
+    >
+      <CardHeader
+        className={cn(
+          "border-b bg-gray-100 !gap-0",
+          // Responsive padding
+          isMobile ? "px-4 pt-[14px] !pb-[14px]" : "px-6 pt-[14px] !pb-[14px]"
+        )}
+      >
         <div className="flex items-center justify-between">
-          <CardTitle className={cn(
-            isMobile ? "text-base" : "text-lg"
-          )}>
-            Course Chat
+          <CardTitle
+            className={cn("line-clamp-1", isMobile ? "text-base" : "text-lg")}
+          >
+            {courseTitle || "Course Chat"}
+            {isInitializing && (
+              <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+            )}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge
-              variant={isConnected ? "default" : "secondary"}
+              variant={isConnected ? "completed" : "destructive"}
               className="text-xs"
             >
               {isConnected ? (
@@ -878,14 +916,14 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
 
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         <div className="flex-1 overflow-hidden">
-          <ScrollArea className={cn(
-            "h-full",
-            isMobile ? "p-3" : "p-4"
-          )} ref={scrollAreaRef}>
-            <div className={cn(
-              "space-y-3",
-              isMobile ? "space-y-2" : "space-y-4"
-            )} ref={scrollAreaViewportRef}>
+          <ScrollArea
+            className={cn("h-full", isMobile ? "p-3" : "px-4")}
+            ref={scrollAreaRef}
+          >
+            <div
+              className={cn("space-y-3", isMobile ? "space-y-2" : "space-y-4")}
+              ref={scrollAreaViewportRef}
+            >
               {isFetchingNextPage && (
                 <div className="text-center py-2">
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
@@ -904,13 +942,26 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
               )}
 
               {isLoading ? (
-                <div className="text-center text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />
-                  Loading messages...
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                  <div className="text-base font-medium text-gray-900 mb-2">
+                    Loading messages...
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Please wait while we fetch your chat history
+                  </div>
                 </div>
               ) : allMessages.length === 0 ? (
-                <div className="text-center text-sm text-muted-foreground">
-                  No messages yet. Start the conversation!
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full flex items-center justify-center mb-4">
+                    <Send className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <div className="text-base font-medium text-gray-900 mb-2">
+                    No messages yet
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Start the conversation! Type a message below.
+                  </div>
                 </div>
               ) : (
                 [...allMessages]
@@ -923,10 +974,7 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
           </ScrollArea>
         </div>
 
-        <div className={cn(
-          "border-t bg-white",
-          isMobile ? "p-3" : "p-4"
-        )}>
+        <div className={cn("border-t bg-white", isMobile ? "p-3" : "p-4")}>
           <div className="flex gap-2">
             <div className="flex-1">
               <Textarea
@@ -938,7 +986,9 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
                 disabled={!isConnected || isSendingMessage}
                 className={cn(
                   "resize-none border-gray-200 focus:border-primary",
-                  isMobile ? "min-h-[36px] max-h-24 text-sm" : "min-h-[40px] max-h-32"
+                  isMobile
+                    ? "min-h-[36px] max-h-24 text-sm"
+                    : "min-h-[40px] max-h-32"
                 )}
                 rows={1}
               />
@@ -952,23 +1002,16 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
               accept="image/*,.pdf,.doc,.docx,.txt,.rtf"
             />
 
-            <div className={cn(
-              "flex gap-2",
-              isMobile ? "flex-row" : "flex-col"
-            )}>
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isConnected}
                 title="Upload file"
-                className={cn(
-                  isMobile ? "h-9 w-9" : "h-10 w-10"
-                )}
+                className={cn(isMobile ? "h-9 w-9" : "h-10 w-10")}
               >
-                <Upload className={cn(
-                  isMobile ? "w-3.5 h-3.5" : "w-4 h-4"
-                )} />
+                <Upload className={cn(isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               </Button>
               <Button
                 onClick={handleSendMessage}
@@ -976,22 +1019,20 @@ const Chat: React.FC<ChatProps> = ({ courseId, onClose, isMobile = false }) => {
                   !messageText.trim() || !isConnected || isSendingMessage
                 }
                 size="icon"
-                className={cn(
-                  isMobile ? "h-9 w-9" : "h-10 w-10"
-                )}
+                className={cn(isMobile ? "h-9 w-9" : "h-10 w-10")}
               >
-                <Send className={cn(
-                  isMobile ? "w-3.5 h-3.5" : "w-4 h-4"
-                )} />
+                <Send className={cn(isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               </Button>
             </div>
           </div>
 
           {!isConnected && (
-            <p className={cn(
-              "text-muted-foreground mt-2 px-2",
-              isMobile ? "text-xs" : "text-xs"
-            )}>
+            <p
+              className={cn(
+                "text-muted-foreground mt-2 px-2",
+                isMobile ? "text-xs" : "text-xs"
+              )}
+            >
               Connecting to chat server...
             </p>
           )}
