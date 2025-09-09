@@ -279,6 +279,14 @@ const InstructorChatPanel: React.FC<InstructorChatPanelProps> = ({
                             <Loader2 className="w-3 h-3 animate-spin text-primary flex-shrink-0" />
                           )}
                         </div>
+                        <div
+                          className={cn(
+                            "text-gray-500 truncate",
+                            isMobile ? "text-xs" : "text-xs"
+                          )}
+                        >
+                          Attended students: {course.totalStudents}
+                        </div>
                       </div>
                     </div>
                   </button>
