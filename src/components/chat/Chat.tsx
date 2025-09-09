@@ -631,9 +631,17 @@ const Chat: React.FC<ChatProps> = ({
                                     }
                                   />
                                   <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                                    <button className="bg-black/50 text-white px-2 py-1 rounded text-xs hover:bg-black/70 transition-colors">
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      className="bg-black/50 text-white px-2 py-1 rounded text-xs hover:bg-black/70 border-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(message.fileUrl, "_blank");
+                                      }}
+                                    >
                                       Click to view full size
-                                    </button>
+                                    </Button>
                                   </div>
                                 </div>
                               )}
