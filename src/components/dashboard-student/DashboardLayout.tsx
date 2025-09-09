@@ -2,6 +2,7 @@
 
 import { Sidebar } from "./Sidebar";
 import { DashboardHeader } from "./DashboardHeader";
+import { ChatBubble } from "../chat";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page Content */}
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
+      <ChatBubble />
     </div>
   );
 }

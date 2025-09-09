@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ChatPanel from "./ChatPanel";
+import { InstructorChatPanel } from ".";
 
-interface ChatBubbleProps {
+interface InstructorChatBubbleProps {
   courseId?: string;
   className?: string;
 }
 
-export const ChatBubble: React.FC<ChatBubbleProps> = ({
+export const InstructorChatBubble: React.FC<InstructorChatBubbleProps> = ({
   courseId,
   className,
 }) => {
@@ -82,7 +83,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
             "md:max-w-none sm:max-w-none"
           )}
         >
-          <ChatPanel
+          <InstructorChatPanel
             initialCourseId={courseId}
             onClose={closeChat}
             isMobile={isMobile}
@@ -101,4 +102,4 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   );
 };
 
-export default ChatBubble;
+export default InstructorChatBubble;

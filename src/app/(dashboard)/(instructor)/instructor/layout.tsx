@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { InstructorSidebar } from '@/components/instructor/layout/InstructorSidebar';
-import { InstructorHeader } from '@/components/instructor/layout/InstructorHeader';
-import { LoadingAnimation } from '@/components/instructor/commom/LoadingAnimation';
-import { RootState } from '@/store/store';
-import { useSelector } from 'react-redux';
+import { useState } from "react";
+import { InstructorSidebar } from "@/components/instructor/layout/InstructorSidebar";
+import { InstructorHeader } from "@/components/instructor/layout/InstructorHeader";
+import { LoadingAnimation } from "@/components/instructor/commom/LoadingAnimation";
+import { RootState } from "@/store/store";
+import { useSelector } from "react-redux";
+import { InstructorChatBubble } from "@/components/chat";
 
 export default function InstructorLayout({
   children,
@@ -37,6 +38,7 @@ export default function InstructorLayout({
           <main className="p-6">{children}</main>
         </div>
       </div>
+      <InstructorChatBubble />
     </>
   );
 }
