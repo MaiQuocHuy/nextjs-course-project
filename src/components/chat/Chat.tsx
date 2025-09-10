@@ -231,7 +231,7 @@ const Chat: React.FC<ChatProps> = ({
   }, [messageText]);
 
   const handleSendMessage = async () => {
-    if (!messageText.trim() || isSendingMessage) return;
+    if (!messageText.trim()) return;
 
     try {
       await sendMessage({
@@ -241,6 +241,19 @@ const Chat: React.FC<ChatProps> = ({
         tempId: uuidv4(),
       }).unwrap();
       setMessageText("");
+      // keep focus in the textarea so the user can continue typing
+      if (textareaRef.current) {
+        // refocus after state update
+        setTimeout(() => {
+          try {
+            textareaRef.current?.focus();
+            const len = textareaRef.current?.value?.length || 0;
+            textareaRef.current?.setSelectionRange(len, len);
+          } catch (e) {
+            // ignore if selection APIs are not available
+          }
+        }, 0);
+      }
     } catch (error) {
       console.error("❌ Failed to send message:", error);
     }
@@ -992,7 +1005,7 @@ const Chat: React.FC<ChatProps> = ({
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={handleKeyPress}
-                disabled={!isConnected || isSendingMessage}
+                disabled={!isConnected}
                 className={cn(
                   "resize-none border-gray-200 focus:border-primary",
                   isMobile
@@ -1024,9 +1037,7 @@ const Chat: React.FC<ChatProps> = ({
               </Button>
               <Button
                 onClick={handleSendMessage}
-                disabled={
-                  !messageText.trim() || !isConnected || isSendingMessage
-                }
+                disabled={!messageText.trim() || !isConnected}
                 size="icon"
                 className={cn(isMobile ? "h-9 w-9" : "h-10 w-10")}
               >
