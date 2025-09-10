@@ -78,6 +78,8 @@ const InstructorChatPanel: React.FC<InstructorChatPanelProps> = ({
   onClose,
   isMobile = false,
 }) => {
+  // animate show/hide of the whole panel
+  const [isVisible, setIsVisible] = useState(false);
   const {
     data: courses,
     isLoading,
@@ -101,6 +103,16 @@ const InstructorChatPanel: React.FC<InstructorChatPanelProps> = ({
   useEffect(() => {
     setShowCourseList(!isMobile);
   }, [isMobile]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => onClose(), 300);
+  };
 
   const handleCourseSelect = (courseId: string) => {
     if (courseId === selectedCourseId) return; // Don't switch if already selected
@@ -152,7 +164,9 @@ const InstructorChatPanel: React.FC<InstructorChatPanelProps> = ({
         // Tablet sizing
         "sm:w-[600px] sm:h-[500px]",
         // Mobile sizing (fullscreen)
-        "w-full h-full md:rounded-lg sm:rounded-lg rounded-none"
+        "w-full h-full md:rounded-lg sm:rounded-lg rounded-none",
+        "transform transition-all duration-300 ease-out",
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
       )}
     >
       {/* Course List Sidebar */}
@@ -320,7 +334,7 @@ const InstructorChatPanel: React.FC<InstructorChatPanelProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={onClose}
+              onClick={handleClose}
               className="h-8 w-8 p-0"
             >
               <X className="h-4 w-4" />
@@ -349,7 +363,7 @@ const InstructorChatPanel: React.FC<InstructorChatPanelProps> = ({
               courseTitle={
                 courses?.find((c) => c.id === selectedCourseId)?.title
               }
-              onClose={onClose}
+              onClose={handleClose}
               isMobile={isMobile}
             />
           )
