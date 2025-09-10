@@ -51,8 +51,26 @@ export const useChatInfiniteScroll = ({
       size: pageSize,
     },
     {
-      skip: !enabled || !courseId || isInitialized,
+      // Previously we skipped when `isInitialized` was true which caused
+      // the initial REST call to be skipped when reopening the chat or
+      // switching courses (race between reset and query hook initialization).
+      // Remove `isInitialized` from skip so the API call runs whenever we
+      // have a valid `courseId` and the hook is enabled.
+      skip: !enabled || !courseId,
+      // Ensure RTK Query will refetch when the hook mounts or args change
+      // (covers reopening the chat panel or switching courses)
+      refetchOnMountOrArgChange: true,
+      // Return the refetch function so callers can trigger a manual refetch
     }
+  );
+  // Note: useGetCourseMessagesQuery returns a `refetch` function but the
+  // RTK Query hook typing may not expose it in destructuring above depending
+  // on your versions. Use the query hook again to get the refetch function
+  // (no network call because RTK caches the result) so we can manually
+  // trigger fetch when switching courses.
+  const { refetch: refetchInitial } = useGetCourseMessagesQuery(
+    { courseId, size: pageSize },
+    { skip: !enabled || !courseId }
   );
 
   // Fetch next page (with beforeMessageId)
@@ -195,7 +213,16 @@ export const useChatInfiniteScroll = ({
 
   // Reset when courseId changes
   useEffect(() => {
+    // Clear local state quickly
     resetMessages();
+    // Also trigger a manual refetch to ensure the initial REST endpoint
+    // is called immediately when the course changes or the chat reopens.
+    try {
+      refetchInitial?.();
+    } catch (err) {
+      // ignore refetch errors here; the normal query state will surface errors
+      console.debug("useChatInfiniteScroll: refetchInitial failed", err);
+    }
   }, [courseId, resetMessages]);
 
   return {
