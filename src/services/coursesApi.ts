@@ -26,6 +26,7 @@ export interface Course {
   averageRating: number;
   sampleVideoUrl: string;
   totalDuration: number;
+  totalHours: number; // Total course duration in hours
   sectionCount: number;
   sections?: Section[];
   categories: Category[];
@@ -35,6 +36,7 @@ export interface Course {
     name: string;
     bio: string;
     thumbnailUrl: string;
+    avatar: string;
   };
   overViewInstructorSummary: {
     average: number;

@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import DiscountDialog from "./DiscountDialog";
 
 interface PaymentButtonProps {
   courseId: string;
@@ -74,6 +75,7 @@ export function PaymentButton({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAlreadyEnrolledDialog, setShowAlreadyEnrolledDialog] =
     useState(false);
+  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
   const [createCheckoutSession] = useCreateCheckoutSessionMutation();
@@ -86,40 +88,27 @@ export function PaymentButton({
     }).format(price);
   };
 
-  // Handle payment process
-  const handlePayment = async () => {
+  // Handle payment process with discount
+  const handlePaymentWithDiscount = async (discountCode?: string) => {
     try {
-      // 1. Check if already enrolled
-      if (isEnrolled) {
-        setShowAlreadyEnrolledDialog(true);
-        return;
-      }
-
-      // 2. Check authentication
-      if (status === "unauthenticated") {
-        toast.error("Please login to enroll in this course");
-        router.push("/login");
-        return;
-      }
-
-      if (status === "loading") {
-        toast.info("Please wait while we verify your session...");
-        return;
-      }
-
-      // 3. Start processing
+      // Start processing
       setIsProcessing(true);
 
-      // 4. Create checkout session
-      const response = await createCheckoutSession({ courseId }).unwrap();
+      // Create checkout session with discount
+      const requestBody: any = { courseId };
+      if (discountCode) {
+        requestBody.discountCode = discountCode;
+      }
 
-      // 5. Initialize Stripe
+      const response = await createCheckoutSession(requestBody).unwrap();
+
+      // Initialize Stripe
       const stripe = await getStripe();
       if (!stripe) {
         throw new Error("Payment system is currently unavailable");
       }
 
-      // 6. Redirect to Stripe Checkout
+      // Redirect to Stripe Checkout
       const { error } = await stripe.redirectToCheckout({
         sessionId: response.sessionId,
       });
@@ -165,6 +154,35 @@ export function PaymentButton({
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Handle initial payment button click
+  const handlePayment = async () => {
+    try {
+      // 1. Check if already enrolled
+      if (isEnrolled) {
+        setShowAlreadyEnrolledDialog(true);
+        return;
+      }
+
+      // 2. Check authentication
+      if (status === "unauthenticated") {
+        toast.error("Please login to enroll in this course");
+        router.push("/login");
+        return;
+      }
+
+      if (status === "loading") {
+        toast.info("Please wait while we verify your session...");
+        return;
+      }
+
+      // 3. Show discount dialog
+      setShowDiscountDialog(true);
+    } catch (error: any) {
+      console.error("Payment initialization error:", error);
+      toast.error("Failed to initialize payment. Please try again.");
     }
   };
 
@@ -234,6 +252,20 @@ export function PaymentButton({
         onOpenChange={setShowAlreadyEnrolledDialog}
         courseTitle={courseTitle}
       />
+
+      <DiscountDialog
+        open={showDiscountDialog}
+        onOpenChange={setShowDiscountDialog}
+        courseId={courseId}
+        courseTitle={courseTitle}
+        originalPrice={price}
+        onDiscountApplied={(data) => {
+          handlePaymentWithDiscount(data.discountCode);
+        }}
+        onContinueWithoutDiscount={() => {
+          handlePaymentWithDiscount();
+        }}
+      />
     </>
   );
 }
@@ -270,35 +302,24 @@ export function EnrollmentButton({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAlreadyEnrolledDialog, setShowAlreadyEnrolledDialog] =
     useState(false);
+  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
   const [createCheckoutSession] = useCreateCheckoutSessionMutation();
 
-  const handleEnrollment = async () => {
+  // Handle enrollment with discount
+  const handleEnrollmentWithDiscount = async (discountCode?: string) => {
     try {
-      // Check if already enrolled
-      if (isEnrolled) {
-        setShowAlreadyEnrolledDialog(true);
-        return;
-      }
-
-      // Check authentication
-      if (status === "unauthenticated") {
-        toast.error("Please login to enroll in this course");
-        router.push("/login");
-        return;
-      }
-
-      if (status === "loading") {
-        toast.info("Please wait while we verify your session...");
-        return;
-      }
-
       // Start processing
       setIsProcessing(true);
 
-      // Create checkout session
-      const response = await createCheckoutSession({ courseId }).unwrap();
+      // Create checkout session with discount
+      const requestBody: any = { courseId };
+      if (discountCode) {
+        requestBody.discountCode = discountCode;
+      }
+
+      const response = await createCheckoutSession(requestBody).unwrap();
 
       // Initialize Stripe
       const stripe = await getStripe();
@@ -342,6 +363,34 @@ export function EnrollmentButton({
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleEnrollment = async () => {
+    try {
+      // Check if already enrolled
+      if (isEnrolled) {
+        setShowAlreadyEnrolledDialog(true);
+        return;
+      }
+
+      // Check authentication
+      if (status === "unauthenticated") {
+        toast.error("Please login to enroll in this course");
+        router.push("/login");
+        return;
+      }
+
+      if (status === "loading") {
+        toast.info("Please wait while we verify your session...");
+        return;
+      }
+
+      // Show discount dialog
+      setShowDiscountDialog(true);
+    } catch (error: any) {
+      console.error("Enrollment initialization error:", error);
+      toast.error("Failed to initialize enrollment. Please try again.");
     }
   };
 
@@ -400,6 +449,20 @@ export function EnrollmentButton({
         open={showAlreadyEnrolledDialog}
         onOpenChange={setShowAlreadyEnrolledDialog}
         courseTitle={courseTitle}
+      />
+
+      <DiscountDialog
+        open={showDiscountDialog}
+        onOpenChange={setShowDiscountDialog}
+        courseId={courseId}
+        courseTitle={courseTitle}
+        originalPrice={0} // We don't have price in this component
+        onDiscountApplied={(data) => {
+          handleEnrollmentWithDiscount(data.discountCode);
+        }}
+        onContinueWithoutDiscount={() => {
+          handleEnrollmentWithDiscount();
+        }}
       />
     </>
   );
