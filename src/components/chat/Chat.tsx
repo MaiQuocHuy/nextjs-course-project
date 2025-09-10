@@ -480,7 +480,7 @@ const Chat: React.FC<ChatProps> = ({
         <div
           className={cn(
             "flex flex-col",
-            isMobile ? "max-w-[85%]" : "max-w-[80%]",
+            isMobile ? "max-w-[85%] w-fit" : "max-w-[80%] w-fit",
             isOwn && "items-end"
           )}
         >
@@ -538,7 +538,7 @@ const Chat: React.FC<ChatProps> = ({
               <>
                 <div
                   className={cn(
-                    "rounded-2xl shadow-sm relative",
+                    "rounded-2xl shadow-sm relative w-fit",
                     isMobile ? "p-2.5" : "p-3",
                     message.type.toUpperCase() === "TEXT" &&
                       (isOwn
