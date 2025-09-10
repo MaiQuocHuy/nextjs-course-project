@@ -34,14 +34,10 @@ export class WebSocketService {
           connectHeaders: {
             Authorization: `Bearer ${config.token}`,
           },
-          debug: (str) => {
-            console.log("STOMP Debug:", str);
-          },
           reconnectDelay: 5000,
           heartbeatIncoming: 4000,
           heartbeatOutgoing: 4000,
           onConnect: (frame) => {
-            console.log("Connected to WebSocket:", frame);
             this.isConnected = true;
             this.reconnectAttempts = 0;
 
@@ -68,7 +64,6 @@ export class WebSocketService {
             );
           },
           onDisconnect: () => {
-            console.log("Disconnected from WebSocket");
             this.isConnected = false;
             this.subscription = null;
             config.onDisconnect?.();
@@ -76,14 +71,11 @@ export class WebSocketService {
             // Auto-reconnect logic
             if (this.reconnectAttempts < this.maxReconnectAttempts) {
               this.reconnectAttempts++;
-              console.log(
-                `Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
-              );
+
               setTimeout(() => {
                 if (this.config) {
                   this.connect(this.config)
                     .then(() => {
-                      console.log("Reconnected successfully");
                       this.config?.onReconnect?.();
                     })
                     .catch((error) => {
@@ -149,22 +141,10 @@ export class WebSocketService {
 
     try {
       const destination = `/topic/courses/${courseId}/messages`;
-      console.log(`Attempting to subscribe to: ${destination}`);
 
       this.subscription = this.client.subscribe(destination, (message) => {
         try {
-          console.log("Raw message received:", message);
-          console.log("Message headers:", message.headers);
-          console.log("Message body:", message.body);
-
           const chatMessage: ChatMessage = JSON.parse(message.body);
-          console.log("Parsed chat message:", chatMessage);
-          console.log("Message content:", chatMessage.content);
-          console.log("Message sender:", chatMessage.senderName);
-          console.log("Message type:", chatMessage.type);
-          console.log("Full message object keys:", Object.keys(chatMessage));
-          console.log("Full message object:", chatMessage);
-
           // Validate that required fields are present
           if (!chatMessage.content && chatMessage.type === "TEXT") {
             console.warn("⚠️ Message missing content field:", chatMessage);
@@ -178,8 +158,6 @@ export class WebSocketService {
         }
       });
 
-      console.log(`Successfully subscribed to courses ${courseId} messages`);
-      console.log("Subscription object:", this.subscription);
       return this.subscription;
     } catch (error) {
       console.error("Error subscribing to messages:", error);
@@ -229,18 +207,12 @@ export class WebSocketService {
 
     try {
       const destination = `/topic/users/${userId}/status`;
-      console.log(`Attempting to subscribe to user status: ${destination}`);
 
       this.userStatusSubscription = this.client.subscribe(
         destination,
         (message) => {
           try {
-            console.log("Raw user status message received:", message);
-            console.log("User status message headers:", message.headers);
-            console.log("User status message body:", message.body);
-
             const statusMessage: UserStatusMessage = JSON.parse(message.body);
-            console.log("Parsed user status message:", statusMessage);
             this.config?.onUserStatus?.(statusMessage);
           } catch (error) {
             console.error("Error parsing user status message:", error);
@@ -249,11 +221,6 @@ export class WebSocketService {
         }
       );
 
-      console.log(`Successfully subscribed to user ${userId} status`);
-      console.log(
-        "User status subscription object:",
-        this.userStatusSubscription
-      );
       return this.userStatusSubscription;
     } catch (error) {
       console.error("Error subscribing to user status:", error);
@@ -268,7 +235,6 @@ export class WebSocketService {
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
-      console.log("Unsubscribed from messages");
     }
   }
 
@@ -279,7 +245,6 @@ export class WebSocketService {
     if (this.userStatusSubscription) {
       this.userStatusSubscription.unsubscribe();
       this.userStatusSubscription = null;
-      console.log("Unsubscribed from user status");
     }
   }
 
@@ -327,7 +292,6 @@ export class WebSocketService {
           this.currentUserId = null;
           this.userStatusSubscription = null;
           this.reconnectAttempts = 0;
-          console.log("WebSocket disconnected");
           resolve();
         };
         this.client.deactivate();
@@ -389,11 +353,6 @@ export class WebSocketService {
       console.error("Cannot test subscription: No active subscription");
       return false;
     }
-
-    console.log("Testing subscription...");
-    console.log("Connected:", this.isConnected);
-    console.log("Client state:", this.client.state);
-    console.log("Subscription:", this.getSubscriptionStatus());
 
     return true;
   }

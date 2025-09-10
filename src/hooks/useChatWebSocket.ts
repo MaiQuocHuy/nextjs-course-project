@@ -4,7 +4,6 @@ import {
   ChatWebSocketManagerConfig,
   getChatConnectionStatus,
 } from "../services/websocket/chatWebSocketManager";
-import { getSession } from "next-auth/react";
 import {
   ChatMessage,
   UserStatusMessage,
@@ -33,22 +32,13 @@ export const useChatWebSocket = (
   // Handle incoming messages
   const handleMessage = useCallback(
     (message: ChatMessage) => {
-      console.log("🔥 Received message via hook:", message);
-      console.log("🔥 Message content:", message.content);
-      console.log("🔥 Message senderName:", message.senderName);
-      console.log("🔥 Message senderThumbnailUrl:", message.senderThumbnailUrl);
-      console.log("🔥 Message type:", message.type);
-      console.log("🔥 Current messages count:", messages.length);
-
       setMessages((prev) => {
         // Avoid duplicates
         const exists = prev.some((msg) => msg.id === message.id);
         if (exists) {
-          console.log("🔥 Message already exists, skipping:", message.id);
           return prev;
         }
 
-        console.log("🔥 Adding new message:", message.id);
         // Add new message and sort by timestamp
         return [...prev, message].sort(
           (a, b) =>
@@ -61,22 +51,18 @@ export const useChatWebSocket = (
 
   // Handle user status updates
   const handleUserStatus = useCallback((status: UserStatusMessage) => {
-    console.log("🔥 Received user status:", status);
     setUserStatus(status);
 
     // Handle different status types
     switch (status.type) {
       case "MESSAGE_SENT":
-        console.log(`Message ${status.messageId} sent successfully`);
         // Update message status in UI if needed
         configRef.current.onUserStatus?.(status);
         break;
       case "MESSAGE_DELIVERED":
-        console.log(`Message ${status.messageId} delivered`);
         configRef.current.onUserStatus?.(status);
         break;
       case "MESSAGE_READ":
-        console.log(`Message ${status.messageId} read`);
         configRef.current.onUserStatus?.(status);
         break;
     }
@@ -84,14 +70,12 @@ export const useChatWebSocket = (
 
   // Connection event handlers
   const handleConnect = useCallback(() => {
-    console.log("Chat WebSocket connected");
     setIsConnected(true);
     setError(null);
     configRef.current.onConnect?.();
   }, []);
 
   const handleDisconnect = useCallback(() => {
-    console.log("Chat WebSocket disconnected");
     setIsConnected(false);
     configRef.current.onDisconnect?.();
   }, []);
@@ -104,7 +88,6 @@ export const useChatWebSocket = (
   }, []);
 
   const handleReconnect = useCallback(() => {
-    console.log("Chat WebSocket reconnected");
     setIsConnected(true);
     setError(null);
     configRef.current.onReconnect?.();
@@ -115,7 +98,6 @@ export const useChatWebSocket = (
     try {
       // Prevent concurrent connect attempts
       if (connectingRef.current) {
-        console.log("connect() already in progress, skipping duplicate call");
         return;
       }
       connectingRef.current = true;
@@ -142,9 +124,6 @@ export const useChatWebSocket = (
         status.currentCourseId === configRef.current.courseId &&
         !status.isConnected
       ) {
-        console.log(
-          "Manager has course but is disconnected — attempting reconnect"
-        );
         await chatWebSocketManager.reconnect();
       } else {
         await chatWebSocketManager.connectToCourse(
@@ -228,18 +207,13 @@ export const useChatWebSocket = (
 
   // Add message function (for optimistic updates)
   const addMessage = useCallback((message: ChatMessage) => {
-    console.log("🔥 AddMessage called with:", message);
-    console.log("🔥 AddMessage stack trace:", new Error().stack);
-
     setMessages((prev) => {
       // Avoid duplicates
       const exists = prev.some((msg) => msg.id === message.id);
       if (exists) {
-        console.log("🔥 Message already exists, skipping:", message.id);
         return prev;
       }
 
-      console.log("🔥 Adding new message to state:", message.id);
       // Add new message and sort by timestamp
       return [...prev, message].sort(
         (a, b) =>

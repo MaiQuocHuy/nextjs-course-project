@@ -1,3 +1,13 @@
+// Hook: useChatInfiniteScroll
+// Purpose: Data-layer hook for the chat message list. Responsible for
+//  - fetching pages of messages (RTK Query)
+//  - storing/merging/deduplicating messages
+//  - add/update/remove operations for messages (used by WebSocket and UI)
+//  - pagination state and an API to fetch next page
+// Note: This hook does NOT attach scroll listeners. Scrolling / viewport
+// detection is intentionally separated into `useInfiniteScroll` (see
+// src/hooks/useInfiniteScroll.ts) so concerns are decoupled: one hook
+// manages data, the other manages scroll behavior.
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useGetCourseMessagesQuery } from "@/services/websocket/chatApi";
 import { ChatMessage } from "@/types/chat";
@@ -94,17 +104,14 @@ export const useChatInfiniteScroll = ({
   useEffect(() => {
     if (initialData?.data?.messages && !isInitialized) {
       const messages = initialData.data.messages;
-      console.log("🎯 Initializing with messages:", messages.length);
       // Store messages in chronological order (newest first from API)
       setAllMessages(messages);
       setIsInitialized(true);
 
       // Check if we have more pages
       if (messages.length < pageSize) {
-        console.log("📄 No more pages available");
         setHasNextPage(false);
       } else {
-        console.log("📄 More pages available");
         setHasNextPage(true);
       }
     }
@@ -114,7 +121,6 @@ export const useChatInfiniteScroll = ({
   useEffect(() => {
     if (nextPageData?.data?.messages && beforeMessageId) {
       const newMessages = nextPageData.data.messages;
-      console.log("📥 Received next page:", newMessages.length, "messages");
 
       // Append new messages to the end (older messages)
       setAllMessages((prev) => {
@@ -123,17 +129,11 @@ export const useChatInfiniteScroll = ({
         const uniqueNewMessages = newMessages.filter(
           (msg) => !existingIds.has(msg.id)
         );
-        console.log(
-          "✅ Adding",
-          uniqueNewMessages.length,
-          "new unique messages"
-        );
         return [...prev, ...uniqueNewMessages];
       });
 
       // Check if we have more pages
       if (newMessages.length < pageSize) {
-        console.log("📄 No more pages available (received less than pageSize)");
         setHasNextPage(false);
       }
 
@@ -158,26 +158,8 @@ export const useChatInfiniteScroll = ({
       // Get the ID of the last (oldest) message
       const oldestMessage = allMessages[allMessages.length - 1];
       if (oldestMessage?.id) {
-        console.log(
-          "🔄 Fetching next page with beforeMessageId:",
-          oldestMessage.id
-        );
-        console.log("📊 Current state:", {
-          hasNextPage,
-          isFetchingNextPage,
-          messagesCount: allMessages.length,
-          oldestMessageId: oldestMessage.id,
-        });
         setBeforeMessageId(oldestMessage.id);
-      } else {
-        console.log("❌ No oldest message ID found");
       }
-    } else {
-      console.log("❌ Cannot fetch next page:", {
-        hasNextPage,
-        isFetchingNextPage,
-        messagesCount: allMessages.length,
-      });
     }
   }, [hasNextPage, isFetchingNextPage, allMessages]);
 
