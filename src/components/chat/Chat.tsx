@@ -63,6 +63,7 @@ const Chat: React.FC<ChatProps> = ({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [deletingMessages, setDeletingMessages] = useState<Set<string>>(
     new Set()
@@ -78,6 +79,8 @@ const Chat: React.FC<ChatProps> = ({
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // wrapper ref for emoji button + picker to detect outside clicks
+  const emojiPickerWrapperRef = useRef<HTMLDivElement>(null);
 
   const { data: session } = useSession();
 
@@ -233,17 +236,114 @@ const Chat: React.FC<ChatProps> = ({
     }
   }, [messageText]);
 
+  // Small emoji dictionary: emoji character -> textual short code
+  // Extend this map as needed. Keep it minimal to avoid large bundles.
+  const EMOJI_MAP: Record<string, string> = {
+    "😀": ":grinning:",
+    "😁": ":grin:",
+    "😂": ":joy:",
+    "😊": ":blush:",
+    "😅": ":sweat_smile:",
+    "😍": ":heart_eyes:",
+    "😎": ":sunglasses:",
+    "😢": ":cry:",
+    "😡": ":rage:",
+    "👍": ":thumbsup:",
+    "👎": ":thumbsdown:",
+    "🙏": ":pray:",
+    "🎉": ":tada:",
+    "❤️": ":heart:",
+    "🔥": ":fire:",
+  };
+
+  const convertEmojiToText = (text: string) => {
+    // Replace every emoji character in EMOJI_MAP with its textual code
+    // This is intentionally simple: it only replaces characters present in EMOJI_MAP
+    let out = text;
+    Object.keys(EMOJI_MAP).forEach((emoji) => {
+      const code = EMOJI_MAP[emoji];
+      out = out.split(emoji).join(code);
+    });
+    return out;
+  };
+
+  // Reverse map for rendering: textual short code -> emoji character
+  const SHORTCODE_TO_EMOJI: Record<string, string> = Object.keys(
+    EMOJI_MAP
+  ).reduce((acc, emoji) => {
+    const code = EMOJI_MAP[emoji];
+    acc[code] = emoji;
+    return acc;
+  }, {} as Record<string, string>);
+
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const convertShortcodesToEmoji = (text: string) => {
+    if (!text) return text;
+    // Build a regex that matches any shortcode (e.g. :smile:)
+    const codes = Object.keys(SHORTCODE_TO_EMOJI);
+    if (codes.length === 0) return text;
+
+    // Sort by length desc to avoid partial matching conflicts
+    codes.sort((a, b) => b.length - a.length);
+    const pattern = codes.map(escapeRegExp).join("|");
+    const re = new RegExp(`(${pattern})`, "g");
+    return text.replace(re, (match) => SHORTCODE_TO_EMOJI[match] || match);
+  };
+
+  const insertEmojiIntoMessage = (emoji: string) => {
+    const cursorPos = textareaRef.current?.selectionStart ?? messageText.length;
+    const before = messageText.slice(0, cursorPos);
+    const after = messageText.slice(cursorPos);
+    const newText = before + emoji + after;
+    setMessageText(newText);
+    setTimeout(() => {
+      try {
+        if (textareaRef.current) {
+          const pos = cursorPos + emoji.length;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(pos, pos);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 0);
+  };
+
+  // Close emoji picker when interacting outside the picker/button
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (
+        emojiPickerWrapperRef.current &&
+        target &&
+        !emojiPickerWrapperRef.current.contains(target)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showEmojiPicker]);
+
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
+
+    // Convert any emoji characters in the message to textual codes before sending
+    const contentToSend = convertEmojiToText(messageText.trim());
 
     try {
       await sendMessage({
         courseId,
-        content: messageText.trim(),
+        content: contentToSend,
         type: "TEXT",
         tempId: uuidv4(),
       }).unwrap();
       setMessageText("");
+      setShowEmojiPicker(false);
       // keep focus in the textarea so the user can continue typing
       if (textareaRef.current) {
         // refocus after state update
@@ -573,7 +673,9 @@ const Chat: React.FC<ChatProps> = ({
                         isMobile ? "text-sm" : "text-sm"
                       )}
                     >
-                      {message.content || "[No content available]"}
+                      {convertShortcodesToEmoji(
+                        message.content || "[No content available]"
+                      )}
                       {isPending && (
                         <span
                           className={cn(
@@ -1044,6 +1146,37 @@ const Chat: React.FC<ChatProps> = ({
               >
                 <Upload className={cn(isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               </Button>
+              <div className="relative" ref={emojiPickerWrapperRef}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowEmojiPicker((s) => !s)}
+                  disabled={!isConnected}
+                  title="Insert emoji"
+                  className={cn(isMobile ? "h-9 w-9" : "h-10 w-10")}
+                >
+                  <span className={cn(isMobile ? "text-sm" : "text-base")}>
+                    😊
+                  </span>
+                </Button>
+
+                {showEmojiPicker && (
+                  <div className="absolute bottom-12 right-0 z-50 bg-white border rounded shadow p-2 w-48">
+                    <div className="grid grid-cols-6 gap-2">
+                      {Object.keys(EMOJI_MAP).map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-lg"
+                          onClick={() => insertEmojiIntoMessage(emoji)}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim() || !isConnected}
