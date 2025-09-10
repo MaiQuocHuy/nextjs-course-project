@@ -28,6 +28,9 @@ import {
   Download,
   Loader2,
   EllipsisVertical,
+  FileImage,
+  FileText,
+  BookText,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -660,7 +663,9 @@ const Chat: React.FC<ChatProps> = ({
                                 </div>
                               )}
                               <div className="flex items-center gap-2 p-2 bg-background/10 rounded-lg">
-                                <div className="text-lg">�️</div>
+                                <div className="text-lg">
+                                  <FileImage />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-xs truncate">
                                     {fileName}
@@ -694,7 +699,9 @@ const Chat: React.FC<ChatProps> = ({
                         } else if (isPdf) {
                           return (
                             <div className="flex items-center gap-3 p-3 bg-background/10 rounded-lg border">
-                              <div className="text-2xl">📄</div>
+                              <div className="text-2xl">
+                                <FileText />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium text-sm truncate">
                                   {fileName}
@@ -733,7 +740,9 @@ const Chat: React.FC<ChatProps> = ({
                         } else if (isDoc) {
                           return (
                             <div className="flex items-center gap-3 p-3 bg-background/10 rounded-lg border">
-                              <div className="text-2xl">📝</div>
+                              <div className="text-2xl">
+                                <BookText />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium text-sm truncate">
                                   {fileName}
