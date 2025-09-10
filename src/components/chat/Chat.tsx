@@ -27,6 +27,7 @@ import {
   Check,
   Download,
   Loader2,
+  EllipsisVertical,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -458,7 +459,7 @@ const Chat: React.FC<ChatProps> = ({
       <div
         key={message.id || (message as ChatMessage).tempId}
         className={cn(
-          "flex gap-2 group transition-opacity duration-200",
+          "flex gap-3 group transition-opacity duration-200",
           isOwn ? "justify-end" : "justify-start",
           isDeleting && "opacity-50 pointer-events-none"
         )}
@@ -801,18 +802,18 @@ const Chat: React.FC<ChatProps> = ({
                 </div>
 
                 {canEditMessage(message) && (
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-2 right-0">
-                    <DropdownMenu>
+                  <div className="group-hover:opacity-100 transition-opacity  ">
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
-                          variant="secondary"
-                          className="h-6 w-6 p-0 rounded-full"
+                          variant="ghost"
+                          className="h-6 w-2 p-0 rounded-full absolute -top-0 -right-4"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <EllipsisVertical className="w-3 h-3 p-0" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
+                      <DropdownMenuContent className="z-101 absolute -top-1 -right-1">
                         <DropdownMenuItem onClick={() => startEditing(message)}>
                           <Edit2 className="w-4 h-4 mr-2" />
                           Edit
