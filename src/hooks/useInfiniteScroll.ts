@@ -1,3 +1,13 @@
+// Hook: useInfiniteScroll
+// Purpose: UI/interaction hook that attaches a scroll listener to a
+// provided scroll container. Responsible for:
+//  - detecting when the user scrolls near the top to trigger loading older pages
+//  - preventing triggers during programmatic (auto) scrolling
+//  - exposing a `setAutoScrolling` helper for callers to temporarily
+//    suspend scroll-triggered loads while performing smooth scrolls.
+// Note: This hook intentionally does not manage data fetching or message
+// state. See `useChatInfiniteScroll` for the data-layer logic. Keeping these
+// concerns separate improves testability and reuse.
 import { useEffect, useCallback, useRef, RefObject } from "react";
 
 interface UseInfiniteScrollProps {
@@ -23,23 +33,19 @@ export const useInfiniteScroll = (
 
   const handleScroll = useCallback(() => {
     if (disabled) {
-      console.log("❌ Infinite scroll disabled");
       return;
     }
 
     const element = scrollElementRef.current;
     if (!element) {
-      console.log("❌ No scroll element found");
       return;
     }
 
     if (!hasNextPage) {
-      console.log("❌ No more pages to load");
       return;
     }
 
     if (isFetchingNextPage) {
-      console.log("❌ Already fetching next page");
       return;
     }
 
@@ -57,7 +63,6 @@ export const useInfiniteScroll = (
 
     // Skip if auto scrolling
     if (isAutoScrollingRef.current) {
-      console.log("❌ Skipping - auto scrolling in progress");
       return;
     }
 
@@ -65,7 +70,6 @@ export const useInfiniteScroll = (
     const shouldTrigger = isScrollingUp && scrollTop <= threshold;
 
     if (shouldTrigger) {
-      console.log("🚀 Triggering fetchNextPage");
       fetchNextPage();
     }
   }, [
@@ -91,7 +95,6 @@ export const useInfiniteScroll = (
   useEffect(() => {
     const element = scrollElementRef.current;
     if (!element) {
-      console.log("❌ No element for scroll listener");
       return;
     }
 
@@ -101,20 +104,10 @@ export const useInfiniteScroll = (
     ) as HTMLElement;
     const scrollableElement = viewport || element;
 
-    console.log(
-      "✅ Setting up scroll listener on:",
-      scrollableElement.tagName,
-      {
-        hasViewport: !!viewport,
-        elementType: scrollableElement === element ? "direct" : "viewport",
-      }
-    );
-
     const listener = () => handleScroll();
     scrollableElement.addEventListener("scroll", listener);
 
     return () => {
-      console.log("🧹 Cleaning up scroll listener");
       scrollableElement.removeEventListener("scroll", listener);
     };
   }, [handleScroll]);

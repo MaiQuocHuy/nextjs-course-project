@@ -1,4 +1,4 @@
-import { ChatMessage, WebSocketConfig, UserStatusMessage } from "@/types/chat";
+import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { webSocketService } from "./webSocketService";
 
 export interface ChatWebSocketManagerConfig {
@@ -6,7 +6,6 @@ export interface ChatWebSocketManagerConfig {
   token: string;
   userId?: string;
   onMessage: (message: ChatMessage) => void;
-  onUserStatus?: (status: UserStatusMessage) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: any) => void;
@@ -28,7 +27,6 @@ export class ChatWebSocketManager {
 
     try {
       this.isInitialized = true;
-      console.log("Initializing ChatWebSocketManager...");
     } catch (error) {
       this.isInitialized = false;
       console.error("Failed to initialize WebSocket manager:", error);
@@ -50,15 +48,11 @@ export class ChatWebSocketManager {
         this.currentCourseId === courseId &&
         webSocketService.isWebSocketConnected()
       ) {
-        console.log(`Already connected to course ${courseId}`);
         return;
       }
 
       // If connected to a different course, disconnect first
       if (this.currentCourseId && this.currentCourseId !== courseId) {
-        console.log(
-          `Switching from course ${this.currentCourseId} to ${courseId}`
-        );
         await this.disconnect();
       }
 
@@ -68,7 +62,6 @@ export class ChatWebSocketManager {
         courseId,
         userId: config.userId,
         onMessage: config.onMessage,
-        onUserStatus: config.onUserStatus,
         onConnect: config.onConnect,
         onDisconnect: config.onDisconnect,
         onError: config.onError,
@@ -77,10 +70,7 @@ export class ChatWebSocketManager {
 
       await webSocketService.connect(wsConfig);
       this.currentCourseId = courseId;
-
-      console.log(`Successfully connected to course ${courseId} chat`);
     } catch (error) {
-      console.error(`Failed to connect to course ${courseId}:`, error);
       throw error;
     }
   }
@@ -94,7 +84,6 @@ export class ChatWebSocketManager {
     }
 
     if (this.currentCourseId === courseId) {
-      console.log(`Already connected to course ${courseId}`);
       return;
     }
 
@@ -103,14 +92,12 @@ export class ChatWebSocketManager {
         // Use the subscribe to course method to switch subscription
         webSocketService.subscribeToCourse(courseId);
         this.currentCourseId = courseId;
-        console.log(`Switched to course ${courseId} chat`);
       } else {
         throw new Error(
           "WebSocket not connected. Use connectToCourse instead."
         );
       }
     } catch (error) {
-      console.error(`Failed to switch to course ${courseId}:`, error);
       throw error;
     }
   }
@@ -123,7 +110,6 @@ export class ChatWebSocketManager {
       await webSocketService.disconnect();
       this.currentCourseId = null;
       this.isInitialized = false;
-      console.log("WebSocket manager disconnected");
     } catch (error) {
       console.error("Failed to disconnect WebSocket manager:", error);
       throw error;
@@ -157,7 +143,6 @@ export class ChatWebSocketManager {
   async reconnect() {
     try {
       await webSocketService.reconnect();
-      console.log("WebSocket reconnected successfully");
     } catch (error) {
       console.error("Failed to reconnect WebSocket:", error);
       throw error;

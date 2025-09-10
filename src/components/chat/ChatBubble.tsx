@@ -44,7 +44,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         className={cn(
           "fixed z-50",
           // Desktop positioning
-          "md:bottom-6 md:right-6",
+          "md:bottom-3 md:right-3",
           // Mobile positioning
           "bottom-4 right-4",
           className
@@ -55,7 +55,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
             onClick={toggleChat}
             size={isMobile ? "default" : "lg"}
             className={cn(
-              "rounded-full shadow-lg transition-all duration-300 hover:scale-105 bg-blue-600 text-white hover:bg-blue-700",
+              "rounded-full shadow-lg transition-all duration-300 hover:scale-105 bg-blue-600 opacity-50  hover:opacity-100 text-white hover:bg-blue-700",
               // Desktop sizing
               "md:h-14 md:w-14",
               // Mobile sizing
