@@ -1,4 +1,4 @@
-import { ChatMessage, WebSocketConfig, UserStatusMessage } from "@/types/chat";
+import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
@@ -7,7 +7,6 @@ export class WebSocketService {
   private config: WebSocketConfig | null = null;
   private isConnected = false;
   private subscription: any = null;
-  private userStatusSubscription: any = null;
   private currentUserId: string | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -43,11 +42,6 @@ export class WebSocketService {
 
             // Subscribe to course messages
             this.subscribeToMessages(config.courseId);
-
-            // Subscribe to user status if userId provided
-            if (this.currentUserId) {
-              this.subscribeToUserStatus(this.currentUserId);
-            }
 
             config.onConnect?.();
             resolve();
@@ -166,85 +160,12 @@ export class WebSocketService {
   }
 
   /**
-   * Subscribe to user's personal status updates
-   */
-  private async subscribeToUserStatus(userId: string) {
-    if (!this.client) {
-      console.error("WebSocket client not initialized for user status");
-      return;
-    }
-
-    // Wait for STOMP underlying connection as well
-    const waitForStompConnected = async (timeoutMs = 5000) => {
-      const intervalMs = 100;
-      const start = Date.now();
-      return new Promise<boolean>((resolve) => {
-        const check = () => {
-          if (this.client && (this.client as any).connected === true) {
-            resolve(true);
-            return;
-          }
-
-          if (Date.now() - start > timeoutMs) {
-            resolve(false);
-            return;
-          }
-
-          setTimeout(check, intervalMs);
-        };
-
-        check();
-      });
-    };
-
-    const connected = await waitForStompConnected(5000);
-    if (!connected) {
-      console.error(
-        "STOMP client not connected after wait - cannot subscribe to user status"
-      );
-      return;
-    }
-
-    try {
-      const destination = `/topic/users/${userId}/status`;
-
-      this.userStatusSubscription = this.client.subscribe(
-        destination,
-        (message) => {
-          try {
-            const statusMessage: UserStatusMessage = JSON.parse(message.body);
-            this.config?.onUserStatus?.(statusMessage);
-          } catch (error) {
-            console.error("Error parsing user status message:", error);
-            console.error("Raw user status message body:", message.body);
-          }
-        }
-      );
-
-      return this.userStatusSubscription;
-    } catch (error) {
-      console.error("Error subscribing to user status:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Unsubscribe from current subscription
    */
   unsubscribe() {
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
-    }
-  }
-
-  /**
-   * Unsubscribe from user status
-   */
-  unsubscribeFromUserStatus() {
-    if (this.userStatusSubscription) {
-      this.userStatusSubscription.unsubscribe();
-      this.userStatusSubscription = null;
     }
   }
 
@@ -283,14 +204,12 @@ export class WebSocketService {
       if (this.client && this.isConnected) {
         // Unsubscribe from both topics
         this.unsubscribe();
-        this.unsubscribeFromUserStatus();
 
         this.client.onDisconnect = () => {
           this.isConnected = false;
           this.client = null;
           this.config = null;
           this.currentUserId = null;
-          this.userStatusSubscription = null;
           this.reconnectAttempts = 0;
           resolve();
         };

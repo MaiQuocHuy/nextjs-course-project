@@ -6,7 +6,6 @@ import {
 } from "../services/websocket/chatWebSocketManager";
 import {
   ChatMessage,
-  UserStatusMessage,
   UseChatWebSocketConfig,
   UseChatWebSocketReturn,
 } from "@/types/chat";
@@ -18,7 +17,6 @@ export const useChatWebSocket = (
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState("DISCONNECTED");
   const [error, setError] = useState<string | null>(null);
-  const [userStatus, setUserStatus] = useState<UserStatusMessage | null>(null);
 
   const configRef = useRef(config);
   // Guard to prevent overlapping connect attempts
@@ -48,25 +46,6 @@ export const useChatWebSocket = (
     },
     [messages.length]
   );
-
-  // Handle user status updates
-  const handleUserStatus = useCallback((status: UserStatusMessage) => {
-    setUserStatus(status);
-
-    // Handle different status types
-    switch (status.type) {
-      case "MESSAGE_SENT":
-        // Update message status in UI if needed
-        configRef.current.onUserStatus?.(status);
-        break;
-      case "MESSAGE_DELIVERED":
-        configRef.current.onUserStatus?.(status);
-        break;
-      case "MESSAGE_READ":
-        configRef.current.onUserStatus?.(status);
-        break;
-    }
-  }, []);
 
   // Connection event handlers
   const handleConnect = useCallback(() => {
@@ -110,7 +89,6 @@ export const useChatWebSocket = (
         token: configRef.current.accessToken,
         userId: configRef.current.userId,
         onMessage: handleMessage,
-        onUserStatus: handleUserStatus,
         onConnect: handleConnect,
         onDisconnect: handleDisconnect,
         onError: handleError,
@@ -145,7 +123,6 @@ export const useChatWebSocket = (
     }
   }, [
     handleMessage,
-    handleUserStatus,
     handleConnect,
     handleDisconnect,
     handleError,
@@ -315,7 +292,6 @@ export const useChatWebSocket = (
     isConnected,
     connectionState,
     error,
-    userStatus,
     connect,
     disconnect,
     switchCourse,

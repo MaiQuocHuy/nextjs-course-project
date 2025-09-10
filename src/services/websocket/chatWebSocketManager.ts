@@ -1,4 +1,4 @@
-import { ChatMessage, WebSocketConfig, UserStatusMessage } from "@/types/chat";
+import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { webSocketService } from "./webSocketService";
 
 export interface ChatWebSocketManagerConfig {
@@ -6,7 +6,6 @@ export interface ChatWebSocketManagerConfig {
   token: string;
   userId?: string;
   onMessage: (message: ChatMessage) => void;
-  onUserStatus?: (status: UserStatusMessage) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: any) => void;
@@ -63,7 +62,6 @@ export class ChatWebSocketManager {
         courseId,
         userId: config.userId,
         onMessage: config.onMessage,
-        onUserStatus: config.onUserStatus,
         onConnect: config.onConnect,
         onDisconnect: config.onDisconnect,
         onError: config.onError,
