@@ -17,19 +17,3 @@ export {
   disconnectFromChat,
   getChatConnectionStatus,
 } from "./chatWebSocketManager";
-
-// Types
-export type {
-  ChatMessage,
-  SendMessageData,
-  WebSocketConfig,
-} from "./webSocketService";
-
-export type {
-  SendMessageRequest,
-  SendMessageResponse,
-  GetMessagesResponse,
-  ApiErrorResponse,
-} from "./chatApi";
-
-export type { ChatWebSocketManagerConfig } from "./chatWebSocketManager";

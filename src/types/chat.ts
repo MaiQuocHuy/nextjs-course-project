@@ -1,0 +1,136 @@
+export interface ChatMessage {
+  id: string;
+  courseId: string;
+  senderId: string;
+  senderName: string;
+  senderThumbnailUrl?: string;
+  senderRole: "STUDENT" | "INSTRUCTOR";
+  type: "TEXT" | "FILE";
+  content?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  duration?: number;
+  thumbnailUrl?: string;
+  createdAt: string;
+  status?: "PENDING" | "SUCCESS" | "ERROR";
+  tempId?: string;
+}
+
+export interface SendMessageData {
+  type: "TEXT" | "FILE";
+  content?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
+  duration?: number | null;
+  thumbnailUrl?: string | null;
+}
+
+export interface WebSocketConfig {
+  baseUrl: string;
+  token: string;
+  courseId: string;
+  userId?: string;
+  onMessage: (message: ChatMessage) => void;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onError?: (error: any) => void;
+  onReconnect?: () => void;
+}
+
+export interface SendMessageRequest {
+  courseId: string;
+  tempId: string;
+  type: "TEXT" | "FILE";
+  content?: string | null;
+  fileUrl?: string | null;
+  file?: File | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
+  duration?: number | null;
+  thumbnailUrl?: string | null;
+}
+
+export interface SendMessageResponse {
+  statusCode: number;
+  message: string;
+  data: ChatMessage;
+  timestamp: string;
+}
+
+export interface UpdateMessageRequest {
+  courseId: string;
+  messageId: string;
+  type: "TEXT";
+  content: string;
+}
+
+export interface UpdateMessageResponse {
+  statusCode: number;
+  message: string;
+  data: ChatMessage;
+  timestamp: string;
+}
+
+export interface DeleteMessageResponse {
+  statusCode: number;
+  message: string;
+  data: null;
+  timestamp: string;
+}
+
+export interface GetMessagesResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    messages: ChatMessage[];
+    page: number | null;
+    size: number;
+    totalElements: number | null;
+    totalPages: number | null;
+  };
+  timestamp: string;
+}
+
+export interface GetMessagesRequest {
+  courseId: string;
+  type?: "TEXT" | "FILE" | "AUDIO" | "VIDEO";
+  page?: number;
+  size?: number;
+  beforeMessageId?: string;
+}
+
+export interface ApiErrorResponse {
+  statusCode: number;
+  message: string;
+  data: null;
+  timestamp: string;
+}
+
+export interface UseChatWebSocketConfig {
+  accessToken: string;
+  courseId: string;
+  userId?: string;
+  autoConnect?: boolean;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onError?: (error: any) => void;
+  onReconnect?: () => void;
+}
+
+export interface UseChatWebSocketReturn {
+  messages: ChatMessage[];
+  isConnected: boolean;
+  connectionState: string;
+  error: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  switchCourse: (courseId: string) => Promise<void>;
+  reconnect: () => Promise<void>;
+  clearMessages: () => void;
+  addMessage: (message: ChatMessage) => void;
+}

@@ -1,34 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ChatMessage } from "../services/websocket/webSocketService";
 import {
   chatWebSocketManager,
   ChatWebSocketManagerConfig,
   getChatConnectionStatus,
 } from "../services/websocket/chatWebSocketManager";
-import { getSession } from "next-auth/react";
-
-export interface UseChatWebSocketConfig {
-  accessToken: string;
-  courseId: string;
-  autoConnect?: boolean;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: any) => void;
-  onReconnect?: () => void;
-}
-
-export interface UseChatWebSocketReturn {
-  messages: ChatMessage[];
-  isConnected: boolean;
-  connectionState: string;
-  error: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-  switchCourse: (courseId: string) => Promise<void>;
-  reconnect: () => Promise<void>;
-  clearMessages: () => void;
-  addMessage: (message: ChatMessage) => void;
-}
+import {
+  ChatMessage,
+  UseChatWebSocketConfig,
+  UseChatWebSocketReturn,
+} from "@/types/chat";
 
 export const useChatWebSocket = (
   config: UseChatWebSocketConfig
@@ -39,7 +19,8 @@ export const useChatWebSocket = (
   const [error, setError] = useState<string | null>(null);
 
   const configRef = useRef(config);
-  const isInitializedRef = useRef(false);
+  // Guard to prevent overlapping connect attempts
+  const connectingRef = useRef(false);
 
   // Update config ref when config changes
   useEffect(() => {
@@ -49,18 +30,13 @@ export const useChatWebSocket = (
   // Handle incoming messages
   const handleMessage = useCallback(
     (message: ChatMessage) => {
-      console.log("🔥 Received message via hook:", message);
-      console.log("🔥 Current messages count:", messages.length);
-
       setMessages((prev) => {
         // Avoid duplicates
         const exists = prev.some((msg) => msg.id === message.id);
         if (exists) {
-          console.log("🔥 Message already exists, skipping:", message.id);
           return prev;
         }
 
-        console.log("🔥 Adding new message:", message.id);
         // Add new message and sort by timestamp
         return [...prev, message].sort(
           (a, b) =>
@@ -73,14 +49,12 @@ export const useChatWebSocket = (
 
   // Connection event handlers
   const handleConnect = useCallback(() => {
-    console.log("Chat WebSocket connected");
     setIsConnected(true);
     setError(null);
     configRef.current.onConnect?.();
   }, []);
 
   const handleDisconnect = useCallback(() => {
-    console.log("Chat WebSocket disconnected");
     setIsConnected(false);
     configRef.current.onDisconnect?.();
   }, []);
@@ -93,7 +67,6 @@ export const useChatWebSocket = (
   }, []);
 
   const handleReconnect = useCallback(() => {
-    console.log("Chat WebSocket reconnected");
     setIsConnected(true);
     setError(null);
     configRef.current.onReconnect?.();
@@ -102,12 +75,19 @@ export const useChatWebSocket = (
   // Connect function
   const connect = useCallback(async () => {
     try {
+      // Prevent concurrent connect attempts
+      if (connectingRef.current) {
+        return;
+      }
+      connectingRef.current = true;
+
       setError(null);
 
       const wsConfig: ChatWebSocketManagerConfig = {
         baseUrl:
           process.env.NEXT_PUBLIC_API_BACKEND_URL || "http://localhost:8080",
         token: configRef.current.accessToken,
+        userId: configRef.current.userId,
         onMessage: handleMessage,
         onConnect: handleConnect,
         onDisconnect: handleDisconnect,
@@ -115,19 +95,31 @@ export const useChatWebSocket = (
         onReconnect: handleReconnect,
       };
 
-      await chatWebSocketManager.connectToCourse(
-        configRef.current.courseId,
-        wsConfig
-      );
+      // If manager already knows about this course but reports disconnected,
+      // try a reconnect flow instead of a fresh connect to avoid stale state.
+      const status = getChatConnectionStatus();
+      if (
+        status.currentCourseId === configRef.current.courseId &&
+        !status.isConnected
+      ) {
+        await chatWebSocketManager.reconnect();
+      } else {
+        await chatWebSocketManager.connectToCourse(
+          configRef.current.courseId,
+          wsConfig
+        );
+      }
 
       // Update connection state
-      const status = getChatConnectionStatus();
-      setIsConnected(status.isConnected);
-      setConnectionState(status.connectionState);
+      const statusAfter = getChatConnectionStatus();
+      setIsConnected(statusAfter.isConnected);
+      setConnectionState(statusAfter.connectionState);
     } catch (error: any) {
       console.error("Failed to connect to chat:", error);
       setError(error?.message || "Failed to connect");
       setIsConnected(false);
+    } finally {
+      connectingRef.current = false;
     }
   }, [
     handleMessage,
@@ -192,18 +184,13 @@ export const useChatWebSocket = (
 
   // Add message function (for optimistic updates)
   const addMessage = useCallback((message: ChatMessage) => {
-    console.log("🔥 AddMessage called with:", message);
-    console.log("🔥 AddMessage stack trace:", new Error().stack);
-
     setMessages((prev) => {
       // Avoid duplicates
       const exists = prev.some((msg) => msg.id === message.id);
       if (exists) {
-        console.log("🔥 Message already exists, skipping:", message.id);
         return prev;
       }
 
-      console.log("🔥 Adding new message to state:", message.id);
       // Add new message and sort by timestamp
       return [...prev, message].sort(
         (a, b) =>
@@ -212,25 +199,82 @@ export const useChatWebSocket = (
     });
   }, []);
 
-  // Auto-connect effect
+  // Auto-connect / auto-disconnect when config.autoConnect changes
   useEffect(() => {
-    if (config.autoConnect !== false && !isInitializedRef.current) {
-      isInitializedRef.current = true;
+    const shouldAutoConnect = config.autoConnect !== false;
+
+    if (shouldAutoConnect) {
+      // If autoConnect enabled, ensure we are connected
       connect().catch((error) => {
         console.error("Auto-connect failed:", error);
       });
+    } else {
+      // If autoConnect disabled, disconnect if connected
+      disconnect().catch((error) => {
+        console.error("Auto-disconnect failed:", error);
+      });
     }
 
-    // Cleanup on unmount
+    // Cleanup on unmount: always attempt to disconnect
     return () => {
-      if (isInitializedRef.current) {
-        disconnect().catch((error) => {
-          console.error("Cleanup disconnect failed:", error);
-        });
-      }
+      disconnect().catch((error) => {
+        console.error("Cleanup disconnect failed:", error);
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.autoConnect]); // Only depend on autoConnect, not the functions
+  }, [config.autoConnect]);
+
+  // When the requested courseId changes, switch subscription or connect as needed.
+  // This ensures that when the parent component changes the course, the
+  // WebSocket subscription follows and incoming messages for the new course
+  // will be delivered to this hook.
+  useEffect(() => {
+    // skip if no courseId provided
+    const newCourseId = config.courseId;
+    if (!newCourseId) return;
+
+    let cancelled = false;
+
+    const handleCourseChange = async () => {
+      try {
+        const status = getChatConnectionStatus();
+
+        // Always prefer the safe connect flow which will initialize manager
+        // and subscribe to the correct course. This avoids calling
+        // chatWebSocketManager.switchCourse when the manager isn't
+        // initialized (which throws).
+        // Ensure configRef has the new course id before connecting.
+        configRef.current = { ...configRef.current, courseId: newCourseId };
+
+        // Only call connect if either the current course differs or we're
+        // not connected. connect() is idempotent via connectingRef guard.
+        if (status.currentCourseId !== newCourseId || !status.isConnected) {
+          await connect();
+        }
+
+        if (!cancelled) {
+          const after = getChatConnectionStatus();
+          setIsConnected(after.isConnected);
+          setConnectionState(after.connectionState);
+          // clear local messages when course changes
+          setMessages([]);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error("Failed to switch/connect to new course:", err);
+          setError(err?.message || "Failed to switch course");
+        }
+      }
+    };
+
+    // Don't run this on initial mount if autoConnect is disabled
+    handleCourseChange();
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally depend on config.courseId only. connect/switchCourse are stable via useCallback.
+  }, [config.courseId]);
 
   // Update connection state periodically
   useEffect(() => {

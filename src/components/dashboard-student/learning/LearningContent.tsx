@@ -1302,14 +1302,16 @@ export function LearningContent({
                 </div>
               </div>
             </div>
-            {currentLesson.isCompleted && (
-              <div className="flex items-center gap-1 sm:gap-2 text-green-600 flex-shrink-0">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-xs sm:text-sm font-medium hidden sm:inline">
-                  Completed
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {currentLesson.isCompleted && (
+                <div className="flex items-center gap-1 sm:gap-2 text-green-600">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-xs sm:text-sm font-medium hidden sm:inline">
+                    Completed
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
