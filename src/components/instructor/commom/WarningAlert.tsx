@@ -34,8 +34,7 @@ const WarningAlert = ({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description && (
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              course and all its content.
+              {description}
             </AlertDialogDescription>
           )}
         </AlertDialogHeader>

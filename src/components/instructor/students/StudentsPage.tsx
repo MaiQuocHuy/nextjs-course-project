@@ -6,8 +6,8 @@ import { Search, Users, Mail, } from 'lucide-react';
 import { Students } from '@/types/instructor/students';
 import { useGetEnrolledStudentsQuery } from '@/services/instructor/students/students-ins-api';
 import { EnrolledStudentList } from './EnrolledStudentList';
-import { ErrorComponent } from '../commom/ErrorComponents';
-import { StudentSkeleton } from './StudentSkeleton';
+import { ErrorComponent } from '../commom/ErrorComponent';
+import { StudentSkeleton } from './skeletons/index';
 import { Pagination } from '../../common/Pagination';
 
 const params = {

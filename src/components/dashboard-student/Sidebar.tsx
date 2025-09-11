@@ -45,6 +45,16 @@ const navigationItems = [
     href: "/dashboard/reviews",
     icon: Star,
   },
+  {
+    label: "Affiliate Payouts",
+    href: "/dashboard/affiliate-payout",
+    icon: CreditCard,
+  },
+  {
+    label: "Discount Usage",
+    href: "/dashboard/discount-usage",
+    icon: CreditCard,
+  },
 ];
 
 interface SidebarProps {

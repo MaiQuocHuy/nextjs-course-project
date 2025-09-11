@@ -9,7 +9,7 @@ import {
   useGetStudentDetailsQuery,
   useGetStudentQuizResultsQuery,
 } from '@/services/instructor/students/students-ins-api';
-import { ErrorComponent } from '../../commom/ErrorComponents';
+import { ErrorComponent } from '../../commom/ErrorComponent';
 import { EnrolledCourses } from './EnrolledCourses';
 import { StudentInfo } from './StudentInfo';
 import { StudentQuizResults } from './StudentQuizResults';

@@ -21,14 +21,14 @@ export const geminiApi = createApi({
       {
         sectionId: string;
         lessonId: string;
-        text: string;
+        texts: string[];
         numQuestions: number;
       }
     >({
       queryFn: async (data, api, extraOptions, baseQuery) => {
         try {
           const result = await localBaseQuery(
-            { url: '/api/test-gemini', method: 'POST', body: data },
+            { url: '/api/gemini', method: 'POST', body: data },
             api,
             extraOptions
           );
