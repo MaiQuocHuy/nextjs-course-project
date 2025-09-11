@@ -209,7 +209,7 @@ export default function SettingsPage() {
   const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
 
   // ReSubmit Application State
-  const [showReSubmitDialog, setShowReSubmitDialog] = useState(true);
+  const [showReSubmitDialog, setShowReSubmitDialog] = useState(false);
 
   // Forms
   const personalForm = useForm<PersonalInfoForm>({
