@@ -60,6 +60,13 @@ export function DiscountUsageMobileCard({
           </Badge>
         </div>
 
+        {/* Discount Type */}
+        {discountUsage.discount.type && (
+          <p className="text-xs text-gray-500">
+            Type: {discountUsage.discount.type}
+          </p>
+        )}
+
         {/* Discount Description */}
         <p className="text-sm text-muted-foreground">
           {discountUsage.discount.description}

@@ -7,6 +7,7 @@ export interface DiscountUsage {
     id: string;
     code: string;
     description: string;
+    type: "REFERRAL" | "GENERAL";
   };
   user: {
     name: string;
@@ -58,6 +59,7 @@ export interface AffiliatePayout {
       id: string;
       code: string;
       description: string;
+      type: "REFERRAL" | "GENERAL";
     };
     user: {
       name: string;

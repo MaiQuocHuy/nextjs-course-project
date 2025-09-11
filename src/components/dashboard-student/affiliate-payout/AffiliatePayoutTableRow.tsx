@@ -6,7 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AffiliatePayout } from "@/types/student";
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatDate } from "@/utils/student";
+import {
+  formatCurrency,
+  formatDate,
+  getAffiliateStatusBadge,
+} from "@/utils/student";
 import {
   ChevronDown,
   ChevronRight,
@@ -48,30 +52,6 @@ export function AffiliatePayoutTableRow({
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateString;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-        return (
-          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-            Paid
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
-          >
-            Pending
-          </Badge>
-        );
-      case "cancelled":
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -120,14 +100,14 @@ export function AffiliatePayoutTableRow({
 
         {/* Commission Amount */}
         <TableCell className="text-right">
-          <div className="font-medium text-green-600 whitespace-nowrap">
+          <div className="font-medium whitespace-nowrap">
             {safeFormatCurrency(affiliatePayout.commissionAmount)}
           </div>
         </TableCell>
 
         {/* Status */}
         <TableCell className="text-center">
-          {getStatusBadge(affiliatePayout.payoutStatus)}
+          {getAffiliateStatusBadge(affiliatePayout.payoutStatus)}
         </TableCell>
 
         {/* Date */}
@@ -193,6 +173,11 @@ export function AffiliatePayoutTableRow({
                     {affiliatePayout.discountUsage?.discount?.description && (
                       <p className="text-xs text-gray-500">
                         {affiliatePayout.discountUsage.discount.description}
+                      </p>
+                    )}
+                    {affiliatePayout.discountUsage?.discount?.type && (
+                      <p className="text-xs text-gray-500">
+                        Type: {affiliatePayout.discountUsage.discount.type}
                       </p>
                     )}
                   </div>

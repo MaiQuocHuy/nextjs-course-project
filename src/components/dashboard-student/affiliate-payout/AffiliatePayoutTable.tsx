@@ -8,8 +8,8 @@ import { AffiliatePayoutTableHead } from "./AffiliatePayoutTableHead";
 import { AffiliatePayoutTableRow } from "./AffiliatePayoutTableRow";
 import { Coins } from "lucide-react";
 import { AffiliatePayoutMobileCard } from "./AffiliatePayoutMobileCard";
-import { PaymentTableLoadingSkeleton } from "../ui/Loading";
-import { PaymentsError } from "../ui/LoadingError";
+import { AffiliateLoadingSkeleton } from "../ui/Loading";
+import { AffiliatePayoutsError } from "../ui/LoadingError";
 import {
   CustomPagination,
   usePagination,
@@ -32,11 +32,11 @@ export function AffiliatePayoutTable() {
   } = usePagination(affiliatePayouts?.content || [], 12);
 
   if (isLoading) {
-    return <PaymentTableLoadingSkeleton />;
+    return <AffiliateLoadingSkeleton />;
   }
 
   if (error) {
-    return <PaymentsError onRetry={refetch} />;
+    return <AffiliatePayoutsError onRetry={refetch} />;
   }
 
   if (!affiliatePayouts?.content || affiliatePayouts.content.length === 0) {
