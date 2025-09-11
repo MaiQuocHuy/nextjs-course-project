@@ -1,5 +1,5 @@
 import { PaginatedData } from '../common';
-import { Category } from './courses';
+import { Category } from './courses/courses';
 
 export interface EnrolledCourse {
   courseId: string;
@@ -33,4 +33,13 @@ export interface StudentDetails {
   email: string;
   thumbnailUrl: string;
   enrolledCourses: PaginatedData<EnrolledCourse>;
+}
+
+export interface CourseEnrolledStudent {
+  id: string;
+  name: string;
+  email: string;
+  thumbnailUrl: string;
+  progress: number;
+  enrolledAt: string;
 }

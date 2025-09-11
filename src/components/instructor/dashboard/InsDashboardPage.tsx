@@ -26,7 +26,7 @@ import {
   DashboardError,
   StatsCardError,
   TableError,
-} from '@/components/instructor/commom/ErrorComponents';
+} from '@/components/instructor/dashboard/DashboardErrorComponents';
 import { SkeletonContainer } from '@/components/instructor/commom/skeletons/SkeletonContainer';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { GeneralStatistics } from './GeneralStatistics';

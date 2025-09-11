@@ -3,10 +3,17 @@ import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { CourseDetailsSections } from '@/types/instructor/courses/course-details';
 
 interface CourseNavigationProps {
-  activeSection: 'overview' | 'content' | 'reviews';
-  onNavigate: (section: 'overview' | 'content' | 'reviews') => void;
+  activeSection: CourseDetailsSections;
+  onNavigate: (section: CourseDetailsSections) => void;
+}
+
+interface NavigateButtonProps {
+  activeSection: string;
+  section: CourseDetailsSections;
+  onNavigate: (section: CourseDetailsSections) => void;
 }
 
 const CourseNavigation = ({
@@ -25,43 +32,19 @@ const CourseNavigation = ({
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
+
         {/* Navigator */}
         <nav className="container flex gap-4 p-4">
-          {/* Overview page */}
-          <Button
-            variant="ghost"
-            className={cn(
-              'font-medium',
-              activeSection === 'overview' && 'bg-secondary'
-            )}
-            onClick={() => onNavigate('overview')}
-          >
-            Overview
-          </Button>
-
-          {/* Course content page */}
-          <Button
-            variant="ghost"
-            className={cn(
-              'font-medium',
-              activeSection === 'content' && 'bg-secondary'
-            )}
-            onClick={() => onNavigate('content')}
-          >
-            Content
-          </Button>
-
-          {/* Reviews page */}
-          <Button
-            variant="ghost"
-            className={cn(
-              'font-medium',
-              activeSection === 'reviews' && 'bg-secondary'
-            )}
-            onClick={() => onNavigate('reviews')}
-          >
-            Reviews
-          </Button>
+          {Object.values(CourseDetailsSections).map((section, index) => {
+            return (
+              <NavigateButton
+                key={index}
+                activeSection={activeSection}
+                section={section}
+                onNavigate={onNavigate}
+              />
+            );
+          })}
         </nav>
       </div>
     </div>
@@ -69,3 +52,19 @@ const CourseNavigation = ({
 };
 
 export default CourseNavigation;
+
+const NavigateButton = ({
+  activeSection,
+  section,
+  onNavigate,
+}: NavigateButtonProps) => {
+  return (
+    <Button
+      variant="ghost"
+      className={cn('font-medium', activeSection === section && 'bg-secondary')}
+      onClick={() => onNavigate(section)}
+    >
+      {section.charAt(0).toUpperCase() + section.slice(1)}
+    </Button>
+  );
+};

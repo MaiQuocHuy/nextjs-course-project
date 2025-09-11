@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 import {
   Card,
@@ -22,6 +23,7 @@ export const EnrolledStudentList = ({
   enrolledStudents,
   searchTerm,
 }: EnrolledStudentListProps) => {
+  console.log(enrolledStudents);
 
   const getAverageProgress = (enrolledCourses: EnrolledCourse[]) => {
     const progressValues = enrolledCourses.map((course) => course.progress);
@@ -52,11 +54,16 @@ export const EnrolledStudentList = ({
                 >
                   {/* Student's info */}
                   <CardHeader>
-                    <img
-                      src={student.thumbnailUrl}
-                      alt={student.name}
-                      className="w-full h-48 object-cover rounded-t-lg"
-                    />
+                    <div className="w-full h-48 relative rounded-t-lg overflow-hidden">
+                      <Image
+                        src={student.thumbnailUrl || '/images/default-avatar.jpg'}
+                        alt={student.name || 'Student Avatar'}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        priority={false}
+                      />
+                    </div>
                     <div>
                       <CardTitle className="text-xl">{student.name}</CardTitle>
                       <CardDescription>{student.email}</CardDescription>
@@ -122,7 +129,10 @@ export const EnrolledStudentList = ({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          window.open(`/instructor/students/${student.id}`, '_blank');
+                          window.open(
+                            `/instructor/students/${student.id}`,
+                            '_blank'
+                          );
                         }}
                       >
                         View Student

@@ -9,8 +9,8 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, CalendarDays, DollarSign, Eye, RefreshCw, Star, Users } from 'lucide-react';
-import { Course } from '@/types/instructor/courses';
+import { BookOpen, CalendarDays, DollarSign, Eye, Star, Users } from 'lucide-react';
+import { Course } from '@/types/instructor/courses/courses';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 import { formatDistanceToNow } from 'date-fns';
 import { EmptyState } from '@/components/instructor/commom/EmptyState';
