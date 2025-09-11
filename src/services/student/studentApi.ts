@@ -19,6 +19,11 @@ import type {
   QuizResultDetails,
   QuizSubmissionRequest,
   QuizSubmissionResponse,
+  DiscountUsage,
+  PaginatedDiscountUsages,
+  AffiliatePayout,
+  PaginatedAffiliatePayouts,
+  AffiliatePayoutStats,
 } from "@/types/student/index";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 import {
@@ -51,6 +56,8 @@ export const studentApi = createApi({
     "Quiz",
     "Comment",
     "CommentCount",
+    "DiscountUsage",
+    "AffiliatePayout",
   ],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
@@ -415,6 +422,45 @@ export const studentApi = createApi({
         { type: "Comment", id: commentId },
       ],
     }),
+
+    // ==============================
+    // Discount Usage APIs
+    // ==============================
+    getDiscountUsages: builder.query<PaginatedDiscountUsages, void>({
+      query: () => ({
+        url: "/student/discount-usage",
+        method: "GET",
+      }),
+      providesTags: ["DiscountUsage"],
+      transformResponse: (response: { data: PaginatedDiscountUsages }) => {
+        return response.data;
+      },
+    }),
+
+    // ==============================
+    // Affiliate Payout APIs
+    // ==============================
+    getAffiliatePayouts: builder.query<PaginatedAffiliatePayouts, void>({
+      query: () => ({
+        url: "/student/affiliate-payout",
+        method: "GET",
+      }),
+      providesTags: ["AffiliatePayout"],
+      transformResponse: (response: { data: PaginatedAffiliatePayouts }) => {
+        return response.data;
+      },
+    }),
+
+    getAffiliatePayoutStats: builder.query<AffiliatePayoutStats, void>({
+      query: () => ({
+        url: "/student/affiliate-payout/statistics",
+        method: "GET",
+      }),
+      providesTags: ["AffiliatePayout"],
+      transformResponse: (response: { data: AffiliatePayoutStats }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -439,4 +485,7 @@ export const {
   useCreateCommentMutation,
   useUpdateCommentMutation,
   useDeleteCommentMutation,
+  useGetDiscountUsagesQuery,
+  useGetAffiliatePayoutsQuery,
+  useGetAffiliatePayoutStatsQuery,
 } = studentApi;
