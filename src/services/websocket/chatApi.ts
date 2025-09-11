@@ -1,48 +1,14 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "@/lib/baseQueryWithReauth";
-import { ChatMessage, SendMessageData } from "./webSocketService";
-
-export interface SendMessageRequest {
-  courseId: string;
-  tempId: string;
-  type: "text" | "file" | "audio" | "video";
-  content: string;
-  fileName?: string | null;
-  fileSize?: number | null;
-  duration?: number | null;
-  thumbnailUrl?: string | null;
-}
-
-export interface SendMessageResponse {
-  statusCode: number;
-  message: string;
-  data: ChatMessage;
-  timestamp: string;
-}
-
-export interface GetMessagesResponse {
-  statusCode: number;
-  message: string;
-  data: {
-    content: ChatMessage[];
-    page: {
-      number: number;
-      size: number;
-      totalElements: number;
-      totalPages: number;
-      first: boolean;
-      last: boolean;
-    };
-  };
-  timestamp: string;
-}
-
-export interface ApiErrorResponse {
-  statusCode: number;
-  message: string;
-  data: null;
-  timestamp: string;
-}
+import {
+  GetMessagesResponse,
+  GetMessagesRequest,
+  SendMessageRequest,
+  SendMessageResponse,
+  UpdateMessageRequest,
+  UpdateMessageResponse,
+  DeleteMessageResponse,
+} from "@/types/chat";
 
 export const chatApi = createApi({
   reducerPath: "chatApi",
@@ -51,28 +17,28 @@ export const chatApi = createApi({
   endpoints: (builder) => ({
     // Send a message via REST API
     sendMessage: builder.mutation<SendMessageResponse, SendMessageRequest>({
-      query: ({ courseId, ...messageData }) => ({
-        url: `/chat/${courseId}/messages`,
-        method: "POST",
-        body: messageData,
-      }),
+      query: ({ courseId, ...messageData }) => {
+        const url = `/chat/${courseId}/messages`;
+
+        // Backend expects JSON with fileUrl for file messages (client should pre-upload files),
+        // so always send JSON body here.
+        return {
+          url,
+          method: "POST",
+          body: messageData,
+        };
+      },
       // Don't invalidate tags since we're using WebSocket for real-time updates
-      // invalidatesTags: ["ChatMessage"], 
+      // invalidatesTags: ["ChatMessage"],
     }),
 
-    // Get chat messages for a course (paginated)
-    getCourseMessages: builder.query<
-      GetMessagesResponse,
-      {
-        courseId: string;
-        type?: "text" | "file" | "audio" | "video";
-        page?: number;
-        size?: number;
-      }
-    >({
-      query: ({ courseId, type, page = 0, size = 20 }) => {
-        const params: any = { page, size };
+    // Get chat messages for a course (with infinite scroll support)
+    getCourseMessages: builder.query<GetMessagesResponse, GetMessagesRequest>({
+      query: ({ courseId, type, page, size = 20, beforeMessageId }) => {
+        const params: any = { size };
         if (type) params.type = type;
+        if (page !== undefined) params.page = page;
+        if (beforeMessageId) params.beforeMessageId = beforeMessageId;
 
         return {
           url: `/chat/${courseId}/messages`,
@@ -81,7 +47,39 @@ export const chatApi = createApi({
       },
       providesTags: ["ChatMessage"],
     }),
+
+    // Update a message
+    updateMessage: builder.mutation<
+      UpdateMessageResponse,
+      UpdateMessageRequest
+    >({
+      query: ({ courseId, messageId, type, content }) => ({
+        url: `/chat/${courseId}/messages/${messageId}`,
+        method: "PATCH",
+        body: { type, content },
+      }),
+      // Invalidate cache to refetch messages after update
+      invalidatesTags: ["ChatMessage"],
+    }),
+
+    // Delete a message
+    deleteMessage: builder.mutation<
+      DeleteMessageResponse,
+      { courseId: string; messageId: string }
+    >({
+      query: ({ courseId, messageId }) => ({
+        url: `/chat/${courseId}/messages/${messageId}`,
+        method: "DELETE",
+      }),
+      // Invalidate cache to refetch messages after delete
+      invalidatesTags: ["ChatMessage"],
+    }),
   }),
 });
 
-export const { useSendMessageMutation, useGetCourseMessagesQuery } = chatApi;
+export const {
+  useSendMessageMutation,
+  useGetCourseMessagesQuery,
+  useUpdateMessageMutation,
+  useDeleteMessageMutation,
+} = chatApi;

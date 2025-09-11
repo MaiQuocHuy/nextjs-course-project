@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { UserInfoCard } from "@/components/profile/UserInfoCard";
 import { ProfileCourseList } from "@/components/profile/CourseListProfile";
+import { ReferralDiscountCard } from "@/components/profile/ReferralDiscountCard";
 
 export default function ProfilePage() {
   return (
@@ -27,7 +28,10 @@ export default function ProfilePage() {
           {/* Section A: User Information */}
           <UserInfoCard />
 
-          {/* Section B: Enrolled Courses */}
+          {/* Section B: Referral Discount Code */}
+          <ReferralDiscountCard />
+
+          {/* Section C: Enrolled Courses */}
           <ProfileCourseList />
         </div>
       </div>
