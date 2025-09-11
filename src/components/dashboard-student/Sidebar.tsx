@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, CreditCard, List, Star, Menu, X } from "lucide-react";
+import { Home, BookOpen, CreditCard, List, Star, Award, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,11 @@ const navigationItems = [
     label: "My Courses",
     href: "/dashboard/my-courses",
     icon: BookOpen,
+  },
+  {
+    label: "Certificates",
+    href: "/dashboard/certificates",
+    icon: Award,
   },
   {
     label: "Payments",

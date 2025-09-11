@@ -909,7 +909,7 @@ export default function SettingsPage() {
 
         {/* Re-Submit Application Dialog */}
         <Dialog open={showReSubmitDialog} onOpenChange={setShowReSubmitDialog}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="!max-w-5xl w-[60vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Re-Submit Application</DialogTitle>
             </DialogHeader>

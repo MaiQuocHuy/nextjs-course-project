@@ -209,8 +209,8 @@ export default function RegisterPage() {
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
     const allowedTypes = [
       "application/pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
+      "application/msword", // DOC
       "image/jpeg",
       "image/jpg",
       "image/png",
@@ -223,7 +223,8 @@ export default function RegisterPage() {
     }
 
     if (!allowedTypes.includes(file.type)) {
-      const error = "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
+      const error =
+        "File type not supported. Please upload PDF, DOCX, DOC, JPG/JPEG, or PNG files.";
       alert(error);
       return error;
     }
@@ -367,7 +368,7 @@ export default function RegisterPage() {
             <Upload className="w-6 h-6 text-indigo-600" />
           </div>
           <p className="text-sm font-medium text-gray-700 mb-1">{label}</p>
-          <p className="text-xs text-gray-500">PDF, DOCX, JPG, PNG (Max 15MB)</p>
+          <p className="text-xs text-gray-500">PDF, DOCX, DOC, JPG/JPEG, PNG (Max 15MB)</p>
         </label>
       </div>
     </div>
@@ -763,7 +764,7 @@ export default function RegisterPage() {
                             Upload Supporting Document
                           </p>
                           <p className="text-xs text-gray-500">
-                            Degrees, certifications, portfolio (Max 15MB)
+                            PDF, DOCX, DOC, JPG/JPEG, PNG (Max 15MB)
                           </p>
                         </label>
                       </div>
