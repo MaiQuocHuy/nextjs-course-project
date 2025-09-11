@@ -28,7 +28,7 @@ export const geminiApi = createApi({
       queryFn: async (data, api, extraOptions, baseQuery) => {
         try {
           const result = await localBaseQuery(
-            { url: '/api/test-gemini', method: 'POST', body: data },
+            { url: '/api/gemini', method: 'POST', body: data },
             api,
             extraOptions
           );

@@ -52,7 +52,7 @@ const TxtViewer = ({ file }: Props) => {
   }
 
   return (
-    <div className="w-full h-full p-4 border rounded bg-white dark:bg-gray-900">
+    <div className="w-full h-full p-4 rounded bg-white dark:bg-gray-900">
       <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
     </div>
   );

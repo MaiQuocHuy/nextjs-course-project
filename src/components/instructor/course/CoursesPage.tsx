@@ -1,4 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import {
+  BookOpen,
+  Search,
+  Filter,
+  Plus,
+  Users,
+  Star,
+  Calendar,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  ArrowRight,
+} from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
   Card,
@@ -26,22 +43,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  BookOpen,
-  Search,
-  Filter,
-  Plus,
-  Users,
-  Star,
-  Calendar,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  ArrowRight,
-} from 'lucide-react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import {
   useDeleteCourseMutation,
   useGetCoursesQuery,
 } from '@/services/instructor/courses/courses-api';
@@ -54,8 +55,9 @@ import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import WarningAlert from '../commom/WarningAlert';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
-import { ErrorComponent } from '../commom/ErrorComponents';
-import { CoursesSkeleton } from './CoursesSkeleton';
+import { ErrorComponent } from '../commom/ErrorComponent';
+import { CoursesSkeleton } from './skeletons/index';
+import { CoursesGridSkeleton } from './skeletons/index';
 import { Pagination } from '@/components/common/Pagination';
 
 const coursesParams: CoursesFilter = {
@@ -67,25 +69,13 @@ const coursesParams: CoursesFilter = {
 };
 
 export const CoursesPage = () => {
-  const initFilterValues = useRef({
-    searchTerm: '',
-    status: 'all',
-    category: 'all',
-    rating: 0,
-    priceRange: {
-      minPrice: 0,
-      maxPrice: 1000,
-      value: [0, 1000],
-    },
-    date: 'latest',
-  });
-  const [filteredCourses, setFilterdCourses] = useState<Course[]>();
-  const [filters, setFilters] = useState(initFilterValues.current);
+  const [filters, setFilters] = useState(coursesParams);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [isGridLoading, setIsGridLoading] = useState(false);
+  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 1000 });
   const [showFilters, setShowFilters] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [filters2, setFilters2] = useState(coursesParams);
-  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 1000 });
 
   const router = useRouter();
   const dispatch: AppDispatch = useDispatch();
@@ -94,7 +84,7 @@ export const CoursesPage = () => {
     data: courses,
     isLoading: isFetchingCourses,
     error: errorFetchCourse,
-  } = useGetCoursesQuery(filters2);
+  } = useGetCoursesQuery(filters);
 
   const {
     data: categories,
@@ -102,115 +92,67 @@ export const CoursesPage = () => {
     error: errorFetchCategories,
   } = useGetCategoriesQuery();
 
-  const [deleteCourse] = useDeleteCourseMutation();
+  const [deleteCourse, { isLoading: isDeletingCourse }] =
+    useDeleteCourseMutation();
+
+  const getCourseStatus = useCallback(() => {
+    if (filters.status) {
+      return filters.status;
+    } else {
+      if (filters.isPublished === false) {
+        return 'DRAFT';
+      } else {
+        return 'ALL';
+      }
+    }
+  }, [filters.status, filters.isPublished]);
+
+  useEffect(() => {
+    if (errorFetchCourse || errorFetchCategories) {
+      setIsGridLoading(false);
+    }
+  }, [errorFetchCourse, errorFetchCategories]);
 
   // Initialize price range when courses data is fetched
   useEffect(() => {
-    if (
-      courses &&
-      courses.content &&
-      courses.content.length > 0 &&
-      !priceRangeInit.current.isInit
-    ) {
-      // Get course that have the most min and max price
-      getPriceRange(courses.content);
-      priceRangeInit.current.isInit = true;
+    if (courses) {
+      // Stop loading when courses are fetched
+      setIsGridLoading(false);
+
+      if (
+        courses.content &&
+        courses.content.length > 0 &&
+        !priceRangeInit.current.isInit
+      ) {
+        // Get course that have the most min and max price
+        getPriceRange(courses.content);
+        priceRangeInit.current.isInit = true;
+      }
     }
   }, [courses]);
 
-  // Handle filters
+  // Check if any filter is applied
   useEffect(() => {
-    if (courses && courses.content && courses.content.length > 0) {
-      let matchedCourses = [...courses.content] as Course[];
-
-      // Search
-      const searchTerm = filters.searchTerm.trim().toLowerCase();
-      if (filters.searchTerm !== '') {
-        matchedCourses = matchedCourses.filter(
-          (course) =>
-            course.title.toLowerCase().includes(searchTerm) ||
-            course.description?.toLowerCase().includes(searchTerm)
-        );
-      }
-
-      // Status
-      // if (filters.status !== 'all') {
-      //   if (filters.status === 'pending') {
-      //     matchedCourses = matchedCourses.filter(
-      //       (course) => course.approved === false
-      //     );
-      //   } else {
-      //     matchedCourses = matchedCourses.filter(
-      //       (course) =>
-      //         course.approved && course.status.toLowerCase() === filters.status
-      //     );
-      //   }
-      // }
-
-      // Category
-      if (filters.category !== 'all') {
-        matchedCourses = matchedCourses.filter((course) => {
-          const categories = course.categories.map((category: any) =>
-            category.name.toLowerCase()
-          );
-          return categories.includes(filters.category);
-        });
-      }
-
-      // Rating
-      if (filters.rating !== 0) {
-        matchedCourses = matchedCourses.filter((course) => {
-          return course.averageRating >= filters.rating;
-        });
-      }
-
-      // Price range
-      const copyPriceRange = { ...filters.priceRange };
-      if (
-        copyPriceRange.value[0] !== copyPriceRange.minPrice ||
-        copyPriceRange.value[1] !== copyPriceRange.maxPrice
-      ) {
-        const minPriceInput = copyPriceRange.value[0];
-        const maxPriceInput = copyPriceRange.value[1];
-        // Check if price's range is invalid
-        if (
-          minPriceInput < copyPriceRange.minPrice ||
-          maxPriceInput > copyPriceRange.maxPrice
-        ) {
-          return;
-        } else {
-          // Get all courses that in range of minPriceInput and maxPriceInput
-          matchedCourses = matchedCourses.filter(
-            (course) =>
-              course.price >= minPriceInput && course.price <= maxPriceInput
-          );
-        }
-      }
-
-      // Date
-      if (filters.date === 'oldest') {
-        orderCoursesByDate(matchedCourses, 'oldest');
-      }
-
-      setFilterdCourses(matchedCourses);
-    }
-  }, [filters]);
-
-  const orderCoursesByDate = (course: Course[], value: string) => {
-    if (value === 'latest') {
-      return course.sort(
-        (a, b) =>
-          new Date(b.createdAt.split('T')[0]).getTime() -
-          new Date(a.createdAt.split('T')[0]).getTime()
-      );
+    if (
+      filters.search ||
+      getCourseStatus() !== 'ALL' ||
+      (filters.categoryIds && filters.categoryIds.length > 0) ||
+      filters.minPrice !== priceRangeInit.current.minPrice ||
+      filters.maxPrice !== priceRangeInit.current.maxPrice ||
+      filters.rating
+    ) {
+      setIsFiltering(true);
     } else {
-      return course.sort(
-        (a, b) =>
-          new Date(a.createdAt.split('T')[0]).getTime() -
-          new Date(b.createdAt.split('T')[0]).getTime()
-      );
+      setIsFiltering(false);
     }
-  };
+  }, [
+    filters.search,
+    getCourseStatus,
+    filters.categoryIds,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.rating,
+  ]);
 
   const getPriceRange = (courses: Course[]) => {
     const coursePrices = courses.map((course) => course.price);
@@ -219,7 +161,7 @@ export const CoursesPage = () => {
     priceRangeInit.current.minPrice = minPrice;
     priceRangeInit.current.maxPrice = maxPrice;
 
-    setFilters2((prev) => ({
+    setFilters((prev) => ({
       ...prev,
       minPrice: minPrice,
       maxPrice: maxPrice,
@@ -237,7 +179,7 @@ export const CoursesPage = () => {
       filterField = 'isPublished';
       value = false;
     } else {
-      setFilters2((prev) => ({ ...prev, isPublished: undefined }));
+      setFilters((prev) => ({ ...prev, isPublished: undefined }));
     }
     handleFilterCourse(filterField, value);
   };
@@ -254,15 +196,17 @@ export const CoursesPage = () => {
   };
 
   const handleFilterCourseWithPriceRange = (value: any) => {
+    setIsGridLoading(true);
     const minPrice = value[0];
     const maxPrice = value[1];
-    setFilters2((prev) => {
+    setFilters((prev) => {
       return { ...prev, minPrice, maxPrice };
     });
   };
 
   const handleFilterCourse = (filterField: string, value: any) => {
-    setFilters2((prev) => {
+    setIsGridLoading(true);
+    setFilters((prev) => {
       if (value === 'ALL') {
         value = undefined;
       }
@@ -271,9 +215,10 @@ export const CoursesPage = () => {
   };
 
   const handleClearFilters = () => {
+    setIsGridLoading(true);
     const minPrice = priceRangeInit.current.minPrice;
     const maxPrice = priceRangeInit.current.maxPrice;
-    setFilters2({ ...coursesParams, minPrice, maxPrice });
+    setFilters({ ...coursesParams, minPrice, maxPrice });
   };
 
   const handleDeleteCourse = async (id: string) => {
@@ -283,7 +228,7 @@ export const CoursesPage = () => {
       const res = await deleteCourse(id).unwrap();
       if (res.statusCode === 200) {
         loadingAnimation(false, dispatch);
-        toast.error('Delete course successfully!');
+        toast.success('Delete course successfully!');
       }
     } catch (error) {
       loadingAnimation(false, dispatch);
@@ -291,7 +236,7 @@ export const CoursesPage = () => {
     }
   };
 
-  if (isFetchingCourses || isFetchingCategories) {
+  if (isFetchingCourses || isDeletingCourse || isFetchingCategories) {
     return <CoursesSkeleton />;
   }
 
@@ -326,7 +271,7 @@ export const CoursesPage = () => {
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search courses by title or description"
-                value={filters2.search}
+                value={filters.search}
                 onChange={(e) => handleFilterCourse('search', e.target.value)}
                 className="pl-10"
               />
@@ -336,13 +281,7 @@ export const CoursesPage = () => {
             <div className="flex gap-2">
               {/* Filter by status */}
               <Select
-                value={
-                  filters2.status
-                    ? filters2.status
-                    : filters2.isPublished === false
-                    ? 'DRAFT'
-                    : 'ALL'
-                }
+                value={getCourseStatus()}
                 onValueChange={(value) =>
                   handleFilterCourseWithStatus('status', value)
                 }
@@ -375,9 +314,9 @@ export const CoursesPage = () => {
               {/* Filter by category */}
               <Select
                 value={
-                  !filters2.categoryIds || filters2.categoryIds?.length === 0
+                  !filters.categoryIds || filters.categoryIds?.length === 0
                     ? 'ALL'
-                    : filters2.categoryIds?.at(0)
+                    : filters.categoryIds?.at(0)
                 }
                 onValueChange={(value) =>
                   handleFilterCourseWithCategories('categoryIds', value)
@@ -419,8 +358,8 @@ export const CoursesPage = () => {
             <div className="mt-4 p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center justify-between gap-4">
                 {/* Filter by price */}
-                {filters2.minPrice !== undefined &&
-                  filters2.maxPrice !== undefined && (
+                {filters.minPrice !== undefined &&
+                  filters.maxPrice !== undefined && (
                     <div className="flex-1 max-w-[300px]">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium ">
@@ -432,11 +371,11 @@ export const CoursesPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${filters2.minPrice}
+                          ${filters.minPrice}
                         </span>
                         <span className="text-muted-foreground">-</span>
                         <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${filters2.maxPrice}
+                          ${filters.maxPrice}
                         </span>
                       </div>
 
@@ -444,7 +383,7 @@ export const CoursesPage = () => {
                         className={cn(
                           'relative flex w-full touch-none select-none items-center my-3'
                         )}
-                        value={[filters2.minPrice, filters2.maxPrice]}
+                        value={[filters.minPrice, filters.maxPrice]}
                         onValueChange={(value) =>
                           handleFilterCourseWithPriceRange(value)
                         }
@@ -507,8 +446,8 @@ export const CoursesPage = () => {
                       </SliderPrimitive.Root>
 
                       <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>${filters2.minPrice}</span>
-                        <span>${filters2.maxPrice}</span>
+                        <span>${filters.minPrice}</span>
+                        <span>${filters.maxPrice}</span>
                       </div>
                     </div>
                   )}
@@ -517,7 +456,7 @@ export const CoursesPage = () => {
                 <div>
                   <label className="text-sm font-medium">Rating</label>
                   <Select
-                    value={filters2.rating ? filters2.rating : 'ALL'}
+                    value={filters.rating ? filters.rating : 'ALL'}
                     onValueChange={(value) =>
                       handleFilterCourse('rating', value)
                     }
@@ -546,8 +485,10 @@ export const CoursesPage = () => {
                 <div>
                   <label className="text-sm font-medium">Levels</label>
                   <Select
-                    value={filters2.level ? filters2.level : 'ALL'}
-                    onValueChange={(value) => handleFilterCourse('level', value)}
+                    value={filters.level ? filters.level : 'ALL'}
+                    onValueChange={(value) =>
+                      handleFilterCourse('level', value)
+                    }
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="All Levels" />
@@ -559,7 +500,10 @@ export const CoursesPage = () => {
                       <SelectItem value="BEGINNER" className="cursor-pointer">
                         Beginner
                       </SelectItem>
-                      <SelectItem value="INTERMEDIATE" className="cursor-pointer">
+                      <SelectItem
+                        value="INTERMEDIATE"
+                        className="cursor-pointer"
+                      >
                         Intermediate
                       </SelectItem>
                       <SelectItem value="ADVANCED" className="cursor-pointer">
@@ -573,15 +517,25 @@ export const CoursesPage = () => {
                 <div>
                   <label className="text-sm font-medium">Created Date</label>
                   <Select
-                    value={filters2.sort}
+                    value={filters.sort}
                     onValueChange={(value) => handleFilterCourse('sort', value)}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Latest Date" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="createdAt,DESC" className='cursor-pointer'>Latest Date</SelectItem>
-                      <SelectItem value="createdAt,ASC" className='cursor-pointer'>Oldest Date</SelectItem>
+                      <SelectItem
+                        value="createdAt,DESC"
+                        className="cursor-pointer"
+                      >
+                        Latest Date
+                      </SelectItem>
+                      <SelectItem
+                        value="createdAt,ASC"
+                        className="cursor-pointer"
+                      >
+                        Oldest Date
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -599,7 +553,9 @@ export const CoursesPage = () => {
       </Card>
 
       {/* Courses Grid */}
-      {courses && courses.content.length > 0 ? (
+      {isGridLoading ? (
+        <CoursesGridSkeleton />
+      ) : courses && courses.content.length > 0 ? (
         <div className="space-y-2">
           {/* Total courses */}
           <div>
@@ -616,9 +572,10 @@ export const CoursesPage = () => {
                   key={course.id}
                   className="shadow-card cursor-pointer hover:shadow-elegant transition-shadow"
                   onClick={() =>
-                    router.push(`/instructor/courses/${course.id}`)
+                    window.open(`/instructor/courses/${course.id}`, '_blank')
                   }
                 >
+                  {/* Course's Thumbnail, Status and Actions*/}
                   <div className="relative">
                     <img
                       src={course.thumbnailUrl}
@@ -653,45 +610,53 @@ export const CoursesPage = () => {
                           className="cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/instructor/courses/${course.id}`);
+                            window.open(
+                              `/instructor/courses/${course.id}`,
+                              '_blank'
+                            );
                           }}
                         >
                           <Eye className="mr-1 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
 
-                        {/* Button edit course */}
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(
-                              `/instructor/courses/${course.id}/edit-course`
-                            );
-                          }}
-                        >
-                          <Edit className="mr-1 h-4 w-4" />
-                          Edit Course
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                        {!course.approved && (
+                          <>
+                            {/* Button edit course */}
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/instructor/courses/${course.id}/edit-course`
+                                );
+                              }}
+                            >
+                              <Edit className="mr-1 h-4 w-4" />
+                              Edit Course
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
 
-                        {/* Button delete course */}
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsDeleteDialogOpen(true);
-                            setSelectedCourse(course);
-                          }}
-                        >
-                          <Trash2 className="mr-1 h-4 w-4" />
-                          Delete Course
-                        </DropdownMenuItem>
+                            {/* Button delete course */}
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              variant="destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDeleteDialogOpen(true);
+                                setSelectedCourse(course);
+                              }}
+                            >
+                              <Trash2 className="mr-1 h-4 w-4" />
+                              Delete Course
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
+                  {/* Title and Description */}
                   <CardHeader>
                     <CardTitle className="line-clamp-2">
                       {course.title}
@@ -777,13 +742,17 @@ export const CoursesPage = () => {
             {/* Pagination */}
             {courses && courses.page && courses.page.totalPages >= 1 && (
               <Pagination
-                currentPage={filters2.page ? filters2.page : 0}
-                itemsPerPage={filters2.size ? filters2.size : 10}
+                currentPage={filters.page ? filters.page : 0}
+                itemsPerPage={filters.size ? filters.size : 10}
                 pageInfo={courses.page}
-                onPageChange={(page) => setFilters2({ ...filters2, page })}
-                onItemsPerPageChange={(size) =>
-                  setFilters2({ ...filters2, size })
-                }
+                onPageChange={(page) => {
+                  setIsGridLoading(true);
+                  setFilters({ ...filters, page });
+                }}
+                onItemsPerPageChange={(size) => {
+                  setIsGridLoading(true);
+                  setFilters({ ...filters, size });
+                }}
               />
             )}
           </div>
@@ -794,22 +763,12 @@ export const CoursesPage = () => {
           <CardContent className="p-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No courses found</h3>
+
+            {/* No courses found message */}
             <p className="text-muted-foreground mb-4">
-              {filters.searchTerm ||
-              filters.status !== 'all' ||
-              filters.category !== 'all' ||
-              filters.priceRange.value[0] !== 0 ||
-              filters.priceRange.value[1] !== 500 ||
-              filters.rating
-                ? 'Try adjusting your search criteria or filters.'
-                : 'Create your first course to get started.'}
-            </p>
-            {!filters.searchTerm &&
-              filters.status === 'all' &&
-              filters.category === 'all' &&
-              filters.priceRange.value[0] === 0 &&
-              filters.priceRange.value[1] === 500 &&
-              !filters.rating && (
+              {isFiltering ? (
+                'Try adjusting your search criteria or filters.'
+              ) : (
                 <Link href="/instructor/courses/create">
                   <Button className="cursor-pointer">
                     <Plus className="mr-2 h-4 w-4" />
@@ -817,6 +776,7 @@ export const CoursesPage = () => {
                   </Button>
                 </Link>
               )}
+            </p>
           </CardContent>
         </Card>
       )}

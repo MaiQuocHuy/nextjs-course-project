@@ -5,12 +5,12 @@ import { CheckCircle, Play, X } from 'lucide-react';
 export const VideoViewer = ({
   videoFile,
   videoPreviewUrl,
-  handleVideoRemove,
+  onVideoRemove,
   mode,
 }: {
   videoFile: File;
   videoPreviewUrl: string;
-  handleVideoRemove: () => void;
+  onVideoRemove: () => void;
   mode?: 'edit' | 'view';
 }) => {
   return (
@@ -46,7 +46,7 @@ export const VideoViewer = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={handleVideoRemove}
+                    onClick={onVideoRemove}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -57,7 +57,6 @@ export const VideoViewer = ({
               <div
                 style={{
                   width: '100%',
-                  // maxHeight: '60vh',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

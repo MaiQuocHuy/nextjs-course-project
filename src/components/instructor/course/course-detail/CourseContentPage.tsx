@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
 
-import SectionsLessonsManager2 from '../create-course/create-lessons/CourseContent';
+import CourseContent from '../create-course/create-lessons/CourseContent';
 import { useGetSectionsQuery } from '@/services/instructor/courses/sections-api';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { SectionDetail } from '@/types/instructor/courses';
 import { createFileFromUrl } from '@/utils/instructor/course/create-file';
 import { SectionType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
 import { Button } from '@/components/ui/button';
+import CourseContentSkeleton from './skeletons/CourseContentSkeleton';
 
 interface CourseContentProps {
   courseId: string;
 }
 
-const CourseContent = ({ courseId }: CourseContentProps) => {
+const CourseContentPage = ({ courseId }: CourseContentProps) => {
   const {
     data: sections,
     isLoading: isFetchingSections,
@@ -23,22 +21,7 @@ const CourseContent = ({ courseId }: CourseContentProps) => {
 
   const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
   const [isSettingUp, setIsSettingUp] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
   const [createContent, setCreateContent] = useState(false);
-
-  const dispatch: AppDispatch = useDispatch();
-
-  // Loading animation
-  useEffect(() => {
-    if (isFetchingSections || isSettingUp) {
-      loadingAnimation(true, dispatch);
-    } else {
-      loadingAnimation(false, dispatch);
-    }
-    return () => {
-      loadingAnimation(false, dispatch);
-    };
-  }, [isFetchingSections, isSettingUp]);
 
   // Normalize data
   useEffect(() => {
@@ -83,7 +66,7 @@ const CourseContent = ({ courseId }: CourseContentProps) => {
   }, [sections]);
 
   if (isFetchingSections || isSettingUp) {
-    return <></>;
+    return <CourseContentSkeleton />;
   }
 
   if (isError) {
@@ -114,7 +97,6 @@ const CourseContent = ({ courseId }: CourseContentProps) => {
                   variant="secondary"
                   onClick={() => {
                     setCreateContent(true);
-                    setHasContent(false);
                   }}
                 >
                   Create Content
@@ -128,7 +110,7 @@ const CourseContent = ({ courseId }: CourseContentProps) => {
   );
 };
 
-export default CourseContent;
+export default CourseContentPage;
 
 const CreateCourseContentForm = ({
   courseId,
@@ -140,7 +122,7 @@ const CreateCourseContentForm = ({
   mode: 'create' | 'view';
 }) => {
   return (
-    <SectionsLessonsManager2
+    <CourseContent
       courseId={courseId}
       mode={mode}
       sections={sections}

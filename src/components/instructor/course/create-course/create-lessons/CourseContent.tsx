@@ -19,7 +19,6 @@ import {
   Edit3,
   Save,
   X,
-  FileSpreadsheet,
   Upload,
   CheckCircle,
 } from 'lucide-react';
@@ -51,16 +50,13 @@ import { DragDropReorder } from './DragDropReorder';
 import {
   courseContentSchema,
   QuizQuestionType,
+  QuizType,
+  VideoType,
   type CourseContentType,
   type LessonType,
   type SectionType,
 } from '@/utils/instructor/course/create-course-validations/course-content-validations';
-import { CombinedFileUpload } from './file-upload/CombinedFileUpload';
-import EnhancedFileUpload from './file-upload/EnhancedFileUpload';
-import {
-  parseExcelFile,
-  validateExcelFormat,
-} from '@/utils/instructor/course/create-course-validations/excel-parser';
+import { parseExcelFile } from '@/utils/instructor/course/excel/excel-parser';
 import { QuizEditor } from './quiz/QuizEditor';
 import {
   getCharacterCount,
@@ -88,6 +84,11 @@ import { useUpdateCourseStatusMutation } from '@/services/instructor/courses/cou
 import CreateCourseSuccess from './CreateCourseSuccess';
 import ReviewCourse from './ReviewCourse';
 import TogglePublishCourse from '../../TogglePublishCourse';
+import ExcelFileFormatIns from './ExcelFileFormatIns';
+import VideoUpload from './file-upload/VideoUpload';
+import DocumentUpload from './file-upload/DocumentUpload';
+import ExcelFileUpload from './file-upload/ExcelFileUpload';
+import { fa } from 'zod/v4/locales';
 
 interface CourseContentProps {
   courseId: string;
@@ -327,13 +328,15 @@ export default function CourseContent({
 
   const removeSection = async (sectionIndex: number) => {
     loadingAnimation(true, dispatch, 'Deleting section. Please wait...');
+
+    let isDeleteSuccess = true;
+    const currentSections = form.getValues('sections');
+    const deletedSection = currentSections[sectionIndex];
+
     try {
-      const currentSections = form.getValues('sections');
-      let isDeleteSuccess = true;
       // Check if the deleted section is existed or not.
       // If no then just delete section in client side.
       // else perform delete both client and server side.
-      const deletedSection = currentSections[sectionIndex];
       if (deletedSection && !deletedSection.id.includes('new-section')) {
         const data = {
           courseId,
@@ -388,10 +391,11 @@ export default function CourseContent({
 
   const removeLesson = async (sectionIndex: number, lessonIndex: number) => {
     loadingAnimation(true, dispatch, 'Deleting lesson. Please wait...');
-    try {
-      let isDeleteSuccess = true;
-      const currentLessons = form.getValues(`sections.${sectionIndex}.lessons`);
-      if (currentLessons.length > 1) {
+    let isDeleteSuccess = true;
+    const currentLessons = form.getValues(`sections.${sectionIndex}.lessons`);
+
+    if (currentLessons.length > 1) {
+      try {
         // Check if the deleted lesson is existed or not.
         // If no then just delete lesson in client side.
         // else perform delete both client and server side.
@@ -427,12 +431,14 @@ export default function CourseContent({
           loadingAnimation(false, dispatch);
           toast.error('Delete lesson fail!');
         }
+      } catch (error) {
+        console.log(error);
+        loadingAnimation(false, dispatch);
+        toast.error('Delete lesson fail!');
       }
-    } catch (error) {
-      console.log(error);
+    } else {
       loadingAnimation(false, dispatch);
-      toast.error('Delete lesson fail!');
-      return;
+      toast.error('Each section must have at least one lesson!');
     }
   };
 
@@ -453,20 +459,40 @@ export default function CourseContent({
           const file = doc.file;
           if (!file) continue;
 
-          const fileType = file.name.split('.').pop()?.toLowerCase();
+          const fileType = file.type;
 
-          if (fileType === 'docx') {
-            const mammoth = (await import('mammoth')).default;
-            const arrayBuffer = await file.arrayBuffer();
-            const { value } = await mammoth.extractRawText({ arrayBuffer });
-            extractedTexts.push(value.trim());
-          } else if (fileType === 'txt') {
-            const text = await file.text();
-            extractedTexts.push(text.trim());
-          } else if (fileType === 'pdf') {
+          if (
+            fileType ===
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          ) {
+            try {
+              const mammoth = (await import('mammoth')).default;
+              const arrayBuffer = await file.arrayBuffer();
+              const { value } = await mammoth.extractRawText({ arrayBuffer });
+              const trimmedText = value.trim();
+              if (trimmedText) {
+                extractedTexts.push(trimmedText);
+              }
+            } catch (error) {
+              console.error('Error extracting text from DOCX:', error);
+              toast.error(`Failed to process DOCX: ${file.name}`);
+            }
+          } else if (fileType === 'text/plain') {
+            try {
+              const text = await file.text();
+              const trimmedText = text.trim();
+              if (trimmedText) {
+                extractedTexts.push(trimmedText);
+              }
+            } catch (error) {
+              console.error('Error extracting text from TXT:', error);
+              toast.error(`Failed to process TXT: ${file.name}`);
+            }
+          } else if (fileType === 'application/pdf') {
             try {
               const parsedText = await pdfToText(file);
-              extractedTexts.push(parsedText);
+              const trimmedText = parsedText.trim();
+              if (trimmedText) extractedTexts.push(trimmedText);
             } catch (pdfError) {
               console.error('Error extracting text from PDF:', pdfError);
               toast.error(`Failed to process PDF: ${file.name}`);
@@ -559,24 +585,16 @@ export default function CourseContent({
     try {
       const excelData = await parseExcelFile(file);
 
-      if (!validateExcelFormat(excelData)) {
-        throw new Error('Invalid Excel format');
-      }
-
       const questions: QuizQuestionType[] = excelData.map((data, index) => ({
-        id: `excel-q-${Date.now()}-${index}`,
+        id: `excel-${crypto.randomUUID()}`,
         questionText: data.question,
         options: {
-          A: data.option1 || '',
-          B: data.option2 || '',
-          C: data.option3 || '',
-          D: data.option4 || '',
+          A: data.option1,
+          B: data.option2,
+          C: data.option3,
+          D: data.option4,
         },
-        correctAnswer: ['A', 'B', 'C', 'D'][data.correctAnswer - 1] as
-          | 'A'
-          | 'B'
-          | 'C'
-          | 'D',
+        correctAnswer: data.correctAnswer,
         orderIndex: index,
         explanation: data.explanation,
       }));
@@ -585,13 +603,10 @@ export default function CourseContent({
         `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
         questions
       );
-      form.setValue(
-        `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`,
-        file
-      );
+      toast.success('Excel file parsed successfully!');
     } catch (error) {
       console.error('Error parsing Excel file:', error);
-      // Handle error - show toast or alert
+      toast.error((error as Error).message || 'Failed to parse Excel file');
     } finally {
       setIsParsingExcel(false);
     }
@@ -602,6 +617,60 @@ export default function CourseContent({
       onCancel?.();
     }
     setCurrentMode(currentMode === 'view' ? 'edit' : 'view');
+  };
+
+  const hasVideo = (video: VideoType) => {
+    return !!video?.file;
+  };
+
+  const hasQuiz = (quiz: QuizType) => {
+    let hasQuiz = false;
+    if (quiz) {
+      if (
+        (quiz.questions && quiz.questions.length > 0) ||
+        (quiz.documents && quiz.documents.length > 0) ||
+        quiz.excelFile
+      ) {
+        hasQuiz = true;
+      }
+    }
+    return hasQuiz;
+  };
+
+  const isEmptyLesson = (lessons: LessonType[]) => {
+    let isEmptyLesson = false;
+    for (const lesson of lessons) {
+      if (
+        lesson.title.trim() === '' &&
+        !hasVideo(lesson.video) &&
+        !hasQuiz(lesson.quiz)
+      ) {
+        isEmptyLesson = true;
+        break;
+      } else {
+        continue;
+      }
+    }
+    return isEmptyLesson;
+  };
+
+  const isEmptyComponent = (sectionIndex: number) => {
+    const section = form.getValues(`sections.${sectionIndex}`);
+
+    if (section) {
+      const lessons = section.lessons;
+      if (
+        section.title.trim() === '' &&
+        section.description.trim() === '' &&
+        isEmptyLesson(lessons)
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
   };
 
   const renderLesson = (
@@ -664,7 +733,9 @@ export default function CourseContent({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (lesson.id.includes('new-lesson')) {
+                        if (
+                          isEmptyLesson(watchedSections[sectionIndex].lessons)
+                        ) {
                           removeLesson(sectionIndex, lessonIndex);
                         } else {
                           setSelectedLesson({ sectionIndex, lessonIndex });
@@ -685,7 +756,7 @@ export default function CourseContent({
                 <>
                   {/* Lesson video */}
                   {lesson.video && lesson.video.file && (
-                    <CombinedFileUpload videoFile={lesson.video.file} />
+                    <VideoUpload videoFile={lesson.video.file} />
                   )}
 
                   {/* Quiz questions preview in view mode */}
@@ -786,15 +857,12 @@ export default function CourseContent({
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <CombinedFileUpload
+                            <VideoUpload
                               videoFile={form.watch(
                                 `sections.${sectionIndex}.lessons.${lessonIndex}.video.file`
                               )}
-                              onVideoSelect={(file) => {
+                              onVideoChange={(file) => {
                                 field.onChange(file);
-                              }}
-                              onVideoRemove={() => {
-                                field.onChange(undefined);
                               }}
                             />
                           </FormControl>
@@ -822,7 +890,35 @@ export default function CourseContent({
                                 <FormLabel>Quiz Creation Method</FormLabel>
                                 <FormControl>
                                   <RadioGroup
-                                    onValueChange={field.onChange}
+                                    onValueChange={(e) => {
+                                      // Reset quiz data when quiz type changes
+                                      form.setValue(
+                                        `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
+                                        []
+                                      );
+
+                                      const hasDocuments = form.getValues(
+                                        `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
+                                      );
+                                      if (hasDocuments) {
+                                        form.setValue(
+                                          `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`,
+                                          []
+                                        );
+                                      }
+
+                                      const hasExcelFile = form.getValues(
+                                        `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.excelFile`
+                                      );
+                                      if (hasExcelFile) {
+                                        form.setValue(
+                                          `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.excelFile`,
+                                          undefined
+                                        );
+                                      }
+
+                                      field.onChange(e);
+                                    }}
                                     value={field.value}
                                     className="flex gap-6"
                                   >
@@ -866,7 +962,7 @@ export default function CourseContent({
                           ) === 'ai' && (
                             <div className="space-y-2">
                               {/* Multiple Documents Upload */}
-                              <CombinedFileUpload
+                              <DocumentUpload
                                 documents={
                                   form.watch(
                                     `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
@@ -909,56 +1005,25 @@ export default function CourseContent({
                             `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
                           ) === 'upload' && (
                             <div className="space-y-4">
-                              <Alert>
-                                <FileSpreadsheet className="h-4 w-4" />
-                                <AlertDescription>
-                                  <strong>
-                                    Excel File Format Instructions:
-                                  </strong>
-                                  <br />
-                                  Your Excel file should have the following
-                                  columns:
-                                  <br />• Column A: Question
-                                  <br />• Column B: Option 1
-                                  <br />• Column C: Option 2
-                                  <br />• Column D: Option 3 (optional)
-                                  <br />• Column E: Option 4 (optional)
-                                  <br />• Column F: Option 5 (optional)
-                                  <br />• Column G: Option 6 (optional)
-                                  <br />• Column H: Correct Answer (number 1-6)
-                                  <br />• Column I: Explanation (optional)
-                                </AlertDescription>
-                              </Alert>
+                              <ExcelFileFormatIns />
 
-                              <EnhancedFileUpload
-                                accept={{
-                                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-                                    ['.xlsx'],
-                                  'application/vnd.ms-excel': ['.xls'],
-                                }}
-                                maxSize={5 * 1024 * 1024}
-                                onFileSelect={(file) =>
-                                  handleExcelUpload(
-                                    file,
-                                    sectionIndex,
-                                    lessonIndex
-                                  )
-                                }
-                                onFileRemove={() => {
-                                  form.setValue(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`,
-                                    undefined
-                                  );
-                                  form.setValue(
-                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
-                                    []
-                                  );
-                                }}
-                                selectedFile={form.watch(
-                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quizFile`
+                              <ExcelFileUpload
+                                excelFile={form.watch(
+                                  `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.excelFile`
                                 )}
-                                label="Upload Quiz File (Excel)"
-                                type="document"
+                                onExcelFileChange={(excelFile) => {
+                                  form.setValue(
+                                    `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.excelFile`,
+                                    excelFile
+                                  );
+                                  if (excelFile && excelFile.file) {
+                                    handleExcelUpload(
+                                      excelFile.file,
+                                      sectionIndex,
+                                      lessonIndex
+                                    );
+                                  }
+                                }}
                               />
 
                               {isParsingExcel && (
@@ -1051,7 +1116,7 @@ export default function CourseContent({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if (section.id.includes('new-section')) {
+                      if (isEmptyComponent(sectionIndex)) {
                         removeSection(sectionIndex);
                       } else {
                         setSelectedSection({ index: sectionIndex });
@@ -1622,12 +1687,14 @@ export default function CourseContent({
 
   if (step === 'review') {
     const sections = form.getValues('sections');
-    return <ReviewCourse
-      courseStatus={courseStatus}
-      sections={sections}
-      onBackToEdit={() => setStep('create')}
-      handleFinalSubmit={handleFinalSubmit}
-    />;
+    return (
+      <ReviewCourse
+        courseStatus={courseStatus}
+        sections={sections}
+        onBackToEdit={() => setStep('create')}
+        handleFinalSubmit={handleFinalSubmit}
+      />
+    );
   }
 
   return (

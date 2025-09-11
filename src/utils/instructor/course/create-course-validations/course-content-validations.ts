@@ -8,13 +8,29 @@ export const documentSchema = z.object({
         const allowedTypes = [
           'application/pdf',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'application/vnd.ms-excel',
           'text/plain', // Adding text file support
         ];
         return allowedTypes.includes(file.type);
       },
-      { message: 'Only PDF, DOCX, Excel, and TXT files are allowed' }
+      { message: 'Only PDF, DOCX, and TXT files are allowed' }
+    )
+    .refine((file) => file.size <= 10 * 1024 * 1024, {
+      message: 'File size must not exceed 10MB',
+    }),
+});
+
+export const excelFileSchema = z.object({
+  file: z
+    .instanceof(File)
+    .refine(
+      (file) => {
+        const allowedTypes = [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+        ];
+        return allowedTypes.includes(file.type);
+      },
+      { message: 'Only Excel files are allowed' }
     )
     .refine((file) => file.size <= 10 * 1024 * 1024, {
       message: 'File size must not exceed 10MB',
@@ -67,6 +83,7 @@ export const quizQuestionSchema = z.object({
 export const quizSchema = z.object({
   questions: z.array(quizQuestionSchema),
   documents: z.array(documentSchema).optional(),
+  excelFile: excelFileSchema.optional(),
 });
 
 export const lessonSchema = z
@@ -78,7 +95,6 @@ export const lessonSchema = z
     video: videoSchema.nullish(),
     quiz: quizSchema.nullish(),
     quizType: z.enum(['ai', 'upload']).optional(),
-    quizFile: z.instanceof(File).optional(),
     isCollapsed: z.boolean().default(false).optional(),
   })
   .refine(
@@ -123,8 +139,10 @@ export const courseContentSchema = z.object({
 
 // Export the inferred types
 export type DocumentType = z.infer<typeof documentSchema>;
-export type VideoType = z.infer<typeof videoSchema>;
+export type ExcelFileType = z.infer<typeof excelFileSchema>;
 export type QuizQuestionType = z.infer<typeof quizQuestionSchema>;
+export type VideoType = z.infer<typeof lessonSchema.shape.video>;
+export type QuizType = z.infer<typeof lessonSchema.shape.quiz>;
 export type LessonType = z.infer<typeof lessonSchema>;
 export type SectionType = z.infer<typeof sectionSchema>;
 export type CourseContentType = z.infer<typeof courseContentSchema>;

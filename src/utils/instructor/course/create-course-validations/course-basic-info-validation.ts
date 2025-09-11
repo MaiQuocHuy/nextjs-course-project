@@ -37,7 +37,7 @@ export const imageFileSchema = z.object({
       ? z.any()
       : z
           .instanceof(File, {
-            message: 'Thmbnail is required',
+            message: 'Thumbnail is required',
           })
           .refine(
             (file) => file.type.startsWith('image/'),

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ErrorComponent } from '../ErrorComponents';
+import { ErrorComponent } from '../ErrorComponent';
 
 interface SkeletonContainerProps<T> {
   data: T | undefined;

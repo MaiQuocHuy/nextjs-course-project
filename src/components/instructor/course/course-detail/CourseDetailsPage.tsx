@@ -1,22 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useDispatch } from 'react-redux';
 
 import { useGetCourseByIdQuery } from '@/services/instructor/courses/courses-api';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
-import { AppDispatch } from '@/store/store';
 import CourseNavigation from './CourseNavigation';
 import CourseOverview from './CourseOverview';
-import CourseContent from './CourseContent';
+import CourseContentPage from './CourseContentPage';
+import CourseOverviewSkeleton from './skeletons/CourseOverviewSkeleton';
+import { ErrorComponent } from '../../commom/ErrorComponent';
 
 interface CourseDetailsPageProps {
-  isEditCourse?: boolean;
+  isEdittingCourse?: boolean;
 }
 
 export default function CourseDetailsPage({
-  isEditCourse,
+  isEdittingCourse,
 }: CourseDetailsPageProps) {
   const [activeSection, setActiveSection] = useState<
     'overview' | 'content' | 'reviews'
@@ -28,31 +27,24 @@ export default function CourseDetailsPage({
     data: courseData,
     isLoading,
     isError,
+    refetch,
   } = useGetCourseByIdQuery(params.id, { skip: !params.id });
 
-  const dispatch: AppDispatch = useDispatch();
-
-  // Loading animation
-  useEffect(() => {
-    if (isLoading) {
-      loadingAnimation(true, dispatch);
-    } else {
-      loadingAnimation(false, dispatch);
-    }
-
-    return () => {
-      loadingAnimation(false, dispatch);
-    };
-  }, [isLoading]);
-
   if (isLoading) {
-    return <></>;
+    return <CourseOverviewSkeleton />;
   }
 
   if (isError) {
-    return <div>Error loading course data</div>;
+    return (
+      <ErrorComponent
+        title="Error Loading Course"
+        message="Failed to load course data. Please try again."
+        onRetry={refetch}
+      />
+    );
   }
-  {
+
+  if (courseData) {
     return (
       <div className="min-h-screen bg-background">
         <CourseNavigation
@@ -63,24 +55,25 @@ export default function CourseDetailsPage({
         <main className="container py-6 space-y-6">
           {activeSection === 'overview' && courseData && (
             <CourseOverview
-              courseData={courseData}
-              isEditCourse={isEditCourse ? isEditCourse : false}
+              courseInfo={courseData}
+              isEdittingCourse={isEdittingCourse ? isEdittingCourse : false}
+              onRefetchData={refetch}
             />
           )}
 
           {activeSection === 'content' && courseData && (
-            <CourseContent courseId={courseData.id} />
+            <CourseContentPage courseId={courseData.id} />
           )}
 
           {/* {activeSection === 'reviews' && params && (
-            <CourseReviews
-              averageRating={4.5}
-              totalReviews={125}
-              onViewAllReviews={() =>
-                router.push(`/instructor/courses/${params.id}/reviews`)
-              }
-            />
-          )} */}
+          <CourseReviews
+            averageRating={4.5}
+            totalReviews={125}
+            onViewAllReviews={() =>
+              router.push(`/instructor/courses/${params.id}/reviews`)
+            }
+          />
+        )} */}
         </main>
       </div>
     );
