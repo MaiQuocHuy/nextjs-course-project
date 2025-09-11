@@ -3,20 +3,23 @@
 // ==============================
 export interface DiscountUsage {
   id: string;
-  discount?: {
+  discount: {
     id: string;
     code: string;
     description: string;
   };
-  user?: {
-    id: string;
+  user: {
     name: string;
     email: string;
   };
-  course?: {
+  course: {
     id: string;
     title: string;
-    instructorName: string;
+    instructor: {
+      name: string;
+      email: string;
+    };
+    price: number;
   };
   usedAt: string;
   discountPercent: number;
@@ -40,34 +43,37 @@ export interface PaginatedDiscountUsages {
 // ==============================
 export interface AffiliatePayout {
   id: string;
-  course?: {
+  course: {
     id: string;
     title: string;
-    instructorName: string;
+    instructor: {
+      name: string;
+      email: string;
+    };
+    price: number;
   };
   discountUsage?: {
     id: string;
-    discount?: {
+    discount: {
       id: string;
       code: string;
       description: string;
     };
-    user?: {
-      id: string;
+    user: {
       name: string;
       email: string;
     };
     usedAt: string;
     discountPercent: number;
     discountAmount: number;
-  };
+  } | null;
   commissionPercent: number;
   commissionAmount: number;
-  payoutStatus: string;
+  payoutStatus: "PENDING" | "PAID" | "CANCELLED";
   createdAt: string;
-  paidAt?: string;
+  paidAt?: string | null;
   updatedAt: string;
-  cancelledAt?: string;
+  cancelledAt?: string | null;
 }
 
 export interface PaginatedAffiliatePayouts {

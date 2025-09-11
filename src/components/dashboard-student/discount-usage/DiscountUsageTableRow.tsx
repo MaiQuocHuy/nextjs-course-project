@@ -1,9 +1,27 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DiscountUsage } from "@/types/student";
+import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/utils/student";
+import {
+  ChevronDown,
+  ChevronRight,
+  Tag,
+  User,
+  Calendar,
+  Hash,
+  Percent,
+  DollarSign,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 interface DiscountUsageTableRowProps {
   discountUsage: DiscountUsage;
@@ -12,81 +30,193 @@ interface DiscountUsageTableRowProps {
 export function DiscountUsageTableRow({
   discountUsage,
 }: DiscountUsageTableRowProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const safeFormatCurrency = (amount: number) => {
+    try {
+      return formatCurrency(amount, "USD");
+    } catch (error) {
+      console.error("Error formatting currency:", error);
+      return `$${amount.toFixed(2)}`;
+    }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateString));
+  const safeFormatDate = (dateString: string | undefined) => {
+    if (!dateString) return "N/A";
+    try {
+      return formatDate(dateString);
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
   };
 
   return (
-    <TableRow className="hover:bg-muted/50">
-      {/* Discount Code */}
-      <TableCell>
-        <div className="flex flex-col">
-          <Badge variant="secondary" className="w-fit">
-            {discountUsage.discount?.code || "N/A"}
-          </Badge>
-          <span className="text-xs text-muted-foreground mt-1 truncate max-w-[100px]">
-            {discountUsage.discount?.description || "No description"}
-          </span>
-        </div>
-      </TableCell>
+    <>
+      {/* Main Table Row */}
+      <TableRow className={cn(isExpanded && "border-b-0", "hover:bg-muted/50")}>
+        {/* Discount Code use tooltip shadcn */}
+        <TableCell className="font-medium">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="secondary" className="font-mono">
+                {discountUsage.discount.code}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>{discountUsage.discount.code}</TooltipContent>
+          </Tooltip>
+        </TableCell>
 
-      {/* Course */}
-      <TableCell>
-        <div className="flex flex-col">
-          <span className="font-medium truncate max-w-[180px]">
-            {discountUsage.course?.title || "Unknown Course"}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            by {discountUsage.course?.instructorName || "Unknown Instructor"}
-          </span>
-        </div>
-      </TableCell>
+        {/* Course Title */}
+        <TableCell className="min-w-[200px]">
+          <div className="space-y-1">
+            <div className="font-medium">{discountUsage.course.title}</div>
+          </div>
+        </TableCell>
 
-      {/* Used By */}
-      <TableCell>
-        <div className="flex flex-col">
-          <span className="font-medium text-sm truncate max-w-[120px]">
-            {discountUsage.user?.name || "Unknown User"}
+        {/* User */}
+        <TableCell>
+          <div className="space-y-1">
+            <div className="font-medium">{discountUsage.user.name}</div>
+            <div className="text-sm text-muted-foreground">
+              {discountUsage.user.email}
+            </div>
+          </div>
+        </TableCell>
+
+        {/* Discount Percentage */}
+        <TableCell className="text-center">
+          <span className="inline-flex items-center gap-1">
+            <Percent className="h-3 w-3" />
+            {discountUsage.discountPercent}%
           </span>
-          <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-            {discountUsage.user?.email || "No email"}
-          </span>
-        </div>
-      </TableCell>
+        </TableCell>
 
-      {/* Discount Percent */}
-      <TableCell className="text-right">
-        <Badge variant="outline" className="font-mono">
-          {discountUsage.discountPercent}%
-        </Badge>
-      </TableCell>
+        {/* Discount Amount */}
+        <TableCell className="text-right">
+          <div className="font-medium text-green-600 whitespace-nowrap">
+            -{safeFormatCurrency(discountUsage.discountAmount)}
+          </div>
+        </TableCell>
 
-      {/* Amount Saved */}
-      <TableCell className="text-right">
-        <span className="font-medium text-green-600">
-          -{formatCurrency(discountUsage.discountAmount)}
-        </span>
-      </TableCell>
+        {/* Used Date */}
+        <TableCell className="text-center">
+          <div className="text-sm text-muted-foreground">
+            {safeFormatDate(discountUsage.usedAt)}
+          </div>
+        </TableCell>
 
-      {/* Date Used */}
-      <TableCell>
-        <span className="text-sm text-muted-foreground">
-          {formatDate(discountUsage.usedAt)}
-        </span>
-      </TableCell>
-    </TableRow>
+        {/* Expand Button */}
+        <TableCell className="text-center w-[80px]">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleExpanded}
+            className="h-8 w-8 p-0"
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+        </TableCell>
+      </TableRow>
+
+      {/* Expanded Detail Row */}
+      {isExpanded && (
+        <TableRow className="bg-muted/30">
+          <TableCell colSpan={7} className="p-6">
+            <div className="space-y-6">
+              <h4 className="font-medium text-sm text-gray-900 flex items-center gap-2">
+                <Hash className="h-4 w-4" />
+                Discount Usage Details
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Usage ID */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Hash className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Usage ID
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-mono break-all">
+                    {discountUsage.id}
+                  </p>
+                </div>
+
+                {/* Discount Details */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Tag className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Discount Details
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900">
+                    {discountUsage.discount.code} -{" "}
+                    {discountUsage.discount.description}
+                  </p>
+                </div>
+
+                {/* Usage Date */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Used At
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900">
+                    {safeFormatDate(discountUsage.usedAt)}
+                  </p>
+                </div>
+
+                {/* User Details */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <User className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      User Information
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900">
+                    {discountUsage.user.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {discountUsage.user.email}
+                  </p>
+                </div>
+
+                {/* Course Details */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Tag className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Course Details
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900">
+                    {discountUsage.course.title}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {`by ${discountUsage.course.instructor.name} (${discountUsage.course.instructor.email})`}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Price: {safeFormatCurrency(discountUsage.course.price)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
   );
 }

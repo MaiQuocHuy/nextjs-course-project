@@ -71,24 +71,26 @@ export function AffiliatePayoutTable() {
           Affiliate Payout History
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0 md:p-6">
+      <CardContent className="px-4">
         {/* Desktop Table */}
         <div className="hidden md:block">
-          <Table>
-            <AffiliatePayoutTableHead />
-            <TableBody>
-              {paginatedAffiliatePayouts.map((affiliatePayout) => (
-                <AffiliatePayoutTableRow
-                  key={affiliatePayout.id}
-                  affiliatePayout={affiliatePayout}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <AffiliatePayoutTableHead />
+              <TableBody>
+                {paginatedAffiliatePayouts.map((affiliatePayout) => (
+                  <AffiliatePayoutTableRow
+                    key={affiliatePayout.id}
+                    affiliatePayout={affiliatePayout}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         {/* Mobile Cards */}
-        <div className="md:hidden space-y-3 p-4">
+        <div className="block md:hidden space-y-3">
           {paginatedAffiliatePayouts.map((affiliatePayout) => (
             <AffiliatePayoutMobileCard
               key={affiliatePayout.id}
@@ -99,7 +101,7 @@ export function AffiliatePayoutTable() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-6 px-4 md:px-0">
+          <div className="mt-6">
             <CustomPagination
               currentPage={currentPage}
               totalPages={totalPages}
