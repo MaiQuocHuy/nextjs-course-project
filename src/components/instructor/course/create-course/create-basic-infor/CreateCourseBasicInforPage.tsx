@@ -62,7 +62,7 @@ import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
-import { CourseDetail } from '@/types/instructor/courses';
+import { CourseDetail } from '@/types/instructor/courses/course-details';
 import { createFileFromUrl } from '@/utils/instructor/course/create-file';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import {
@@ -72,7 +72,6 @@ import {
 } from '@radix-ui/react-dialog';
 import ImageUpload from '../create-lessons/file-upload/ImageUpload';
 import FileUploadErrorContainer from '../create-lessons/file-upload/upload-error/FileUploadErrorContainer';
-import { on } from 'events';
 
 interface CourseFormProps {
   mode: 'create' | 'edit';

@@ -15,7 +15,7 @@ export function parseExcelFile(file: File): Promise<ExcelQuizData[]> {
     reader.onload = async (e) => {
       try {
         // Use xlsx library to parse Excel data
-        const XLSX = await import('xlsx')
+        const XLSX = await import('xlsx');
         const data = e.target?.result as ArrayBuffer;
         const workbook = XLSX.read(data, { type: 'array' });
 
@@ -44,7 +44,11 @@ export function parseExcelFile(file: File): Promise<ExcelQuizData[]> {
               option2: cleanField(row['Option 2']),
               option3: cleanField(row['Option 3']),
               option4: cleanField(row['Option 4']),
-              correctAnswer: row['Correct Answer'],
+              correctAnswer: cleanField(row['Correct Answer']) as
+                | 'A'
+                | 'B'
+                | 'C'
+                | 'D',
               explanation: cleanField(row['Explanation'] || ''),
             };
           });

@@ -10,15 +10,6 @@ import { SkeletonStudentCard } from '@/components/instructor/students/skeletons'
 export const CourseOverviewSkeleton = () => {
   return (
     <div className="space-y-6">
-      {/* Navigation Tabs */}
-      <div className="flex border-b space-x-6 pb-1">
-        {/* Back button */}
-        <Skeleton className="h-10 w-12" />
-        <Skeleton className="h-10 w-28" /> {/* Overview */}
-        <Skeleton className="h-10 w-28" /> {/* Content */}
-        <Skeleton className="h-10 w-28" /> {/* Reviews */}
-      </div>
-
       {/* Main content area */}
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         {/* Banner Image */}
@@ -49,26 +40,6 @@ export const CourseOverviewSkeleton = () => {
             <div className="flex items-center gap-2">
               <Skeleton className="h-5 w-5" /> {/* Calendar icon */}
               <Skeleton className="h-5 w-40" /> {/* Updated date */}
-            </div>
-          </div>
-
-          {/* Students Section */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-8 w-40" /> {/* Students Title */}
-              <Skeleton className="h-10 w-32" /> {/* View All button */}
-            </div>
-
-            {/* Search Bar */}
-            <SkeletonSearchBar />
-
-            {/* Student Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array(3)
-                .fill(0)
-                .map((_, index) => (
-                  <SkeletonStudentCard key={index} />
-                ))}
             </div>
           </div>
         </div>

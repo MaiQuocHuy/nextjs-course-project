@@ -2,22 +2,20 @@ import { useEffect, useState } from 'react';
 
 import CourseContent from '../create-course/create-lessons/CourseContent';
 import { useGetSectionsQuery } from '@/services/instructor/courses/sections-api';
-import { SectionDetail } from '@/types/instructor/courses';
+import { SectionDetail } from '@/types/instructor/courses/course-details';
 import { createFileFromUrl } from '@/utils/instructor/course/create-file';
 import { SectionType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
 import { Button } from '@/components/ui/button';
 import CourseContentSkeleton from './skeletons/CourseContentSkeleton';
+import { useParams } from 'next/navigation';
 
-interface CourseContentProps {
-  courseId: string;
-}
-
-const CourseContentPage = ({ courseId }: CourseContentProps) => {
+const CourseContentPage = () => {
+  const { id } = useParams<{ id: string }>();
   const {
     data: sections,
     isLoading: isFetchingSections,
     isError,
-  } = useGetSectionsQuery(courseId);
+  } = useGetSectionsQuery(id, { skip: !id });
 
   const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
   const [isSettingUp, setIsSettingUp] = useState(false);
@@ -75,33 +73,33 @@ const CourseContentPage = ({ courseId }: CourseContentProps) => {
 
   return (
     <>
-      {updatedSections && updatedSections.length > 0 ? (
-        courseId && (
-          <CreateCourseContentForm
-            courseId={courseId}
-            sections={updatedSections}
-            mode="view"
-          />
-        )
-      ) : (
+      {id && (
         <>
-          {createContent ? (
-            courseId && (
-              <CreateCourseContentForm courseId={courseId} mode="create" />
-            )
+          {updatedSections && updatedSections.length > 0 ? (
+            <CreateCourseContentForm
+              courseId={id}
+              sections={updatedSections}
+              mode="view"
+            />
           ) : (
             <>
-              <div className="text-center space-y-4">
-                <p>No content available</p>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setCreateContent(true);
-                  }}
-                >
-                  Create Content
-                </Button>
-              </div>
+              {createContent ? (
+                <CreateCourseContentForm courseId={id} mode="create" />
+              ) : (
+                <>
+                  <div className="text-center space-y-4">
+                    <p>No content available</p>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setCreateContent(true);
+                      }}
+                    >
+                      Create Content
+                    </Button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </>

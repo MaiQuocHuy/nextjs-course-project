@@ -1,27 +1,47 @@
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Edit, BookOpen, Calendar, Clock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CreateCourseBasicInforPage } from '../create-course/create-basic-infor/CreateCourseBasicInforPage';
-import { CourseDetail } from '@/types/instructor/courses';
 import { calculateTotalDuration } from '@/utils/instructor/course/course-helper-functions';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
+import { useGetCourseByIdQuery } from '@/services/instructor/courses/courses-api';
+import CourseOverviewSkeleton from './skeletons/CourseOverviewSkeleton';
+import { ErrorComponent } from '../../commom/ErrorComponent';
 
 export interface CourseHeaderProps {
-  courseInfo: CourseDetail;
   isEdittingCourse?: boolean;
-  onRefetchData?: () => void;
 }
 
 const CourseOverview = ({
-  courseInfo,
   isEdittingCourse,
-  onRefetchData,
 }: CourseHeaderProps) => {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
+
+  const {
+    data: courseInfo,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetCourseByIdQuery(id, { skip: !id });
+
+  if (isLoading) {
+    return <CourseOverviewSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorComponent
+        title="Error Loading Course"
+        message="Failed to load course data. Please try again."
+        onRetry={refetch}
+      />
+    );
+  }
 
   return (
     <>
@@ -30,14 +50,15 @@ const CourseOverview = ({
           <CreateCourseBasicInforPage
             mode="edit"
             courseInfo={courseInfo}
-            onCancel={() => router.push(`/instructor/courses/${courseInfo.id}`)}
-            onRefetchData={onRefetchData}
+            onCancel={() => router.push(`/instructor/courses/${id}`)}
+            onRefetchData={refetch}
           />
         ) : (
           <p>No course information available</p>
         )
       ) : (
         <>
+          {/* Course Information */}
           {courseInfo && (
             <Card className="w-full">
               <CardHeader className="relative h-[200px] sm:h-[300px]">

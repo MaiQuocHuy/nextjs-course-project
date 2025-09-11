@@ -2,10 +2,13 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 import type {
   Course,
-  CourseDetail,
   CoursesFilter,
-} from "@/types/instructor/courses";
+} from "@/types/instructor/courses/courses";
+import type {
+  CourseDetail,
+} from "@/types/instructor/courses/course-details";
 import { ApiResponse, PaginatedData } from "@/types/common";
+import { CourseEnrolledStudent } from "@/types/instructor/students";
 
 const errorsHandler = (response: { status: number; data: any }) => {
   let errorMessage = "Failed to create course";
@@ -211,6 +214,30 @@ export const coursesInstSlice = createApi({
         { type: "Courses", id: data.courseId },
       ],
     }),
+
+    // Get enrolled students for a specific course
+    getEnrolledStudents: builder.query<
+      PaginatedData<CourseEnrolledStudent>, 
+      { courseId: string; page?: number; size?: number; sort?: string }
+    >({
+      query: ({ courseId, page = 0, size = 10, sort = "createdAt,DESC" }) => ({
+        url: `/instructor/courses/${courseId}/enrolled-students?page=${page}&size=${size}&sort=${sort}`,
+        method: "GET",
+      }),
+      transformResponse: (response: ApiResponse<PaginatedData<CourseEnrolledStudent>>) => {
+        return response.data;
+      },
+      providesTags: (result, error, { courseId }) => 
+        result
+          ? [
+              ...result.content.map((student) => ({
+                type: "Courses" as const,
+                id: `${courseId}-student-${student.id}`,
+              })),
+              { type: "Courses", id: `${courseId}-students` },
+            ]
+          : [{ type: "Courses", id: `${courseId}-students` }],
+    }),
   }),
 });
 
@@ -222,4 +249,5 @@ export const {
   useUpdateCourseMutation,
   useDeleteCourseMutation,
   useUpdateCourseStatusMutation,
+  useGetEnrolledStudentsQuery,
 } = coursesInstSlice;

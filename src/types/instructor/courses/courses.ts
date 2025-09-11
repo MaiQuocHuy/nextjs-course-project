@@ -1,4 +1,5 @@
-import { User } from './profile';
+import { Page } from '@/types/common';
+import { User } from '../profile';
 
 export interface VideoContent {
   id: string;
@@ -22,21 +23,6 @@ export interface QuizQuestion {
   explanation?: string;
 }
 
-export interface Quiz {
-  id?: string;
-  questions: {
-    questionText: string;
-    options: {
-      A: string;
-      B: string;
-      C: string;
-      D: string;
-    };
-    correctAnswer: 'A' | 'B' | 'C' | 'D';
-    explanation: string;
-  }[];
-}
-
 export interface LessonOverview {
   id: string;
   title: string;
@@ -46,37 +32,12 @@ export interface LessonOverview {
   quizQuestionCount: number | null;
 }
 
-export interface LessonDetail extends LessonOverview {
-  order: number;
-  orderIndex: number;
-  video?: VideoContent;
-  quiz?: {
-    questions: QuizQuestion[];
-  };
-  isCompleted: boolean;
-  completedAt: string;
-}
-
 export interface SectionOverview {
   id: string;
   title: string;
   totalVideoDuration: number;
   totalQuizQuestion: number;
   lessons: LessonOverview[];
-}
-
-export interface SectionDetail extends SectionOverview {
-  orderIndex: number;
-  lessons: LessonDetail[];
-}
-
-export interface Enrollment {
-  id: string;
-  user_id: string;
-  course_id: string;
-  enrolled_at: string;
-  completion_status: 'IN_PROGRESS' | 'COMPLETED';
-  progress?: number;
 }
 
 export interface Review {
@@ -118,25 +79,9 @@ export interface Course {
   approved: boolean;
 }
 
-export interface CourseDetail extends Course {
-  isPublished: boolean;
-  enrollmentCount: number;
-  ratingCount: number;
-  sections: SectionOverview[];
-}
-
-export interface PageType {
-  number: number;
-  size: number;
-  totalPages: number;
-  totalElements: number;
-  first: boolean;
-  last: boolean;
-}
-
 export interface Courses {
   content: Course[];
-  page: PageType;
+  page: Page;
 }
 
 export interface CoursesFilter {
@@ -152,3 +97,4 @@ export interface CoursesFilter {
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' ;
   isPublished?: boolean;
 }
+

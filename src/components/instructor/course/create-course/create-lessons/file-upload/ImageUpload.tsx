@@ -98,7 +98,6 @@ const ImageUpload = ({
       ) : (
         <>
           {imagePreviewUrl && (
-            <div className="space-y-3">
               <div className="grid gap-3">
                 <div
                   className={cn(
@@ -107,7 +106,7 @@ const ImageUpload = ({
                     'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20'
                   )}
                 >
-                  <div className="space-y-4">
+                  <div className="space-y-4 px-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 flex-1 min-w-0">
                         <ImageIcon className="w-4 h-4 text-blue-500" />
@@ -147,7 +146,6 @@ const ImageUpload = ({
                   </div>
                 </div>
               </div>
-            </div>
           )}
         </>
       )}

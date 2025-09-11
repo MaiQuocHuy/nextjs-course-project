@@ -5,7 +5,7 @@ import Image from "next/image";
 import Chat from "./Chat";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Course } from "@/types/instructor/courses";
+import { Course } from "@/types/instructor/courses/courses";
 import { ChevronLeft, X, BookOpen, Loader2 } from "lucide-react";
 import { useGetPublishedCoursesQuery } from "@/services/instructor/courses/courses-api";
 

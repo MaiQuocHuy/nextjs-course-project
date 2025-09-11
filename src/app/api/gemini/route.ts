@@ -1,3 +1,4 @@
+import { geminiApi } from './../../../services/quiz/geminiApi';
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -68,6 +69,19 @@ const promptTemplate = (inputs: string = '') => {
 
 export async function POST(req: Request) {
   try {
+    // 1. Authentication & Authorization
+    // const { userId } = auth();
+    // if (!userId) {
+    //   return new NextResponse('Unauthorized', { status: 401 });
+    // }
+
+    // 2. Rate Limiting
+    // const identifier = req.ip ?? '127.0.0.1';
+    // const { success } = await rateLimiter.limit(identifier);
+    // if (!success) {
+    //   return new NextResponse('Too Many Requests', { status: 429 });
+    // }
+
     const { texts } = await req.json();
 
     if (!texts || !Array.isArray(texts) || texts.length === 0) {
@@ -122,7 +136,15 @@ export async function POST(req: Request) {
     const documentSeparator = '\n\n--- NEW DOCUMENT ---\n\n';
     const combinedText = texts.join(documentSeparator);
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      return NextResponse.json(
+        { error: 'Gemini API key is missing' },
+        { status: 500 }
+      );
+    }
+
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const result = await model.generateContent(promptTemplate(combinedText));
@@ -133,6 +155,10 @@ export async function POST(req: Request) {
 
     try {
       const parsed = JSON.parse(output);
+      // const validation = quizGenerationResponseSchema.safeParse(parsed);
+      // if (!validation.success) {
+      //   // Handle invalid JSON structure, maybe retry or return error
+      // }
       return NextResponse.json({ mcqs: parsed.questions || [] });
     } catch (err) {
       console.error('Failed to parse Gemini output:', err, output);

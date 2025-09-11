@@ -46,7 +46,7 @@ import {
   useDeleteCourseMutation,
   useGetCoursesQuery,
 } from '@/services/instructor/courses/courses-api';
-import { Course, CoursesFilter } from '@/types/instructor/courses';
+import { Course, CoursesFilter } from '@/types/instructor/courses/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';

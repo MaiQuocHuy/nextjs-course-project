@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { localBaseQuery } from '@/lib/baseQueryWithReauth';
-import { QuizQuestion } from '@/types/instructor/courses';
+import { QuizQuestion } from '@/types/instructor/courses/courses';
 
 export const quizzesInstSlice = createApi({
   reducerPath: 'quizzesInstSlice',
