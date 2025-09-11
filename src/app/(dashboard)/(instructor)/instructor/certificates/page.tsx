@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,13 @@ export default function InstructorCertificatesPage() {
 
   const courses = coursesData?.content || [];
   const certificates = certificatesData?.content || [];
+
+  // Auto-select the first course when courses are loaded
+  useEffect(() => {
+    if (courses.length > 0 && !selectedCourseId) {
+      setSelectedCourseId(courses[0].id);
+    }
+  }, [courses, selectedCourseId]);
 
   // Filter courses based on search query
   const filteredCourses = courses.filter((course: Course) =>
@@ -277,16 +284,19 @@ export default function InstructorCertificatesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-16">#</TableHead>
                         <TableHead>Certificate Code</TableHead>
                         <TableHead>Student</TableHead>
-
                         <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCertificates.map((certificate: CertificateListItem) => (
+                      {filteredCertificates.map((certificate: CertificateListItem, index: number) => (
                         <TableRow key={certificate.id}>
+                          <TableCell className="text-gray-500 font-medium">
+                            {index + 1}
+                          </TableCell>
                           <TableCell className="font-mono text-sm">
                             {certificate.certificateCode}
                           </TableCell>

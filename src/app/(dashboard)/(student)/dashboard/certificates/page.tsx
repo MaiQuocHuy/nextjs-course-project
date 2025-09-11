@@ -115,8 +115,8 @@ export default function CertificatesPage() {
 
   // Effect to handle download when certificate data is loaded
   useEffect(() => {
-    if (downloadCertificateData?.data?.fileUrl && downloadingCertificateCode) {
-      const fileUrl = downloadCertificateData.data.fileUrl;
+    if (downloadCertificateData?.fileUrl && downloadingCertificateCode) {
+      const fileUrl = downloadCertificateData.fileUrl;
       window.open(fileUrl, "_blank");
 
       // Reset the downloading state
@@ -244,7 +244,7 @@ export default function CertificatesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Certificate Code</TableHead>
+                        <TableHead className="w-16">#</TableHead>
                         <TableHead>Course</TableHead>
                         <TableHead>Instructor</TableHead>
                         <TableHead>Issue Date</TableHead>
@@ -253,11 +253,12 @@ export default function CertificatesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCertificates.map((certificate) => (
+                      {filteredCertificates.map((certificate, index) => (
                         <TableRow key={certificate.id}>
-                          <TableCell className="font-mono text-sm">
-                            {certificate.certificateCode}
+                          <TableCell className="text-gray-500 font-medium">
+                            {page * size + index + 1}
                           </TableCell>
+
                           <TableCell>
                             <div>
                               <div className="font-medium">{certificate.courseTitle}</div>

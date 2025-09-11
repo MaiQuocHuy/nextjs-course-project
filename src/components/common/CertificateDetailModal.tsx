@@ -87,8 +87,8 @@ export default function CertificateDetailModal({
 
   const handleViewPublic = () => {
     if (certificate?.certificateCode) {
-      // Open public certificate view in new tab
-      const publicUrl = `${window.location.origin}/certificates/${certificate.certificateCode}`;
+      // Open public certificate view in new tab with query parameter
+      const publicUrl = `${window.location.origin}/certificates?code=${certificate.certificateCode}`;
       window.open(publicUrl, "_blank");
     }
   };

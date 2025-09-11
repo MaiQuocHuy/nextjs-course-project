@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Award,
@@ -26,14 +27,25 @@ import { useLazyGetCertificateByCodeQuery, type TransformedCertificateResponse }
 type CertificateData = TransformedCertificateResponse;
 
 export default function CertificateSearchPage() {
+  const searchParams = useSearchParams();
   const [searchCode, setSearchCode] = useState("");
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
 
   const [getCertificateByCode, { isLoading }] = useLazyGetCertificateByCodeQuery();
 
-  const handleSearch = async () => {
-    if (!searchCode.trim()) {
+  // Handle query parameter on component mount
+  useEffect(() => {
+    const codeFromQuery = searchParams.get('code');
+    if (codeFromQuery) {
+      setSearchCode(codeFromQuery);
+      // Automatically search when code is provided via query parameter
+      handleSearchWithCode(codeFromQuery);
+    }
+  }, [searchParams]);
+
+  const handleSearchWithCode = async (code: string) => {
+    if (!code.trim()) {
       setSearchError("Please enter a certificate code");
       return;
     }
@@ -42,7 +54,7 @@ export default function CertificateSearchPage() {
     setCertificate(null);
 
     try {
-      const result = await getCertificateByCode(searchCode.trim()).unwrap();
+      const result = await getCertificateByCode(code.trim()).unwrap();
       setCertificate(result);
     } catch (error: any) {
       console.error("Search error:", error);
@@ -52,6 +64,10 @@ export default function CertificateSearchPage() {
         setSearchError("An error occurred while searching. Please try again.");
       }
     }
+  };
+
+  const handleSearch = async () => {
+    await handleSearchWithCode(searchCode);
   };
 
   const handleDownload = () => {
