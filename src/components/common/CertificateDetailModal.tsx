@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Certificate } from "@/types/certificate";
@@ -128,7 +133,7 @@ export default function CertificateDetailModal({
 
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="w-[60vw] h-[95vh] !max-w-7xl p-0 flex flex-col">
+        <DialogContent className="xl:w-[60vw] w-[100vw] sm:h-[95vh]  h-[100vh] !max-w-7xl p-0 flex flex-col">
           <DialogHeader className="p-6 pb-2 flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -142,7 +147,11 @@ export default function CertificateDetailModal({
               src={getViewUrl(previewUrl)}
               className="w-full h-full border rounded-lg"
               title="Certificate Preview"
-              onLoad={() => toast.success("Certificate loaded successfully", { duration: 1000 })}
+              onLoad={() =>
+                toast.success("Certificate loaded successfully", {
+                  duration: 1000,
+                })
+              }
               onError={() => toast.error("Failed to load certificate preview")}
             />
           </div>
@@ -173,23 +182,28 @@ export default function CertificateDetailModal({
                 </div>
               ) : (
                 <>
-                  {certificate.fileStatus === "GENERATED" && certificateDetail?.fileUrl && (
-                    <Button onClick={handleViewCertificate} className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      View Certificate
-                    </Button>
-                  )}
+                  {certificate.fileStatus === "GENERATED" &&
+                    certificateDetail?.fileUrl && (
+                      <Button
+                        onClick={handleViewCertificate}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Certificate
+                      </Button>
+                    )}
 
-                  {certificate.fileStatus === "GENERATED" && certificateDetail?.fileUrl && (
-                    <Button
-                      onClick={handleDownload}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download Certificate
-                    </Button>
-                  )}
+                  {certificate.fileStatus === "GENERATED" &&
+                    certificateDetail?.fileUrl && (
+                      <Button
+                        onClick={handleDownload}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Certificate
+                      </Button>
+                    )}
 
                   <Button
                     variant="outline"
@@ -220,13 +234,16 @@ export default function CertificateDetailModal({
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-600">Issued:</span>
-                  <span className="font-medium">{formatDate(certificate.issuedAt)}</span>
+                  <span className="font-medium">
+                    {formatDate(certificate.issuedAt)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-600">Instructor:</span>
                   <span className="font-medium">
-                    {certificateDetail?.course?.instructorName || certificate.instructorName}
+                    {certificateDetail?.course?.instructorName ||
+                      certificate.instructorName}
                   </span>
                 </div>
               </div>
@@ -234,9 +251,13 @@ export default function CertificateDetailModal({
 
             {/* Certificate Code */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Certificate Code</label>
+              <label className="text-sm font-medium text-gray-700">
+                Certificate Code
+              </label>
               <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
-                <code className="flex-1 font-mono text-sm">{certificate.certificateCode}</code>
+                <code className="flex-1 font-mono text-sm">
+                  {certificate.certificateCode}
+                </code>
                 <Button
                   variant="outline"
                   size="sm"
@@ -260,23 +281,33 @@ export default function CertificateDetailModal({
                 </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
                   <User className="h-4 w-4 text-gray-500" />
-                  <span>{certificateDetail?.user?.name || certificate.userName}</span>
+                  <span>
+                    {certificateDetail?.user?.name || certificate.userName}
+                  </span>
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Email Address</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{certificateDetail?.user?.email || certificate.userEmail}</span>
+                  <span>
+                    {certificateDetail?.user?.email || certificate.userEmail}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Course Title</label>
+              <label className="text-sm font-medium text-gray-700">
+                Course Title
+              </label>
               <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
                 <BookOpen className="h-4 w-4 text-gray-500" />
-                <span>{certificateDetail?.course?.title || certificate.courseTitle}</span>
+                <span>
+                  {certificateDetail?.course?.title || certificate.courseTitle}
+                </span>
               </div>
             </div>
 

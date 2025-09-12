@@ -91,7 +91,7 @@ export function DashboardHeader() {
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="sm:text-sm md:text-xl font-semibold text-foreground">
                   Welcome, {user?.name || "Student"}!
                 </h1>
                 <p className="text-sm text-muted-foreground">

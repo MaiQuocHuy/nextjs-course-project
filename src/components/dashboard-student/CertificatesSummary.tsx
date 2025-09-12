@@ -80,7 +80,9 @@ export function CertificatesSummary() {
           <div className="text-center py-6">
             <Award className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-sm text-gray-500 mb-3">No certificates yet</p>
-            <p className="text-xs text-gray-400">Complete courses to earn certificates</p>
+            <p className="text-xs text-gray-400">
+              Complete courses to earn certificates
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -112,8 +114,15 @@ export function CertificatesSummary() {
                     </Badge>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="ml-2 h-8 w-8 p-0" asChild>
-                  <Link href={`/certificates/${certificate.certificateCode}`}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-2 h-8 w-8 p-0"
+                  asChild
+                >
+                  <Link
+                    href={`/certificates?code=${certificate.certificateCode}`}
+                  >
                     <Eye className="h-4 w-4" />
                     <span className="sr-only">View certificate</span>
                   </Link>
