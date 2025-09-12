@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import {
   type CourseBasicInfoType,
+  fullCourseSchema,
+} from '@/utils/instructor/course/create-course-validations/course-basic-info-validation';
+import {
   getWordCount,
   getCharacterCount,
-  imageFileSchema,
-  fullCourseSchema,
-} from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+} from '@/utils/instructor/course/course-helper-functions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,8 +44,6 @@ import {
   BookOpen,
   DollarSign,
   FileText,
-  ImageIcon,
-  Upload,
   Trash2,
   AlertCircle,
 } from 'lucide-react';
@@ -63,52 +62,50 @@ import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
-import { CourseDetail } from '@/types/instructor/courses';
-import { createFileFromUrl } from '@/utils/instructor/create-file-from-url';
+import { CourseDetail } from '@/types/instructor/courses/course-details';
+import { createFileFromUrl } from '@/utils/instructor/course/create-file';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import {
   DialogDescription,
   DialogTitle,
   DialogTrigger,
 } from '@radix-ui/react-dialog';
+import ImageUpload from '../create-lessons/file-upload/ImageUpload';
+import FileUploadErrorContainer from '../create-lessons/file-upload/upload-error/FileUploadErrorContainer';
 
 interface CourseFormProps {
   mode: 'create' | 'edit';
-  courseInfor?: CourseDetail;
+  courseInfo?: CourseDetail;
   onCancel?: () => void;
   onSubmit?: (data: CourseBasicInfoType) => void;
+  onRefetchData?: () => void;
 }
 
-interface Thumbnail {
-  id: string;
-  file: File;
-  preview: string;
-}
-
-const accept = 'image/*,video/*';
-const maxFiles = 1;
-const maxSize = 10;
+const maxSize = 10 * 1024 * 1024; // 10MB
 
 export function CreateCourseBasicInforPage({
   mode,
-  courseInfor,
+  courseInfo,
   onCancel,
   onSubmit,
+  onRefetchData,
 }: CourseFormProps) {
-  const { data: categories } = useGetCategoriesQuery();
-  const [courseThumb, setCourseThumb] = useState<Thumbnail | null>(null);
   const [isCourseThumbUpdated, setIsCourseThumbUpdated] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [courseStatus, setCourseStatus] = useState<'published' | 'unpublished'>(
     'published'
   );
+  const [isLoading, setIsLoading] = useState(false);
+  const [canSaveChanges, setCanSaveChanges] = useState(false);
 
-  const [createCourse] = useCreateCourseMutation();
-  const [updateCourse] = useUpdateCourseMutation();
-  const [updateCourseStatus] = useUpdateCourseStatusMutation();
-  const [deleteCourse] = useDeleteCourseMutation();
+  const { data: categories, refetch: refetchCategories } =
+    useGetCategoriesQuery();
+
+  const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation();
+  const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation();
+  const [updateCourseStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateCourseStatusMutation();
+  const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
 
   const dispatch: AppDispatch = useDispatch();
   const router = useRouter();
@@ -123,77 +120,57 @@ export function CreateCourseBasicInforPage({
       level: 'BEGINNER',
       file: undefined,
     },
-    mode: 'onChange', // Enable real-time validation
+    mode: 'onChange',
   });
 
   const {
     watch,
     formState: { errors, isValid, isDirty, dirtyFields },
   } = form;
-  // console.log(courseInfor);
 
   // Set up data for edit mode
   useEffect(() => {
-    if (courseInfor) {
+    if (courseInfo) {
       const setUpData = async () => {
         const courseBasicInfo: CourseBasicInfoType = {
-          title: courseInfor.title ? courseInfor.title : '',
-          description: courseInfor.description ? courseInfor.description : '',
-          price: courseInfor.price ? courseInfor.price : 0,
+          title: courseInfo.title ? courseInfo.title : '',
+          description: courseInfo.description ? courseInfo.description : '',
+          price: courseInfo.price ? courseInfo.price : 0,
           categoryIds: [],
-          level: courseInfor.level,
+          level: courseInfo.level,
           file: undefined,
         };
-        if (courseInfor.categories) {
-          courseBasicInfo.categoryIds = courseInfor.categories.map(
+        if (courseInfo.categories) {
+          courseBasicInfo.categoryIds = courseInfo.categories.map(
             (cat) => cat.id
           );
         }
-        if (courseInfor.thumbnailUrl) {
+        if (courseInfo.thumbnailUrl) {
           courseBasicInfo.file = await createFileFromUrl(
-            courseInfor.thumbnailUrl,
-            courseInfor.title
+            courseInfo.thumbnailUrl,
+            courseInfo.title
           );
         }
         form.reset(courseBasicInfo);
 
-        setCourseStatus(courseInfor.isPublished ? 'published' : 'unpublished');
+        setCourseStatus(courseInfo.isPublished ? 'published' : 'unpublished');
       };
       setUpData();
     }
-  }, [courseInfor]);
+  }, [courseInfo]);
 
-  const watchThumbnail = watch('file');
-
-  // Set thumbnail only if file is valid
+  // Enable save changes button if form is valid and dirty
   useEffect(() => {
-    const validateAndSetThumbnail = async () => {
-      // Clear thumbnail first if there's no file
-      if (!watchThumbnail || watchThumbnail.size === 0) {
-        setCourseThumb(null);
-        return;
-      }
+    const isCourseUpdated = isValid && (isDirty || isCourseThumbUpdated);
+    setCanSaveChanges(isCourseUpdated);
+  }, [isValid, isDirty, isCourseThumbUpdated]);
 
-      try {
-        // Validate the file using the schema directly
-        await imageFileSchema.parseAsync({ file: watchThumbnail });
+  // Enable loading state
+  useEffect(() => {
+    setIsLoading(isCreating || isUpdating || isDeleting || isUpdatingStatus);
+  }, [isCreating, isUpdating, isDeleting, isUpdatingStatus]);
 
-        // Only create preview if validation passes
-        const preview = await createFilePreview(watchThumbnail);
-        const courseThumb: Thumbnail = {
-          id: crypto.randomUUID(),
-          file: watchThumbnail,
-          preview,
-        };
-        setCourseThumb(courseThumb);
-      } catch (error) {
-        // If validation fails, clear the thumbnail
-        setCourseThumb(null);
-      }
-    };
-
-    validateAndSetThumbnail();
-  }, [watchThumbnail]);
+  const imageFile = watch('file');
 
   const getStatusReviewColor = (status: string) => {
     if (status) status = status.toLowerCase();
@@ -212,32 +189,6 @@ export function CreateCourseBasicInforPage({
     }
   };
 
-  const createFilePreview = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      } else {
-        // For videos, create a thumbnail
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => {
-          video.currentTime = 1;
-        };
-        video.onseeked = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(video, 0, 0);
-          resolve(canvas.toDataURL());
-        };
-        video.src = URL.createObjectURL(file);
-      }
-    });
-  };
-
   const handleSubmit = (data: CourseBasicInfoType) => {
     // console.log('Course form data:', data);
     if (mode === 'edit') {
@@ -245,26 +196,6 @@ export function CreateCourseBasicInforPage({
     } else {
       handleCreateCourse(data);
     }
-  };
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (
-      Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    );
   };
 
   const handleCreateCourse = async (data: CourseBasicInfoType) => {
@@ -291,10 +222,10 @@ export function CreateCourseBasicInforPage({
   const handleUpdateCourse = async (data: CourseBasicInfoType) => {
     // console.log(data);
     loadingAnimation(true, dispatch, 'Course is being updated. Please wait...');
-    if (courseInfor) {
+    if (courseInfo && canSaveChanges) {
       const keys = Object.keys(dirtyFields) as (keyof CourseBasicInfoType)[];
       const updatedData: Partial<CourseBasicInfoType> = {
-        id: courseInfor.id,
+        id: courseInfo.id,
       };
       for (const key of keys) {
         updatedData[key] = data[key];
@@ -316,7 +247,7 @@ export function CreateCourseBasicInforPage({
         toast.error(error.message);
       }
     } else {
-      // Handle case where courseInfor is not available
+      // Handle case where courseInfo is not available
       loadingAnimation(false, dispatch);
       toast.error('Course information is not available.');
     }
@@ -325,12 +256,12 @@ export function CreateCourseBasicInforPage({
   const handlePublishCourseToggle = async () => {
     loadingAnimation(true, dispatch, 'Updating course status. Please wait...');
     let isUpdateStatusSuccess = false;
-    if (courseInfor && courseInfor.id) {
+    if (courseInfo && courseInfo.id) {
       try {
         const updateStatus =
           courseStatus === 'published' ? 'unpublished' : 'published';
         const res = await updateCourseStatus({
-          courseId: courseInfor.id,
+          courseId: courseInfo.id,
           status: updateStatus.toUpperCase(),
         }).unwrap();
 
@@ -362,7 +293,7 @@ export function CreateCourseBasicInforPage({
   const handleDeleteCourse = async () => {
     loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
     try {
-      const res = await deleteCourse(courseInfor?.id).unwrap();
+      const res = await deleteCourse(courseInfo?.id).unwrap();
       if (res.statusCode === 200) {
         loadingAnimation(false, dispatch);
         toast.error('Delete course successfully!');
@@ -374,30 +305,41 @@ export function CreateCourseBasicInforPage({
     }
   };
 
+  const handleRefetchData = () => {
+    refetchCategories();
+    if (onRefetchData) {
+      onRefetchData();
+    }
+  };
+
   return (
     <div className={cn('space-y-6')}>
       {/* Course actions */}
-      {mode === 'edit' && courseInfor && (
-        <div>
+      {mode === 'edit' && courseInfo && (
+        <div className="space-y-3">
+          <Button variant="outline" onClick={handleRefetchData} disabled={isLoading}>
+            Refetch
+          </Button>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-4">
                   <span
-                    className={getStatusReviewColor(courseInfor.statusReview)}
+                    className={getStatusReviewColor(courseInfo.statusReview)}
                   >
-                    {courseInfor.statusReview
-                      ? courseInfor.statusReview
+                    {courseInfo.statusReview
+                      ? courseInfo.statusReview
                       : 'Draft'}
                   </span>
 
-                  {courseInfor.statusReview === null && (
+                  {courseInfo.statusReview === null && (
                     <span className="text-sm text-muted-foreground">
                       Switch to publish mode to be able to submit for review
                     </span>
                   )}
 
-                  {courseInfor.statusReview === 'DENIED' && (
+                  {courseInfo.statusReview === 'DENIED' && (
                     <>
                       <Dialog>
                         <DialogTrigger asChild>
@@ -405,6 +347,7 @@ export function CreateCourseBasicInforPage({
                             variant="outline"
                             size="sm"
                             className="text-red-600 border-red-300 hover:bg-red-50"
+                            disabled={isLoading}
                           >
                             <AlertCircle className="h-4 w-4 mr-2" />
                             View Denied Reason
@@ -421,7 +364,7 @@ export function CreateCourseBasicInforPage({
                           </DialogHeader>
                           <div className="border-l-4 border-red-400 bg-red-50 p-4 my-2 rounded-r">
                             <p className="text-red-700">
-                              {courseInfor.reason ||
+                              {courseInfo.reason ||
                                 'No specific reason provided.'}
                             </p>
                           </div>
@@ -444,10 +387,11 @@ export function CreateCourseBasicInforPage({
                 </div>
 
                 {/* Delete course */}
-                {courseInfor.id && (
+                {courseInfo.id && (
                   <Button
                     variant="destructive"
                     onClick={() => setIsDeleteDialogOpen(true)}
+                    disabled={isLoading}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -456,17 +400,6 @@ export function CreateCourseBasicInforPage({
               </div>
             </CardHeader>
           </Card>
-
-          {/* Display warning message and handle delete course if can */}
-          <WarningAlert
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            title="Are you sure you want to delete this course?"
-            description="This action cannot be undone. This will permanently delete the
-                  course and all its content."
-            onClick={handleDeleteCourse}
-            actionTitle="Delete Course"
-          />
         </div>
       )}
 
@@ -487,19 +420,29 @@ export function CreateCourseBasicInforPage({
                   </CardDescription>
                 </div>
                 {mode === 'edit' && (
-                  <Button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (onCancel) {
-                        onCancel();
-                      }
-                    }}
-                    // disabled={isLoading}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (onCancel) {
+                          onCancel();
+                        }
+                      }}
+                      disabled={isLoading}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      variant={'default'}
+                      disabled={!canSaveChanges || isLoading}
+                    >
+                      Save changes
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -741,163 +684,26 @@ export function CreateCourseBasicInforPage({
                 name="file"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      Course Thumbnail{' '}
-                      <strong className="text-red-500 font-medium">*</strong>
-                    </FormLabel>
                     <FormControl>
-                      <div>
-                        {/* Upload Area */}
-                        {courseThumb === null ? (
-                          <>
-                            <div
-                              className={cn(
-                                'relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer group',
-                                'hover:border-primary/50 hover:bg-accent/20',
-                                isDragOver
-                                  ? 'border-primary bg-primary/5 scale-[1.02]'
-                                  : 'border-border'
-                              )}
-                              onDragOver={handleDragOver}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                if (e.dataTransfer.files) {
-                                  field.onChange(e.dataTransfer.files[0]);
-                                  setIsDragOver(false);
-                                }
-                              }}
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <Input
-                                type="file"
-                                ref={fileInputRef}
-                                accept={accept}
-                                className="hidden"
-                                onChange={(e) => {
-                                  if (e.target.files) {
-                                    field.onChange(e.target.files[0]);
-                                  }
-                                  if (mode === 'edit') {
-                                    setIsCourseThumbUpdated(true);
-                                  }
-                                }}
-                              />
-
-                              <div className="space-y-4">
-                                <div
-                                  className={cn(
-                                    'mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center transition-all duration-300',
-                                    isDragOver && 'bg-primary/20 scale-110'
-                                  )}
-                                >
-                                  <Upload
-                                    className={cn(
-                                      'w-8 h-8 text-primary transition-all duration-300',
-                                      isDragOver && 'scale-110'
-                                    )}
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <h3 className="text-lg font-semibold">
-                                    {isDragOver
-                                      ? 'Drop files here'
-                                      : 'Upload Image File'}
-                                  </h3>
-                                  <p className="text-muted-foreground">
-                                    Drag and drop your image file, or{' '}
-                                    <span className="text-primary font-medium">
-                                      browse file
-                                    </span>
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Supports image up to {maxSize}
-                                    MB each
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Animated overlay */}
-                              <div
-                                className={cn(
-                                  'absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 to-primary/10 opacity-0 transition-opacity duration-300',
-                                  isDragOver && 'opacity-100'
-                                )}
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="space-y-3">
-                            <h4 className="font-medium text-sm text-muted-foreground">
-                              Uploaded Files (1/{maxFiles})
-                            </h4>
-
-                            <div className="grid gap-3">
-                              <div
-                                key={courseThumb.id}
-                                className={cn(
-                                  'relative group bg-card border rounded-lg p-4 transition-all duration-300',
-                                  'hover:shadow-card hover:border-primary/30',
-                                  errors.file === undefined
-                                    ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20'
-                                    : 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20'
-                                )}
-                              >
-                                <div className="space-y-4">
-                                  {/* File Info Header */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                      <ImageIcon className="w-4 h-4 text-blue-500" />
-                                      <p className="font-medium truncate text-sm">
-                                        {courseThumb.file.name}
-                                      </p>
-                                      <span className="text-sm text-muted-foreground">
-                                        {formatFileSize(courseThumb.file.size)}
-                                      </span>
-                                    </div>
-
-                                    {/* Status & Actions */}
-                                    <div className="flex items-center space-x-2">
-                                      {errors.file === undefined && (
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                      )}
-
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => {
-                                          field.onChange(null);
-                                          setCourseThumb(null);
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  {/* Full Width Preview */}
-                                  <div className="relative w-full rounded-lg overflow-hidden">
-                                    {courseThumb.preview && (
-                                      <img
-                                        src={courseThumb.preview}
-                                        alt={courseThumb.file.name}
-                                        className="w-full h-auto object-cover max-h-80"
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <ImageUpload
+                        imageFile={imageFile}
+                        onImageChange={(file) => {
+                          field.onChange(file);
+                          if (mode === 'edit') {
+                            setIsCourseThumbUpdated(true);
+                          }
+                        }}
+                        maxSize={maxSize}
+                        label="Course Thumbnail"
+                        imageFileName={imageFile && imageFile.name}
+                        required
+                      />
                     </FormControl>
-                    <FormMessage />
-                    <FormDescription>
-                      Upload an attractive image that represents your course
-                    </FormDescription>
+                    {errors.file && (
+                      <FileUploadErrorContainer
+                        error={errors.file.message?.toString()}
+                      />
+                    )}
                   </FormItem>
                 )}
               />
@@ -907,19 +713,24 @@ export function CreateCourseBasicInforPage({
           {/* Submit Button */}
           <div className="flex justify-end">
             {mode === 'create' && (
-              <Button type="submit" disabled={isValid === false}>
+              <Button type="submit" disabled={isValid === false || isLoading}>
                 Continue to Add Lessons
               </Button>
             )}
-
-            {mode === 'edit' &&
-              isValid &&
-              (isDirty || isCourseThumbUpdated) && (
-                <Button type="submit">Save changes</Button>
-              )}
           </div>
         </form>
       </Form>
+
+      {/* Display warning message and handle delete course if can */}
+      <WarningAlert
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Are you sure you want to delete this course?"
+        description="This action cannot be undone. This will permanently delete the
+                  course and all its content."
+        onClick={handleDeleteCourse}
+        actionTitle="Delete Course"
+      />
     </div>
   );
 }

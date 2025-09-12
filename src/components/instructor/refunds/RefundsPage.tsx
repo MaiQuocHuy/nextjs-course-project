@@ -10,7 +10,7 @@ import {
 } from '@/components/instructor/refunds/shared';
 import { RefundsTable } from '@/components/instructor/refunds/RefundsTable';
 import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
-import { TableLoadingSkeleton } from './shared/LoadingSkeleton';
+import { TableLoadingSkeleton, RefundsSkeleton } from './skeletons/index';
 import { TableLoadingError } from './shared/LoadingError';
 
 type Filters = {
@@ -34,6 +34,7 @@ const RefundsPage = () => {
   const [currentPage, setCurrentPage] = useState(params.page);
   const [itemsPerPage, setItemsPerPage] = useState(params.size);
   const [filters, setFilters] = useState<Filters>(initFilterValues);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   const { data, isLoading, error, refetch } = useGetAllRefundsQuery({
     page: currentPage,
@@ -60,7 +61,9 @@ const RefundsPage = () => {
       return [];
     }
 
-    return data.content.filter((refund) => {
+    setIsFiltering(true);
+
+    const result = data.content.filter((refund) => {
       // Search: match id, payment id, or reason
       if (filters.searchQuery !== '') {
         const searchLower = String(filters.searchQuery).toLowerCase();
@@ -100,6 +103,9 @@ const RefundsPage = () => {
 
       return true;
     });
+
+    setIsFiltering(false);
+    return result;
   }, [data, filters]);
 
   const handleSearchChange = useCallback((query: string) => {
@@ -111,7 +117,7 @@ const RefundsPage = () => {
   }, []);
 
   if (isLoading) {
-    return <TableLoadingSkeleton />;
+    return <RefundsSkeleton />;
   }
 
   if (error) {
@@ -161,34 +167,44 @@ const RefundsPage = () => {
       </Card>
 
       {/* Refunds Table */}
-      {filteredRefunds.length > 0 ? (
-        <div className="space-y-4">
-          {/* Refetch button */}
-          <div>
-            <Button variant="outline" onClick={() => refetch()}>
-              Refetch
-            </Button>
-          </div>
+      {isFiltering ? (
+        <TableLoadingSkeleton />
+      ) : (
+        <>
+          {filteredRefunds.length > 0 ? (
+            <div className="space-y-4">
+              {/* Refetch button */}
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => refetch()}
+                  disabled={isLoading || isFiltering}
+                >
+                  Refetch
+                </Button>
+              </div>
 
-          {/* Refunds Table */}
-          <RefundsTable filteredRefunds={filteredRefunds} />
+              {/* Refunds Table */}
+              <RefundsTable filteredRefunds={filteredRefunds} />
 
-          {/* Pagination */}
-          {data && data.page && data.page.totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              itemsPerPage={itemsPerPage}
-              pageInfo={data.page || null}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
+              {/* Pagination */}
+              {data && data.page && data.page.totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  itemsPerPage={itemsPerPage}
+                  pageInfo={data.page || null}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              type={hasActiveFilters ? 'no-results' : 'no-data'}
+              clearFilters={resetFilters}
             />
           )}
-        </div>
-      ) : (
-        <EmptyState
-          type={hasActiveFilters ? 'no-results' : 'no-data'}
-          clearFilters={resetFilters}
-        />
+        </>
       )}
     </div>
   );

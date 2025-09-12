@@ -14,14 +14,3 @@ export const getStatusColor = (status: string) => {
       return 'text-blue-700 bg-blue-100 px-5 py-1 rounded-lg font-medium';
   }
 };
-
-export const getCourseStatus = (statusReview: string) => {
-  if (statusReview) {
-    statusReview = statusReview.toUpperCase();
-    if (statusReview === 'APPROVED') {
-      return 'PUBLISHED';
-    } else return statusReview;
-  } else {
-    return 'UNPUBLISHED';
-  }
-};

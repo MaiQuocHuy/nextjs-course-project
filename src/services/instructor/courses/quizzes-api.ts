@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { localBaseQuery } from '@/lib/baseQueryWithReauth';
-import { QuizQuestion } from '@/types/instructor/courses';
+import { QuizQuestion } from '@/types/instructor/courses/courses';
 
 export const quizzesInstSlice = createApi({
   reducerPath: 'quizzesInstSlice',
@@ -9,12 +9,12 @@ export const quizzesInstSlice = createApi({
     generateQuestions: builder.mutation<
       QuizQuestion[],
       {
-        text: string;
+        texts: string[];
         numQuestions: number;
       }
     >({
       query: (data) => ({
-        url: '/api/test-gemini',
+        url: '/api/gemini',
         method: 'POST',
         body: data
       }),

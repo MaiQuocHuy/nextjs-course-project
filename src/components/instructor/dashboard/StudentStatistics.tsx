@@ -34,7 +34,7 @@ export const StudentStatistics = ({
             {enrolledStudents
               .slice(
                 0,
-                enrolledStudents.length > 4 ? 4 : enrolledStudents.length
+                enrolledStudents.length > 3 ? 3 : enrolledStudents.length
               )
               .map((student) => (
                 <Link

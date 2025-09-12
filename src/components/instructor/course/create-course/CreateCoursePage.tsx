@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-
-import type { CourseBasicInfoType } from '@/utils/instructor/create-course-validations/course-basic-info-validation';
+import type { CourseBasicInfoType } from '@/utils/instructor/course/create-course-validations/course-basic-info-validation';
 import { CreateCourseBasicInforPage } from '@/components/instructor/course/create-course/create-basic-infor/CreateCourseBasicInforPage';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '../../commom/WarningAlert';
-import SectionsLessonsManager2 from '../SectionsLessonsManager2';
+import SectionsLessonsManager2 from './create-lessons/CourseContent';
 
 export default function CreateCoursePage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -110,14 +110,6 @@ export default function CreateCoursePage() {
             setProgress={(progress) => setProgress(progress)}
           />
         )}
-
-        {/* {currentStep === 1 && (
-          <SectionsLessonsManager2
-            courseId='abc'
-            mode="create"
-            setProgress={(progress) => setProgress(progress)}
-          />
-        )} */}
 
         <WarningAlert
           open={isDeleteDialogOpen}

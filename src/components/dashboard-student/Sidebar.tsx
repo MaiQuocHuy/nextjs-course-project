@@ -9,6 +9,7 @@ import {
   CreditCard,
   List,
   Star,
+  Award,
   Menu,
   X,
   Coins,
@@ -34,6 +35,11 @@ const navigationItems = [
     label: "My Courses",
     href: "/dashboard/my-courses",
     icon: BookOpen,
+  },
+  {
+    label: "Certificates",
+    href: "/dashboard/certificates",
+    icon: Award,
   },
   {
     label: "Quiz Results",

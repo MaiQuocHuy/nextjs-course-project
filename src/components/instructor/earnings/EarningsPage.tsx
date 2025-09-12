@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import EarningsPageSkeleton from './EarningsPageSkeleton';
 import {
   Select,
   SelectContent,
@@ -18,25 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DollarSign,
-  TrendingUp,
-  Wallet,
-  BookOpen,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { DollarSign, Wallet, BookOpen } from 'lucide-react';
 import { useGetInsEarningsQuery } from '@/services/instructor/earnings/earnings-ins-api';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import { InsEarningsDetail } from '@/types/instructor/earnings';
+import { ErrorComponent } from '../commom/ErrorComponent';
+import { Pagination } from '@/components/common/Pagination';
 
 interface DateRange {
   from?: Date;
@@ -52,8 +39,6 @@ const formatCurrency = (amount: number) => {
 };
 
 export const EarningsPage = () => {
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [sort, setSort] = useState('paidAt,desc');
@@ -108,25 +93,28 @@ export const EarningsPage = () => {
   }, [data, courseId]);
 
   const getStatusColor = (status: string) => {
+    if (status) {
+      status = status.toUpperCase();
+    }
     switch (status) {
-      case 'COMPLETED':
-      case 'completed':
-        return 'bg-success text-success-foreground';
+      case 'PAID':
+        return 'bg-emerald-600 text-white font-medium';
       case 'PENDING':
-      case 'pending':
         return 'bg-warning text-warning-foreground';
-      case 'FAILED':
-      case 'failed':
-        return 'bg-destructive text-destructive-foreground';
+      case 'AVAILABLE':
+        return 'bg-blue-500 text-white';
       default:
         return 'bg-secondary text-secondary-foreground';
     }
   };
 
-  // Calculate total pages
-  const totalPages = data?.earnings?.page
-    ? Math.ceil(data.earnings.page.totalElements / size)
-    : 0;
+  if (isLoading) {
+    return <EarningsPageSkeleton />;
+  }
+
+  if (isError) {
+    return <ErrorComponent onRetry={refetch} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -182,24 +170,6 @@ export const EarningsPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Available Balance */}
-              {/* <Card className="shadow-card">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Available Balance
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-warning" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {data.summary.totalEarnings}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Ready for withdrawal
-                  </p>
-                </CardContent>
-              </Card> */}
-
               {/* Total Transactions */}
               <Card className="shadow-card">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -218,211 +188,132 @@ export const EarningsPage = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Filters */}
+            {courses.size > 0 && (
+              <Card className="mb-6 gap-2">
+                <CardHeader>
+                  <CardTitle className="text-lg">Filter Earnings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                    {/* Course filter */}
+                    <div className="col-span-2 space-y-2">
+                      <Label>Course</Label>
+                      <Select
+                        value={courseId ? courseId : 'all'}
+                        onValueChange={(value) =>
+                          setCourseId(value !== 'all' ? value : undefined)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All courses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All courses</SelectItem>
+                          {Array.from(courses).map((course) => (
+                            <SelectItem key={course.id} value={course.id}>
+                              {course.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* From date */}
+                    <div className="space-y-2">
+                      <Label>From Date</Label>
+                      <Input
+                        type="date"
+                        value={
+                          dateRange?.from
+                            ? format(dateRange.from, 'yyyy-MM-dd')
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const date = e.target.value
+                            ? new Date(e.target.value)
+                            : undefined;
+                          setDateRange((prev) => ({
+                            from: date,
+                            to: prev?.to,
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    {/* To date */}
+                    <div className="space-y-2">
+                      <Label>To Date</Label>
+                      <Input
+                        type="date"
+                        value={
+                          dateRange?.to
+                            ? format(dateRange.to, 'yyyy-MM-dd')
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const date = e.target.value
+                            ? new Date(e.target.value)
+                            : undefined;
+                          setDateRange((prev) => ({
+                            from: prev?.from,
+                            to: date,
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    {/* Sort filter */}
+                    <div className="space-y-2">
+                      <Label>Sort By</Label>
+                      <Select
+                        value={sort}
+                        onValueChange={(value) => setSort(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sort by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="paidAt,desc">
+                            Latest Date
+                          </SelectItem>
+                          <SelectItem value="paidAt,asc">
+                            Oldest Date
+                          </SelectItem>
+                          <SelectItem value="amount,desc">
+                            Highest Amount
+                          </SelectItem>
+                          <SelectItem value="amount,asc">
+                            Lowest Amount
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="mt-6">
+                      {/* Clear filters */}
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCourseId(undefined);
+                          setDateRange(undefined);
+                          setSort('paidAt,desc');
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </>
-        )}
-
-        {/* Filters */}
-        {courses.size > 0 && (
-          <Card className="mb-6 gap-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Filter Earnings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                {/* Course filter */}
-                <div className="col-span-2 space-y-2">
-                  <Label>Course</Label>
-                  <Select
-                    value={courseId ? courseId : 'all'}
-                    onValueChange={(value) =>
-                      setCourseId(value !== 'all' ? value : undefined)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All courses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All courses</SelectItem>
-                      {Array.from(courses).map((course) => (
-                        <SelectItem key={course.id} value={course.id}>
-                          {course.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* From date */}
-                <div className="space-y-2">
-                  <Label>From Date</Label>
-                  <Input
-                    type="date"
-                    value={
-                      dateRange?.from
-                        ? format(dateRange.from, 'yyyy-MM-dd')
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const date = e.target.value
-                        ? new Date(e.target.value)
-                        : undefined;
-                      setDateRange((prev) => ({
-                        from: date,
-                        to: prev?.to,
-                      }));
-                    }}
-                  />
-                </div>
-
-                {/* To date */}
-                <div className="space-y-2">
-                  <Label>To Date</Label>
-                  <Input
-                    type="date"
-                    value={
-                      dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : ''
-                    }
-                    onChange={(e) => {
-                      const date = e.target.value
-                        ? new Date(e.target.value)
-                        : undefined;
-                      setDateRange((prev) => ({
-                        from: prev?.from,
-                        to: date,
-                      }));
-                    }}
-                  />
-                </div>
-
-                {/* Sort filter */}
-                <div className="space-y-2">
-                  <Label>Sort By</Label>
-                  <Select
-                    value={sort}
-                    onValueChange={(value) => setSort(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="paidAt,desc">Latest Date</SelectItem>
-                      <SelectItem value="paidAt,asc">Oldest Date</SelectItem>
-                      <SelectItem value="amount,desc">
-                        Highest Amount
-                      </SelectItem>
-                      <SelectItem value="amount,asc">Lowest Amount</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="mt-6">
-                  {/* Clear filters */}
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setCourseId(undefined);
-                      setDateRange(undefined);
-                      setSort('paidAt,desc');
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         )}
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-          <p>Loading earnings data...</p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {isError && (
-        <div className="flex flex-col items-center justify-center py-8">
-          <AlertCircle className="h-8 w-8 text-destructive mb-4" />
-          <p>Failed to load earnings data. Please try again.</p>
-          <Button variant="outline" onClick={() => refetch()} className="mt-4">
-            Retry
-          </Button>
-        </div>
-      )}
-
-      {/* Content when data is loaded */}
-      {data && !isLoading && !isError && (
+      {data && (
         <>
-          {/* Stats Cards */}
-          {/* <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="shadow-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Earnings
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(data.summary.totalEarnings || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  All-time earnings
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Paid Amount
-                </CardTitle>
-                <Wallet className="h-4 w-4 text-success" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(data.summary.paidAmount || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">Amount received</p>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Available Balance
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-warning" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(
-                    (data.summary.totalEarnings || 0) -
-                      (data.summary.paidAmount || 0)
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ready for withdrawal
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="shadow-card">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Transactions
-                </CardTitle>
-                <BookOpen className="h-4 w-4 text-instructor-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {data.summary.totalTransactions}
-                </div>
-                <p className="text-xs text-muted-foreground">Completed sales</p>
-              </CardContent>
-            </Card>
-          </div> */}
-
           {/* Earnings Table */}
           <Card>
             <CardHeader>
@@ -431,6 +322,7 @@ export const EarningsPage = () => {
                 Your course earnings and payment status
               </CardDescription>
             </CardHeader>
+
             <CardContent>
               {data.earnings.content.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
@@ -447,6 +339,9 @@ export const EarningsPage = () => {
                     <table className="w-full text-sm">
                       <thead className="text-xs uppercase bg-muted/50">
                         <tr>
+                          <th scope="col" className="px-4 py-3 text-center w-12">
+                            No.
+                          </th>
                           <th scope="col" className="px-4 py-3 text-left">
                             Course
                           </th>
@@ -462,15 +357,19 @@ export const EarningsPage = () => {
                           <th scope="col" className="px-4 py-3 text-center">
                             Status
                           </th>
-                          <th scope="col" className="px-4 py-3 text-right">
+                          <th scope="col" className="px-4 py-3 text-center">
                             Date
                           </th>
                         </tr>
                       </thead>
+
                       <tbody>
                         {data.earnings.content.map(
-                          (earning: InsEarningsDetail) => (
+                          (earning: InsEarningsDetail, index: number) => (
                             <tr key={earning.id} className="border-b">
+                              <td className="px-4 py-4 text-center font-medium">
+                                {page * size + index + 1}
+                              </td>
                               <td className="px-4 py-4">
                                 <div className="flex items-center space-x-3">
                                   <div className="h-10 w-10 rounded bg-muted">
@@ -522,56 +421,14 @@ export const EarningsPage = () => {
                   </div>
 
                   {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex justify-center mt-6">
-                      <Pagination>
-                        <PaginationContent>
-                          <PaginationItem>
-                            <PaginationPrevious
-                              onClick={() => setPage(Math.max(0, page - 1))}
-                              className={
-                                page === 0
-                                  ? 'pointer-events-none opacity-50'
-                                  : ''
-                              }
-                            />
-                          </PaginationItem>
-
-                          {Array.from(
-                            { length: Math.min(totalPages, 5) },
-                            (_, i) => {
-                              // Simple pagination logic for first 5 pages
-                              const pageNumber = i;
-                              return (
-                                <PaginationItem key={pageNumber}>
-                                  <PaginationLink
-                                    isActive={pageNumber === page}
-                                    onClick={() => setPage(pageNumber)}
-                                  >
-                                    {pageNumber + 1}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              );
-                            }
-                          )}
-
-                          {totalPages > 5 && <PaginationEllipsis />}
-
-                          <PaginationItem>
-                            <PaginationNext
-                              onClick={() =>
-                                setPage(Math.min(totalPages - 1, page + 1))
-                              }
-                              className={
-                                page === totalPages - 1
-                                  ? 'pointer-events-none opacity-50'
-                                  : ''
-                              }
-                            />
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
-                    </div>
+                  {data.earnings.page.totalPages > 0 && (
+                    <Pagination
+                      currentPage={page}
+                      itemsPerPage={size}
+                      onPageChange={(page) => setPage(page)}
+                      onItemsPerPageChange={(size) => setSize(size)}
+                      pageInfo={data.earnings.page}
+                    />
                   )}
                 </>
               )}
