@@ -27,6 +27,7 @@ import {
   getTypeVariant,
 } from "@/utils/instructor/discount-usage";
 import { useGetDiscountUsageByIdQuery } from "@/services/instructor/discount-usage/discount-usage-api";
+import { DetailsLoadingSkeleton } from "../refunds/skeletons";
 
 export const DiscountUsageDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,17 +38,7 @@ export const DiscountUsageDetailPage = () => {
   });
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 lg:p-6 space-y-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-32 bg-gray-200 rounded-lg"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-48 bg-gray-200 rounded-lg"></div>
-            <div className="h-48 bg-gray-200 rounded-lg"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <DetailsLoadingSkeleton />;
   }
 
   if (error || !data) {

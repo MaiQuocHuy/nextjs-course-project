@@ -28,6 +28,7 @@ import {
   getStatusVariant,
 } from "@/utils/instructor/affiliate-payout";
 import { useGetAffiliatePayoutByIdQuery } from "@/services/instructor/affiliate-payout/affiliate-payout-api";
+import { DetailsLoadingSkeleton } from "../refunds/skeletons";
 
 export const AffiliatePayoutDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,17 +42,7 @@ export const AffiliatePayoutDetailPage = () => {
   );
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 lg:p-6 space-y-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-32 bg-gray-200 rounded-lg"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-48 bg-gray-200 rounded-lg"></div>
-            <div className="h-48 bg-gray-200 rounded-lg"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <DetailsLoadingSkeleton />;
   }
 
   if (error || !data) {

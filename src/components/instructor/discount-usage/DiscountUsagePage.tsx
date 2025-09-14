@@ -6,15 +6,12 @@ import {
   SearchBar,
   FilterBar,
   Pagination,
-  EmptyState,
 } from "@/components/instructor/discount-usage/shared";
 import { DiscountUsageTable } from "@/components/instructor/discount-usage/DiscountUsageTable";
 import { useGetAllDiscountUsagesQuery } from "@/services/instructor/discount-usage/discount-usage-api";
-import {
-  TableLoadingSkeleton,
-  DiscountUsagesSkeleton,
-} from "./skeletons/index";
-import { TableLoadingError } from "./shared/LoadingError";
+import { EmptyState } from "../refunds/shared";
+import { TableLoadingError } from "../refunds/shared/LoadingError";
+import { RefundsSkeleton, TableLoadingSkeleton } from "../refunds/skeletons";
 
 type Filters = {
   searchQuery: string;
@@ -124,7 +121,7 @@ const DiscountUsagePage = () => {
   }, []);
 
   if (isLoading) {
-    return <DiscountUsagesSkeleton />;
+    return <RefundsSkeleton />;
   }
 
   if (error) {

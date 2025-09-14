@@ -6,15 +6,13 @@ import {
   SearchBar,
   FilterBar,
   Pagination,
-  EmptyState,
 } from "@/components/instructor/affiliate-payout/shared";
 import { AffiliatePayoutTable } from "@/components/instructor/affiliate-payout/AffiliatePayoutTable";
 import { useGetAllAffiliatePayoutsQuery } from "@/services/instructor/affiliate-payout/affiliate-payout-api";
-import {
-  TableLoadingSkeleton,
-  AffiliatePayoutsSkeleton,
-} from "./skeletons/index";
-import { TableLoadingError } from "./shared/LoadingError";
+
+import { TableLoadingError } from "../refunds/shared/LoadingError";
+import { EmptyState } from "../refunds/shared";
+import { RefundsSkeleton, TableLoadingSkeleton } from "../refunds/skeletons";
 
 type Filters = {
   searchQuery: string;
@@ -122,7 +120,7 @@ const AffiliatePayoutPage = () => {
   }, []);
 
   if (isLoading) {
-    return <AffiliatePayoutsSkeleton />;
+    return <RefundsSkeleton />;
   }
 
   if (error) {
