@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./Sidebar";
+import { NotificationTrigger } from "@/components/common/NotificationTrigger";
 import { useDashboardData } from "@/hooks/student/useDashboard";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
 import {
@@ -101,6 +102,7 @@ export function DashboardHeader() {
               </div>
             </div>
 
+
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-4 text-sm mr-4">
                 <div className="text-center">
@@ -116,6 +118,9 @@ export function DashboardHeader() {
                   <div className="text-muted-foreground">Completed</div>
                 </div>
               </div>
+
+              {/* Notification Bell */}
+              <NotificationTrigger />
 
               {/* User Dropdown Menu */}
               <DropdownMenu>
