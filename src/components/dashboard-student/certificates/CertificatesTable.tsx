@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { CustomPagination } from "@/components/ui/custom-pagination";
 import { Award, Download, Eye, Calendar, User, Search } from "lucide-react";
 import type { Certificate } from "@/types/certificate";
 import CertificateRow from "./CertificateRow";
@@ -124,33 +125,15 @@ export default function CertificatesTable({
           </div>
 
           {pageData && pageData.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-gray-500">
-                Showing {page * size + 1} to{" "}
-                {Math.min((page + 1) * size, pageData.totalElements)} of{" "}
-                {pageData.totalElements} certificates
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={pageData.first}
-                >
-                  Previous
-                </Button>
-                <span className="flex items-center px-3 text-sm">
-                  Page {page + 1} of {pageData.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={pageData.last}
-                >
-                  Next
-                </Button>
-              </div>
+            <div className="mt-6">
+              <CustomPagination
+                currentPage={page + 1}
+                totalPages={pageData.totalPages}
+                onPageChange={(p) => handlePageChange(p - 1)}
+                totalItems={pageData.totalElements}
+                itemsPerPage={size}
+                itemName="certificates"
+              />
             </div>
           )}
         </>
