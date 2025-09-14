@@ -12,6 +12,32 @@ interface FileMessageProps {
   isMobile?: boolean;
 }
 
+// Helper function to download file directly
+const downloadFile = async (url: string, fileName: string) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    // Create a temporary URL for the blob
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    // Create a temporary anchor element and trigger download
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error("Download failed:", error);
+    // Fallback to opening in new tab if download fails
+    window.open(url, "_blank");
+  }
+};
+
 export const FileMessage: React.FC<FileMessageProps> = ({
   message,
   isMobile = false,
@@ -93,22 +119,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              asChild
               className={cn(
                 "text-current hover:bg-background/20 flex-shrink-0",
                 isMobile ? "h-6 w-6 p-0" : "h-8 w-8 p-0"
               )}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                downloadFile(message.fileUrl!, fileName);
+              }}
+              title="Download image"
             >
-              <a
-                href={message.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Download image"
-              >
-                <Download
-                  className={cn(isMobile ? "w-2.5 h-2.5" : "w-3 h-3")}
-                />
-              </a>
+              <Download className={cn(isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
             </Button>
           )}
         </div>
@@ -155,20 +177,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            asChild
             className={cn(
               "text-current hover:bg-background/20 flex-shrink-0",
               isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0"
             )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              downloadFile(message.fileUrl!, fileName);
+            }}
+            title="Download PDF"
           >
-            <a
-              href={message.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open PDF in new tab"
-            >
-              <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
-            </a>
+            <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
           </Button>
         )}
       </div>
@@ -214,20 +234,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            asChild
             className={cn(
               "text-current hover:bg-background/20 flex-shrink-0",
               isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0"
             )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              downloadFile(message.fileUrl!, fileName);
+            }}
+            title="Download document"
           >
-            <a
-              href={message.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Download document"
-            >
-              <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
-            </a>
+            <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
           </Button>
         )}
       </div>
@@ -273,20 +291,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
         <Button
           size="sm"
           variant="ghost"
-          asChild
           className={cn(
             "text-current hover:bg-background/20 flex-shrink-0",
             isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0"
           )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            downloadFile(message.fileUrl!, fileName);
+          }}
+          title="Download file"
         >
-          <a
-            href={message.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Download file"
-          >
-            <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
-          </a>
+          <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
         </Button>
       )}
     </div>
