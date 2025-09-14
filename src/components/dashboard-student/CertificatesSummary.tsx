@@ -113,7 +113,7 @@ export function CertificatesSummary() {
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" className="ml-2 h-8 w-8 p-0" asChild>
-                  <Link href={`/certificates/${certificate.certificateCode}`}>
+                  <Link href={`/certificates?code=${certificate.certificateCode}`}>
                     <Eye className="h-4 w-4" />
                     <span className="sr-only">View certificate</span>
                   </Link>
