@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
 import { useChatInfiniteScroll } from "@/hooks/useChatInfiniteScroll";
 import { useInfiniteScroll } from "@/hooks/student/useInfiniteScroll";
-import { useEmojiUtils } from "@/hooks/useEmojiUtils";
+import { useEmojiUtils } from "@/hooks/student/useEmojiUtils";
 import { useFileUpload } from "@/hooks/student/useFileUpload";
 import {
   useSendMessageMutation,
