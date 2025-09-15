@@ -87,10 +87,10 @@ export function Loading({
 }
 
 // Skeleton loading components for specific use cases
-export function CoursesLoadingSkeleton() {
+export function CoursesLoadingSkeleton({ count }: { count?: number }) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: count || 6 }).map((_, i) => (
         <div key={i} className="border rounded-lg overflow-hidden">
           <Skeleton className="aspect-video w-full" />
           <div className="p-4 space-y-3">
