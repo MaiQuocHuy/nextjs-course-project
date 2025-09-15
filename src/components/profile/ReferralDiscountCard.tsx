@@ -59,6 +59,15 @@ export function ReferralDiscountCard() {
     error: loadError,
   } = useGetUserReferralDiscountQuery();
 
+  // Debug log để xem lỗi chi tiết
+  useEffect(() => {
+    if (loadError) {
+      console.error("Referral discount load error:", loadError);
+      console.error("Error status:", (loadError as any)?.status);
+      console.error("Error data:", (loadError as any)?.data);
+    }
+  }, [loadError]);
+
   // Load existing referral data on component mount
   useEffect(() => {
     if (existingReferralData) {
@@ -67,7 +76,12 @@ export function ReferralDiscountCard() {
   }, [existingReferralData]);
 
   // Check if error is 404 (user doesn't have referral code yet)
-  const hasNoReferralCode = loadError && (loadError as any)?.status === 404;
+  // RTK Query error format: error.status for HTTP status
+  const hasNoReferralCode =
+    loadError &&
+    ((loadError as any)?.status === 404 ||
+      (loadError as any)?.originalStatus === 404 ||
+      (loadError as any)?.data?.status === 404);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -151,8 +165,8 @@ export function ReferralDiscountCard() {
               </p>
             </div>
           </div>
-        ) : !referralData && (hasNoReferralCode || !loadError) ? (
-          // Create referral code section
+        ) : !referralData && !isLoadingExisting ? (
+          // No referral data - show create button (covers 404 and no data cases)
           <div className="text-center space-y-4">
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-100">
               <div className="mb-4">
@@ -187,7 +201,7 @@ export function ReferralDiscountCard() {
               </Button>
             </div>
           </div>
-        ) : loadError && !hasNoReferralCode ? (
+        ) : loadError && referralData === null ? (
           // Error state (not 404)
           <div className="text-center space-y-4">
             <div className="bg-red-50 rounded-lg p-6 border border-red-200">
@@ -282,7 +296,7 @@ export function ReferralDiscountCard() {
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-blue-700">
-                  {referralData.currentUsageCount}
+                  {referralData.currentUsageCount}/20
                 </p>
                 <p className="text-xs text-blue-600 mt-1">Times used</p>
               </div>
