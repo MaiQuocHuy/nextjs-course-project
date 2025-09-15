@@ -20,6 +20,24 @@ import { NotificationDto, NotificationPriority } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
+// Hook to detect mobile devices
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  return isMobile;
+};
+
 interface NotificationsModalProps {
   userId: string;
   triggerButton?: React.ReactNode;
@@ -62,6 +80,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const pageSize = 10;
+  const isMobile = useIsMobile();
 
   const {
     data: notificationsResponse,
@@ -113,6 +132,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   const handleMouseEnter = () => {
+    if (isMobile) return; // Disable hover on mobile
+    
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
@@ -121,6 +142,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   const handleMouseLeave = () => {
+    if (isMobile) return; // Disable hover on mobile
+    
     const timeout = setTimeout(() => {
       setOpen(false);
     }, 200); // 200ms delay before closing
@@ -128,6 +151,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   const handlePopoverMouseEnter = () => {
+    if (isMobile) return; // Disable hover on mobile
+    
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
@@ -135,10 +160,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   const handlePopoverMouseLeave = () => {
+    if (isMobile) return; // Disable hover on mobile
+    
     const timeout = setTimeout(() => {
       setOpen(false);
     }, 200);
     setHoverTimeout(timeout);
+  };
+
+  const handleTriggerClick = () => {
+    if (isMobile) {
+      setOpen(!open); // Toggle on click for mobile
+    }
   };
 
   // Cleanup timeout on unmount
@@ -169,6 +202,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       className="relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleTriggerClick}
     >
       <Bell className="h-5 w-5" />
       {unreadCount > 0 && (
@@ -186,7 +220,11 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         {triggerButton ? (
-          <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+          <div 
+            onMouseEnter={handleMouseEnter} 
+            onMouseLeave={handleMouseLeave}
+            onClick={handleTriggerClick}
+          >
             {triggerButton}
           </div>
         ) : (
@@ -201,6 +239,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         sideOffset={8}
         onMouseEnter={handlePopoverMouseEnter}
         onMouseLeave={handlePopoverMouseLeave}
+        onInteractOutside={(e) => {
+          // On mobile, close when clicking outside
+          if (isMobile) {
+            setOpen(false);
+          }
+        }}
       >
         <div className="flex flex-col max-h-[80vh]">
           {/* Header */}
