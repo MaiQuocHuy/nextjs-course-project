@@ -14,6 +14,7 @@ import { CustomPagination } from "@/components/ui/custom-pagination";
 import { Award, Download, Eye, Calendar, User, Search } from "lucide-react";
 import type { Certificate } from "@/types/certificate";
 import CertificateRow from "./CertificateRow";
+import CertificateMobileCard from "./CertificateMobileCard";
 
 interface Props {
   isLoading: boolean;
@@ -93,35 +94,56 @@ export default function CertificatesTable({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">#</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Instructor</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCertificates.map((certificate, index) => (
-                  <CertificateRow
-                    key={certificate.id}
-                    certificate={certificate}
-                    index={index}
-                    page={page}
-                    size={size}
-                    getStatusBadge={getStatusBadge}
-                    handleViewDetails={handleViewDetails}
-                    handleDownload={handleDownload}
-                    downloadingCertificateCode={downloadingCertificateCode}
-                    isDownloadLoading={isDownloadLoading}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+          {/* Desktop Table */}
+          <div className="hidden md:block">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">#</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Instructor</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCertificates.map((certificate, index) => (
+                    <CertificateRow
+                      key={certificate.id}
+                      certificate={certificate}
+                      index={index}
+                      page={page}
+                      size={size}
+                      getStatusBadge={getStatusBadge}
+                      handleViewDetails={handleViewDetails}
+                      handleDownload={handleDownload}
+                      downloadingCertificateCode={downloadingCertificateCode}
+                      isDownloadLoading={isDownloadLoading}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4 p-4">
+            {filteredCertificates.map((certificate, index) => (
+              <CertificateMobileCard
+                key={certificate.id}
+                certificate={certificate}
+                index={index}
+                page={page}
+                size={size}
+                getStatusBadge={getStatusBadge}
+                handleViewDetails={handleViewDetails}
+                handleDownload={handleDownload}
+                downloadingCertificateCode={downloadingCertificateCode}
+                isDownloadLoading={isDownloadLoading}
+              />
+            ))}
           </div>
 
           {pageData && pageData.totalPages > 1 && (

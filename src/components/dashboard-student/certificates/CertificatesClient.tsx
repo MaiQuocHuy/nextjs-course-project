@@ -112,27 +112,31 @@ export default function CertificatesClient() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <CardTitle>
-            Certificates ({pageData?.totalElements || 0})
-            {debouncedSearchQuery && (
-              <span className="text-sm font-normal text-gray-600 ml-2">
-                - {filteredCertificates.length} found
-              </span>
-            )}
-          </CardTitle>
-          <CertificatesHeader
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            isSearching={isSearching}
-            size={size}
-            setSize={(s: number) => {
-              setSize(s);
-              setPage(0);
-            }}
-          />
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 pb-4">
+          <div>
+            <CardTitle className="text-lg md:text-xl">
+              Certificates ({pageData?.totalElements || 0})
+              {debouncedSearchQuery && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  - {filteredCertificates.length} found
+                </span>
+              )}
+            </CardTitle>
+          </div>
+          <div className="w-full sm:w-auto">
+            <CertificatesHeader
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              isSearching={isSearching}
+              size={size}
+              setSize={(s: number) => {
+                setSize(s);
+                setPage(0);
+              }}
+            />
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           <CertificatesTable
             isLoading={isLoading}
             allCertificates={allCertificates}

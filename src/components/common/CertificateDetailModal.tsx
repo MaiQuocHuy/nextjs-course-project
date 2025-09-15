@@ -133,16 +133,18 @@ export default function CertificateDetailModal({
 
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="xl:w-[60vw] w-[100vw] sm:h-[95vh]  h-[100vh] !max-w-7xl p-0 flex flex-col">
-          <DialogHeader className="p-6 pb-2 flex-shrink-0">
+        <DialogContent className="w-[95vw] max-w-7xl h-[95vh] p-0 flex flex-col">
+          <DialogHeader className="p-4 md:p-6 pb-2 flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-blue-600" />
-                Certificate Preview
+                <Award className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+                <span className="text-sm md:text-base">
+                  Certificate Preview
+                </span>
               </span>
             </DialogTitle>
           </DialogHeader>
-          <div className="px-6 pb-6 flex-1 min-h-0">
+          <div className="px-4 md:px-6 pb-4 md:pb-6 flex-1 min-h-0">
             <iframe
               src={getViewUrl(previewUrl)}
               className="w-full h-full border rounded-lg"
@@ -164,21 +166,23 @@ export default function CertificateDetailModal({
     <div>
       <CertificatePreview />
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="!max-w-[60vw] w-[60vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-blue-600" />
-              Certificate Details
+              <Award className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+              <span className="text-sm md:text-base">Certificate Details</span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Action Buttons at the top */}
-            <div className="flex flex-wrap gap-3 pt-2 border-b pb-4">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-2 border-b pb-4">
               {isLoading ? (
                 <div className="flex items-center gap-2 text-gray-500">
                   <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                  Loading certificate details...
+                  <span className="text-sm">
+                    Loading certificate details...
+                  </span>
                 </div>
               ) : (
                 <>
@@ -186,10 +190,11 @@ export default function CertificateDetailModal({
                     certificateDetail?.fileUrl && (
                       <Button
                         onClick={handleViewCertificate}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                        size="sm"
                       >
                         <Eye className="h-4 w-4" />
-                        View Certificate
+                        <span className="text-sm">View Certificate</span>
                       </Button>
                     )}
 
@@ -198,50 +203,52 @@ export default function CertificateDetailModal({
                       <Button
                         onClick={handleDownload}
                         variant="outline"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                        size="sm"
                       >
                         <Download className="h-4 w-4" />
-                        Download Certificate
+                        <span className="text-sm">Download</span>
                       </Button>
                     )}
 
                   <Button
                     variant="outline"
                     onClick={handleViewPublic}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto"
+                    size="sm"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    View Public Page
+                    <span className="text-sm">View Public</span>
                   </Button>
                 </>
               )}
             </div>
             {/* Certificate Header */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-4">
+                <div className="flex-1">
+                  <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 line-clamp-2">
                     {certificate.courseTitle}
                   </h3>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(certificate.fileStatus)}
                   </div>
                 </div>
-                <Award className="h-12 w-12 text-blue-600" />
+                <Award className="h-10 w-10 md:h-12 md:w-12 text-blue-600 shrink-0" />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-gray-500 shrink-0" />
                   <span className="text-gray-600">Issued:</span>
                   <span className="font-medium">
                     {formatDate(certificate.issuedAt)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-500" />
+                  <User className="h-4 w-4 text-gray-500 shrink-0" />
                   <span className="text-gray-600">Instructor:</span>
-                  <span className="font-medium">
+                  <span className="font-medium truncate">
                     {certificateDetail?.course?.instructorName ||
                       certificate.instructorName}
                   </span>
@@ -254,34 +261,35 @@ export default function CertificateDetailModal({
               <label className="text-sm font-medium text-gray-700">
                 Certificate Code
               </label>
-              <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
-                <code className="flex-1 font-mono text-sm">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-3 bg-gray-50 border rounded-lg">
+                <code className="flex-1 font-mono text-xs sm:text-sm break-all">
                   {certificate.certificateCode}
                 </code>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleCopyCode}
-                  className="h-8 w-8 p-0"
+                  className="w-full sm:w-auto sm:h-8 sm:px-3 self-stretch sm:self-auto"
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-600" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
+                  <span className="ml-2 sm:hidden">Copy Code</span>
                 </Button>
               </div>
             </div>
 
             {/* Recipient Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
                   {isInstructorView ? "Student Name" : "Recipient Name"}
                 </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <span>
+                  <User className="h-4 w-4 text-gray-500 shrink-0" />
+                  <span className="text-sm truncate">
                     {certificateDetail?.user?.name || certificate.userName}
                   </span>
                 </div>
@@ -291,8 +299,8 @@ export default function CertificateDetailModal({
                   Email Address
                 </label>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span>
+                  <Mail className="h-4 w-4 text-gray-500 shrink-0" />
+                  <span className="text-sm truncate">
                     {certificateDetail?.user?.email || certificate.userEmail}
                   </span>
                 </div>
@@ -304,8 +312,8 @@ export default function CertificateDetailModal({
                 Course Title
               </label>
               <div className="flex items-center gap-2 p-3 bg-gray-50 border rounded-lg">
-                <BookOpen className="h-4 w-4 text-gray-500" />
-                <span>
+                <BookOpen className="h-4 w-4 text-gray-500 shrink-0" />
+                <span className="text-sm">
                   {certificateDetail?.course?.title || certificate.courseTitle}
                 </span>
               </div>
