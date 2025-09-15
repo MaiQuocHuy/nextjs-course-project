@@ -2,26 +2,15 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Award, Download, Eye, Calendar, User } from "lucide-react";
 import {
   useGetCertificateByCodeQuery,
   useGetMyCertificatesQuery,
 } from "@/services/common/certificateApi";
-import { formatDate } from "@/utils/formatDate";
 import CertificateDetailModal from "@/components/common/CertificateDetailModal";
 import CertificatesHeader from "./CertificatesHeader";
 import CertificatesTable from "./CertificatesTable";
 import type { Certificate } from "@/types/certificate";
+import { getCertificateStatusBadge } from "@/utils/student";
 
 export default function CertificatesClient() {
   const [page, setPage] = useState(0);
@@ -68,21 +57,6 @@ export default function CertificatesClient() {
         certificate.certificateCode.toLowerCase().includes(query)
     );
   }, [allCertificates, debouncedSearchQuery]);
-
-  const getStatusBadge = (status: Certificate["fileStatus"]) => {
-    switch (status) {
-      case "GENERATED":
-        return (
-          <Badge variant="default" className="bg-green-500">
-            Generated
-          </Badge>
-        );
-      case "PENDING":
-        return <Badge variant="secondary">Pending</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
 
   const handleViewDetails = (certificate: Certificate) => {
     setSelectedCertificate(certificate);
@@ -144,7 +118,7 @@ export default function CertificatesClient() {
             page={page}
             size={size}
             pageData={pageData}
-            getStatusBadge={getStatusBadge}
+            getStatusBadge={getCertificateStatusBadge}
             handleViewDetails={handleViewDetails}
             handleDownload={handleDownload}
             downloadingCertificateCode={downloadingCertificateCode}

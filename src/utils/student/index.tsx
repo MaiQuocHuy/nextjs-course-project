@@ -149,3 +149,32 @@ export const getAffiliateStatusBadge = (status: string) => {
       );
   }
 };
+
+export const getCertificateStatusBadge = (status: string) => {
+  switch (status) {
+    case "GENERATED":
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">
+          Generated
+        </Badge>
+      );
+    case "PENDING":
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-xs">
+          Pending
+        </Badge>
+      );
+    case "CANCELLED":
+      return (
+        <Badge className="bg-red-100 text-red-800 hover:bg-red-100 text-xs">
+          Cancelled
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline" className="text-xs">
+          {status}
+        </Badge>
+      );
+  }
+};
