@@ -73,7 +73,19 @@ export const studentApi = createApi({
     // Get enrolled courses without pagination
     getAllEnrolledCourses: builder.query<Course[], void>({
       query: () => ({
+        method: "GET",
         url: "/student/courses/all", // Assuming a large size to get all courses
+      }),
+      providesTags: ["Course"],
+      transformResponse: (response: { data: Course[] }) => {
+        return response.data;
+      },
+    }),
+    // Get 3 recent enrolled courses for dashboard
+    getRecentEnrolledCourses: builder.query<Course[], void>({
+      query: () => ({
+        url: "/student/courses/recent",
+        method: "GET",
       }),
       providesTags: ["Course"],
       transformResponse: (response: { data: Course[] }) => {
@@ -466,6 +478,7 @@ export const studentApi = createApi({
 
 export const {
   useGetEnrolledCoursesQuery,
+  useGetRecentEnrolledCoursesQuery,
   useGetAllEnrolledCoursesQuery,
   useGetCourseDetailsQuery,
   useGetCourseSectionsQuery,
