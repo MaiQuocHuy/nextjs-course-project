@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import ReCAPTCHA from "react-google-recaptcha";
 import {
   Search,
   Award,
@@ -12,6 +13,7 @@ import {
   Eye,
   AlertCircle,
   CheckCircle,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +23,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 // Import the API hook and types
-import { useLazyGetCertificateByCodeQuery, type TransformedCertificateResponse } from "@/services";
+import {
+  useLazyGetCertificateByCodeQuery,
+  type TransformedCertificateResponse,
+} from "@/services";
 
 // Use the transformed certificate type
 type CertificateData = TransformedCertificateResponse;
@@ -31,12 +36,16 @@ export default function CertificateSearchPage() {
   const [searchCode, setSearchCode] = useState("");
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
-  const [getCertificateByCode, { isLoading }] = useLazyGetCertificateByCodeQuery();
+  const [getCertificateByCode, { isLoading }] =
+    useLazyGetCertificateByCodeQuery();
 
   // Handle query parameter on component mount
   useEffect(() => {
-    const codeFromQuery = searchParams.get('code');
+    const codeFromQuery = searchParams.get("code");
     if (codeFromQuery) {
       setSearchCode(codeFromQuery);
       // Automatically search when code is provided via query parameter
@@ -66,8 +75,43 @@ export default function CertificateSearchPage() {
     }
   };
 
+  // Handle CAPTCHA verification
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
+
   const handleSearch = async () => {
+    // Clear previous results
+    setCertificate(null);
+    setSearchError(null);
+
+    if (!searchCode.trim()) {
+      setSearchError("Please enter a certificate code");
+      return;
+    }
+
+    // Show CAPTCHA if not already verified
+    if (!captchaToken) {
+      setShowCaptcha(true);
+      setSearchError("Please complete the CAPTCHA verification");
+      return;
+    }
+
+    // Perform search with CAPTCHA verification
     await handleSearchWithCode(searchCode);
+
+    // Reset CAPTCHA after search
+    setCaptchaToken(null);
+    setShowCaptcha(false);
+    if (recaptchaRef.current) {
+      recaptchaRef.current.reset();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   const handleDownload = () => {
@@ -107,7 +151,9 @@ export default function CertificateSearchPage() {
     viewUrl = viewUrl.replace("/fl_attachment", "");
 
     // Transform URL to be absolute if needed
-    const url = viewUrl.startsWith("http") ? viewUrl : `${window.location.origin}${viewUrl}`;
+    const url = viewUrl.startsWith("http")
+      ? viewUrl
+      : `${window.location.origin}${viewUrl}`;
 
     // Open in new tab
     window.open(url, "_blank");
@@ -125,14 +171,20 @@ export default function CertificateSearchPage() {
     switch (status) {
       case "GENERATED":
         return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+          <Badge
+            variant="default"
+            className="bg-green-100 text-green-800 border-green-200"
+          >
             <CheckCircle className="h-3 w-3 mr-1" />
             Generated
           </Badge>
         );
       case "PENDING":
         return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          <Badge
+            variant="secondary"
+            className="bg-yellow-100 text-yellow-800 border-yellow-200"
+          >
             <AlertCircle className="h-3 w-3 mr-1" />
             Processing
           </Badge>
@@ -157,10 +209,12 @@ export default function CertificateSearchPage() {
               <Award className="h-8 w-8 text-blue-600" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Certificate Lookup</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Certificate Lookup
+          </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Enter the certificate code to verify authenticity and view detailed information about
-            course completion certificate
+            Enter the certificate code to verify authenticity and view detailed
+            information about course completion certificate
           </p>
         </div>
 
@@ -178,12 +232,23 @@ export default function CertificateSearchPage() {
                 <Input
                   placeholder="Enter certificate code (e.g., RC-2025-001-ABCD1234)"
                   value={searchCode}
-                  onChange={(e) => setSearchCode(e.target.value)}
+                  onChange={(e) => {
+                    setSearchCode(e.target.value);
+                    // Show CAPTCHA when user starts typing and hasn't verified yet
+                    if (e.target.value.trim() && !captchaToken) {
+                      setShowCaptcha(true);
+                    }
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="h-12 text-lg"
                 />
               </div>
-              <Button onClick={handleSearch} disabled={isLoading} className="h-12 px-8" size="lg">
+              <Button
+                onClick={handleSearch}
+                disabled={isLoading || !captchaToken}
+                className="h-12 px-8"
+                size="lg"
+              >
                 {isLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
@@ -197,6 +262,23 @@ export default function CertificateSearchPage() {
                 )}
               </Button>
             </div>
+
+            {/* CAPTCHA Section */}
+            {showCaptcha && (
+              <div className="mt-6 flex flex-col items-center space-y-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Shield className="h-4 w-4" />
+                  Please verify you are human to search for certificates
+                </div>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                  onChange={handleCaptchaChange}
+                  theme="light"
+                  size="normal"
+                />
+              </div>
+            )}
 
             {searchError && (
               <Alert variant="destructive" className="mt-4">
@@ -225,7 +307,9 @@ export default function CertificateSearchPage() {
                   </h2>
                   <p className="text-gray-600">Certificate Code</p>
                 </div>
-                <div className="text-right">{getStatusBadge(certificate.fileStatus)}</div>
+                <div className="text-right">
+                  {getStatusBadge(certificate.fileStatus)}
+                </div>
               </div>
 
               <Separator className="my-8" />
@@ -240,11 +324,17 @@ export default function CertificateSearchPage() {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Full Name</label>
-                      <p className="text-lg font-medium text-gray-900">{certificate.userName}</p>
+                      <label className="text-sm font-medium text-gray-600">
+                        Full Name
+                      </label>
+                      <p className="text-lg font-medium text-gray-900">
+                        {certificate.userName}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <label className="text-sm font-medium text-gray-600">
+                        Email
+                      </label>
                       <p className="text-gray-900">{certificate.userEmail}</p>
                     </div>
                   </div>
@@ -258,12 +348,20 @@ export default function CertificateSearchPage() {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Course Name</label>
-                      <p className="text-lg font-medium text-gray-900">{certificate.courseTitle}</p>
+                      <label className="text-sm font-medium text-gray-600">
+                        Course Name
+                      </label>
+                      <p className="text-lg font-medium text-gray-900">
+                        {certificate.courseTitle}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Instructor</label>
-                      <p className="text-gray-900">{certificate.instructorName}</p>
+                      <label className="text-sm font-medium text-gray-600">
+                        Instructor
+                      </label>
+                      <p className="text-gray-900">
+                        {certificate.instructorName}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -307,7 +405,9 @@ export default function CertificateSearchPage() {
                   }
                 >
                   <Download className="h-4 w-4" />
-                  {certificate.fileStatus === "PENDING" ? "Processing..." : "Download"}
+                  {certificate.fileStatus === "PENDING"
+                    ? "Processing..."
+                    : "Download"}
                 </Button>
               </div>
 
@@ -315,7 +415,8 @@ export default function CertificateSearchPage() {
                 <Alert className="mt-8">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Certificate is being generated. Please come back in a few minutes to download.
+                    Certificate is being generated. Please come back in a few
+                    minutes to download.
                   </AlertDescription>
                 </Alert>
               )}
@@ -337,7 +438,8 @@ export default function CertificateSearchPage() {
                   </div>
                   <h4 className="font-semibold mb-2">Enter Certificate Code</h4>
                   <p className="text-sm text-gray-600">
-                    Enter the certificate code you received after completing the course
+                    Enter the certificate code you received after completing the
+                    course
                   </p>
                 </div>
                 <div className="text-center">
