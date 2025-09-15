@@ -1,18 +1,18 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useDashboardData } from "@/hooks/student/useDashboard";
+import { useGetDashboardStatsQuery } from "@/services/student/studentApi";
 import { BookOpen, Award, Clock, Target, TrendingUp } from "lucide-react";
 import { StatsLoadingSkeleton } from "./ui/Loading";
 import { StatsError } from "./ui/LoadingError";
 
 export function DashboardStats() {
   const {
-    data: dashboardData,
+    data: dashboardStats,
     error,
     isLoading,
     refetch,
-  } = useDashboardData({ page: 0, size: 20 });
+  } = useGetDashboardStatsQuery();
 
   if (isLoading) {
     return <StatsLoadingSkeleton />;
@@ -27,9 +27,9 @@ export function DashboardStats() {
     totalCourses = 0,
     completedCourses = 0,
     inProgressCourses = 0,
-    completedLessons = 0,
+    lessonsCompleted = 0,
     totalLessons = 0,
-  } = dashboardData?.stats || {};
+  } = dashboardStats || {};
 
   const statCards = [
     {
@@ -55,8 +55,8 @@ export function DashboardStats() {
     },
     {
       title: "Lessons Completed",
-      value: completedLessons,
-      description: `${completedLessons} of ${totalLessons} lessons completed`,
+      value: lessonsCompleted,
+      description: `${lessonsCompleted} of ${totalLessons} lessons completed`,
       icon: TrendingUp,
       color: "text-purple-600",
     },

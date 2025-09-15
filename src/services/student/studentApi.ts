@@ -92,6 +92,29 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
+    // Get student dashboard statistics
+    getDashboardStats: builder.query<{
+      totalCourses: number;
+      completedCourses: number;
+      inProgressCourses: number;
+      lessonsCompleted: number;
+      totalLessons: number;
+    }, void>({
+      query: () => ({
+        url: "/student/courses/dashboard-stats",
+        method: "GET",
+      }),
+      providesTags: ["Course"],
+      transformResponse: (response: { data: {
+        totalCourses: number;
+        completedCourses: number;
+        inProgressCourses: number;
+        lessonsCompleted: number;
+        totalLessons: number;
+      }}) => {
+        return response.data;
+      },
+    }),
     // Get course details with sections and lessons
     getCourseDetails: builder.query<CourseSections, string>({
       query: (courseId) => ({
@@ -483,6 +506,7 @@ export const {
   useGetCourseDetailsQuery,
   useGetCourseSectionsQuery,
   useGetDashboardDataCompleteQuery,
+  useGetDashboardStatsQuery,
   useCompleteLessonMutation,
   useGetPaymentsQuery,
   useGetPaymentDetailQuery,
