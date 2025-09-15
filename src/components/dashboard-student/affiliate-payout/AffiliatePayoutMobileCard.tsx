@@ -16,7 +16,11 @@ import {
   ChevronRight,
   Hash,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/utils/student";
+import {
+  formatCurrency,
+  formatDate,
+  getAffiliateStatusBadge,
+} from "@/utils/student";
 
 interface AffiliatePayoutMobileCardProps {
   affiliatePayout: AffiliatePayout;
@@ -46,30 +50,6 @@ export function AffiliatePayoutMobileCard({
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-        return (
-          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-            Paid
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
-          >
-            Pending
-          </Badge>
-        );
-      case "cancelled":
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
   return (
     <Card className="hover:shadow-md transition-shadow pb-0">
       <CardContent className="p-4 space-y-3">
@@ -81,8 +61,15 @@ export function AffiliatePayoutMobileCard({
               {affiliatePayout.discountUsage?.discount?.code || "Direct Sale"}
             </Badge>
           </div>
-          {getStatusBadge(affiliatePayout.payoutStatus)}
+          {getAffiliateStatusBadge(affiliatePayout.payoutStatus)}
         </div>
+
+        {/* Discount Type */}
+        {affiliatePayout.discountUsage?.discount?.type && (
+          <p className="text-xs text-gray-500">
+            Type: {affiliatePayout.discountUsage.discount.type}
+          </p>
+        )}
 
         {/* Discount Description */}
         {affiliatePayout.discountUsage?.discount?.description && (

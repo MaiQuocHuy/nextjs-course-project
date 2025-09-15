@@ -358,8 +358,8 @@ const Chat: React.FC<ChatProps> = ({
   return (
     <Card
       className={cn(
-        "flex flex-col shadow-none border-0 gap-0 py-0",
-        "w-full h-full"
+        "flex flex-col shadow-none border-0 gap-0 py-0 rounded-none",
+        "w-full h-full max-w-full max-h-full overflow-hidden"
       )}
     >
       <ChatHeader
@@ -372,14 +372,20 @@ const Chat: React.FC<ChatProps> = ({
         onClose={onClose}
       />
 
-      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-        <div className="flex-1 overflow-hidden">
+      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden min-h-0">
+        <div className="flex-1 overflow-hidden min-h-0">
           <ScrollArea
-            className={cn("h-full", isMobile ? "p-3" : "px-4")}
+            className={cn(
+              "h-full w-full max-w-full",
+              isMobile ? "p-2" : "px-4"
+            )}
             ref={scrollAreaRef}
           >
             <div
-              className={cn("space-y-3", isMobile ? "space-y-2" : "space-y-4")}
+              className={cn(
+                "w-full max-w-full overflow-hidden",
+                isMobile ? "space-y-2" : "space-y-4"
+              )}
               ref={scrollAreaViewportRef}
             >
               {isFetchingNextPage && (

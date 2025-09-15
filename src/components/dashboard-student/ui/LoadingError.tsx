@@ -8,6 +8,8 @@ import {
   CreditCard,
   Receipt,
   MessageCircle,
+  Tag,
+  Coins,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -324,6 +326,7 @@ export function ReviewsError({ onRetry }: { onRetry?: () => void }) {
   );
 }
 
+// Payments Error Component
 export function PaymentsError({ onRetry }: { onRetry?: () => void }) {
   return (
     <Card>
@@ -357,6 +360,76 @@ export function PaymentsError({ onRetry }: { onRetry?: () => void }) {
             </div>
           </CardContent>
         </Card>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Affiliate Payouts Error Component
+export function AffiliatePayoutsError({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Coins className="h-5 w-5" />
+          Affiliate Payout History
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="py-8">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/10">
+            <Coins className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="text-center space-y-2 max-w-md">
+            <h3 className="text-lg font-semibold text-foreground">
+              Failed to Load Affiliate Payouts
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Unable to load your affiliate payouts. Please try again.
+            </p>
+          </div>
+          {onRetry && (
+            <Button variant="outline" onClick={onRetry} size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reload Affiliate Payouts
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Discount Usage Error Component
+export function DiscountUsageError({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Tag className="h-5 w-5" />
+          Discount Usage History
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="py-8">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-destructive/10">
+            <Tag className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="text-center space-y-2 max-w-md">
+            <h3 className="text-lg font-semibold text-foreground">
+              Failed to Load Discount Usage
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Unable to load your discount usage. Please try again.
+            </p>
+          </div>
+          {onRetry && (
+            <Button variant="outline" onClick={onRetry} size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reload Discount Usage
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
