@@ -65,12 +65,27 @@ export interface CreateReferralDiscountResponse {
   perUserLimit: number;
   isActive: boolean;
   currentUsageCount: number;
+  remainingUsageCount?: number;
+}
+
+export interface AvailableDiscount {
+  id: string;
+  code: string;
+  discountPercent: number;
+  description: string;
+  type: "GENERAL";
+  usageLimit?: number;
+  currentUsageCount: number;
+  remainingUsageCount?: number; // -1 = unlimited, 0+ = limited
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
 }
 
 export const paymentApi = createApi({
   reducerPath: "paymentApi",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["Payment", "ReferralDiscount"],
+  tagTypes: ["Payment", "ReferralDiscount", "AvailableDiscounts"],
   endpoints: (builder) => ({
     // Create checkout session
     createCheckoutSession: builder.mutation<
@@ -200,6 +215,24 @@ export const paymentApi = createApi({
       },
       providesTags: ["ReferralDiscount"],
     }),
+
+    // Get available public discount codes
+    getAvailableDiscounts: builder.query<AvailableDiscount[], void>({
+      query: () => ({
+        url: "/common/discounts/available",
+        method: "GET",
+      }),
+      transformResponse: (response: any) => {
+        console.log("Get available discounts API response:", response);
+        // Backend returns wrapped response with ApiResponse structure
+        return response.data;
+      },
+      transformErrorResponse: (error: any) => {
+        console.error("Get available discounts API error:", error);
+        return error.data;
+      },
+      providesTags: ["AvailableDiscounts"],
+    }),
   }),
 });
 
@@ -210,4 +243,5 @@ export const {
   useValidateDiscountMutation,
   useCreateReferralDiscountMutation,
   useGetUserReferralDiscountQuery,
+  useGetAvailableDiscountsQuery,
 } = paymentApi;
