@@ -4,56 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, FileText, BookOpen, Award, Clock } from "lucide-react";
-import { useDashboardData } from "@/hooks/student/useDashboard";
+import { useGetRecentActivitiesQuery } from "@/services/student/studentApi";
 import { LoadingError, ActivityFeedLoadingSkeleton } from "./ui";
 import { ActivityFeedError } from "./ui/LoadingError";
-import type { ActivityType } from "@/types/student/index";
-
-function getActivityIcon(type: ActivityType) {
-  switch (type) {
-    case "LESSON_COMPLETED":
-      return <CheckCircle className="h-4 w-4 text-green-600 mt-1" />;
-    case "QUIZ_SUBMITTED":
-      return <FileText className="h-4 w-4 text-blue-600 mt-1" />;
-    case "COURSE_ENROLLED":
-      return <BookOpen className="h-4 w-4 text-purple-600 mt-1" />;
-    default:
-      return <Clock className="h-4 w-4 text-gray-600 mt-1" />;
-  }
-}
-
-function getActivityBadge(type: ActivityType) {
-  switch (type) {
-    case "LESSON_COMPLETED":
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800">
-          Completed
-        </Badge>
-      );
-    case "QUIZ_SUBMITTED":
-      return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Quiz
-        </Badge>
-      );
-    case "COURSE_ENROLLED":
-      return (
-        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-          Enrolled
-        </Badge>
-      );
-    default:
-      return null;
-  }
-}
+import { getActivityIcon, getActivityBadge } from "@/utils/student";
 
 export function ActivityFeed() {
   const {
-    data: dashboardData,
+    data: activities,
     error,
     isLoading,
     refetch,
-  } = useDashboardData({ page: 0, size: 20 });
+  } = useGetRecentActivitiesQuery();
 
   if (isLoading) {
     return <ActivityFeedLoadingSkeleton />;
@@ -77,7 +39,7 @@ export function ActivityFeed() {
     );
   }
 
-  const activities = dashboardData?.activities?.content || [];
+  const activityList = activities || [];
 
   // Simple function to format relative time
   const formatTimeAgo = (dateString: string) => {
@@ -107,19 +69,19 @@ export function ActivityFeed() {
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[400px] px-6">
-          {activities && activities.length > 0 ? (
+          {activityList && activityList.length > 0 ? (
             <div className="space-y-4 pb-6">
-              {activities.map((activity, index) => (
+              {activityList.map((activity, index) => (
                 <div
-                  key={activity.id}
+                  key={`${activity.courseId}-${activity.timestamp}-${index}`}
                   className={`flex items-start space-x-4 py-4 ${
-                    index !== activities.length - 1
+                    index !== activityList.length - 1
                       ? "border-b border-border"
                       : ""
                   }`}
                 >
                   <div className="flex-shrink-0">
-                    {getActivityIcon(activity.type)}
+                    {getActivityIcon(activity.activityType)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -132,9 +94,9 @@ export function ActivityFeed() {
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {getActivityBadge(activity.type)}{" "}
+                        {getActivityBadge(activity.activityType)}{" "}
                         <time className="text-xs text-muted-foreground">
-                          {formatTimeAgo(activity.completedAt)}
+                          {formatTimeAgo(activity.timestamp)}
                         </time>
                       </div>
                     </div>

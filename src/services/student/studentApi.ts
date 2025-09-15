@@ -6,6 +6,8 @@ import type {
   PaginatedCourses,
   ActivityFeedResponse,
   DashboardData,
+  DashboardStats,
+  RecentActivity,
   Course,
   Payment,
   PaymentDetail,
@@ -93,25 +95,24 @@ export const studentApi = createApi({
       },
     }),
     // Get student dashboard statistics
-    getDashboardStats: builder.query<{
-      totalCourses: number;
-      completedCourses: number;
-      inProgressCourses: number;
-      lessonsCompleted: number;
-      totalLessons: number;
-    }, void>({
+    getDashboardStats: builder.query<DashboardStats, void>({
       query: () => ({
         url: "/student/courses/dashboard-stats",
         method: "GET",
       }),
       providesTags: ["Course"],
-      transformResponse: (response: { data: {
-        totalCourses: number;
-        completedCourses: number;
-        inProgressCourses: number;
-        lessonsCompleted: number;
-        totalLessons: number;
-      }}) => {
+      transformResponse: (response: { data: DashboardStats }) => {
+        return response.data;
+      },
+    }),
+    // Get recent student activities
+    getRecentActivities: builder.query<RecentActivity[], void>({
+      query: () => ({
+        url: "/student/courses/recent-activities",
+        method: "GET",
+      }),
+      providesTags: ["Course"],
+      transformResponse: (response: { data: RecentActivity[] }) => {
         return response.data;
       },
     }),
@@ -507,6 +508,7 @@ export const {
   useGetCourseSectionsQuery,
   useGetDashboardDataCompleteQuery,
   useGetDashboardStatsQuery,
+  useGetRecentActivitiesQuery,
   useCompleteLessonMutation,
   useGetPaymentsQuery,
   useGetPaymentDetailQuery,

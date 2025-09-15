@@ -1,5 +1,6 @@
 import { Payment } from "@/types/student";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle, FileText, BookOpen, Clock } from "lucide-react";
 
 export const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat("en-US", {
@@ -178,3 +179,41 @@ export const getCertificateStatusBadge = (status: string) => {
       );
   }
 };
+
+export function getActivityIcon(type: string) {
+  switch (type) {
+    case "LESSON_COMPLETION":
+      return <CheckCircle className="h-4 w-4 text-green-600 mt-1" />;
+    case "QUIZ_SUBMISSION":
+      return <FileText className="h-4 w-4 text-blue-600 mt-1" />;
+    case "ENROLLMENT":
+      return <BookOpen className="h-4 w-4 text-purple-600 mt-1" />;
+    default:
+      return <Clock className="h-4 w-4 text-gray-600 mt-1" />;
+  }
+}
+
+export function getActivityBadge(type: string) {
+  switch (type) {
+    case "LESSON_COMPLETION":
+      return (
+        <Badge variant="secondary" className="bg-green-100 text-green-800">
+          Completed
+        </Badge>
+      );
+    case "QUIZ_SUBMISSION":
+      return (
+        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+          Quiz
+        </Badge>
+      );
+    case "ENROLLMENT":
+      return (
+        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+          Enrolled
+        </Badge>
+      );
+    default:
+      return null;
+  }
+}

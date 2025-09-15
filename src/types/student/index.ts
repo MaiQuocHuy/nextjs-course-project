@@ -231,6 +231,32 @@ export interface DashboardData {
 }
 
 // ==============================
+// Dashboard Statistics Types
+// ==============================
+export interface DashboardStats {
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  lessonsCompleted: number;
+  totalLessons: number;
+}
+
+// ==============================
+// Recent Activities Types
+// ==============================
+export interface RecentActivity {
+  activityType: "ENROLLMENT" | "LESSON_COMPLETION" | "QUIZ_SUBMISSION";
+  title: string;
+  description: string;
+  timestamp: string;
+  courseId: string;
+  courseTitle: string;
+  lessonId: string | null;
+  lessonTitle: string | null;
+  score: number | null;
+}
+
+// ==============================
 // Payment types
 // ==============================
 export interface PaymentCourse {
