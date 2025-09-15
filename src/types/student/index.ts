@@ -7,6 +7,7 @@ export interface DiscountUsage {
     id: string;
     code: string;
     description: string;
+    type: "REFERRAL" | "GENERAL";
   };
   user: {
     name: string;
@@ -58,6 +59,7 @@ export interface AffiliatePayout {
       id: string;
       code: string;
       description: string;
+      type: "REFERRAL" | "GENERAL";
     };
     user: {
       name: string;
@@ -226,6 +228,32 @@ export interface ActivityFeedResponse {
 export interface DashboardData {
   stats: CourseStats; // Thống kê chung
   activities: ActivityFeedResponse; // Lịch sử hoạt động
+}
+
+// ==============================
+// Dashboard Statistics Types
+// ==============================
+export interface DashboardStats {
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  lessonsCompleted: number;
+  totalLessons: number;
+}
+
+// ==============================
+// Recent Activities Types
+// ==============================
+export interface RecentActivity {
+  activityType: "ENROLLMENT" | "LESSON_COMPLETION" | "QUIZ_SUBMISSION";
+  title: string;
+  description: string;
+  timestamp: string;
+  courseId: string;
+  courseTitle: string;
+  lessonId: string | null;
+  lessonTitle: string | null;
+  score: number | null;
 }
 
 // ==============================

@@ -13,6 +13,8 @@ import {
   GraduationCap,
   RefreshCw,
   Award,
+  Coins,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +33,12 @@ const navigation = [
   { name: "Certificates", href: "/instructor/certificates", icon: Award },
   { name: "Earnings", href: "/instructor/earnings", icon: DollarSign },
   { name: "Refunds", href: "/instructor/refunds", icon: RefreshCw },
+  {
+    name: "Affiliate Payouts",
+    href: "/instructor/affiliate-payout",
+    icon: Coins,
+  },
+  { name: "Discount Usage", href: "/instructor/discount-usage", icon: Tag },
   { name: "Notifications", href: "/instructor/notifications", icon: Bell },
 ];
 
@@ -42,7 +50,9 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
       {/* Logo */}
       <Link
         href="/instructor"
-        className={`flex h-16 items-center px-6 & ${isLoading && "pointer-events-none"}`}
+        className={`flex h-16 items-center px-6 & ${
+          isLoading && "pointer-events-none"
+        }`}
       >
         <div className="flex items-center space-x-3">
           <div className="rounded-lg bg-white/20 p-2">
@@ -85,7 +95,11 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
   );
 };
 
-export const InstructorSidebar = ({ open, onOpenChange, isLoading }: InstructorSidebarProps) => {
+export const InstructorSidebar = ({
+  open,
+  onOpenChange,
+  isLoading,
+}: InstructorSidebarProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <>

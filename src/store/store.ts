@@ -8,7 +8,7 @@ import { notificationApi } from "@/services/notificationApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
 import { profileApi } from "@/services/common/profileApi";
 import { chatApi } from "@/services/websocket/chatApi";
-import { certificateApi } from '@/services/common/certificateApi';
+import { certificateApi } from "@/services/common/certificateApi";
 
 // Instructor
 import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
@@ -20,6 +20,8 @@ import { earningsInstSlice } from "@/services/instructor/earnings/earnings-ins-a
 import { refundsInstSlice } from "@/services/instructor/refunds/refunds-ins-api";
 import { dashboardStatsInstSlice } from "@/services/instructor/statistics/dashboard-statistics";
 import { studentsInstSlice } from "@/services/instructor/students/students-ins-api";
+import { affiliatePayoutApi } from "@/services/instructor/affiliate-payout/affiliate-payout-api";
+import { discountUsageApi } from "@/services/instructor/discount-usage/discount-usage-api";
 
 import courseFilterReducer from "./slices/student/courseFilterSlice";
 import { settingsApi } from "@/services/common/settingsApi";
@@ -72,6 +74,8 @@ export const makeStore = () => {
       [refundsInstSlice.reducerPath]: refundsInstSlice.reducer,
       [dashboardStatsInstSlice.reducerPath]: dashboardStatsInstSlice.reducer,
       [studentsInstSlice.reducerPath]: studentsInstSlice.reducer,
+      [affiliatePayoutApi.reducerPath]: affiliatePayoutApi.reducer,
+      [discountUsageApi.reducerPath]: discountUsageApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -95,7 +99,9 @@ export const makeStore = () => {
         earningsInstSlice.middleware,
         refundsInstSlice.middleware,
         dashboardStatsInstSlice.middleware,
-        studentsInstSlice.middleware
+        studentsInstSlice.middleware,
+        affiliatePayoutApi.middleware,
+        discountUsageApi.middleware
       ),
   });
 

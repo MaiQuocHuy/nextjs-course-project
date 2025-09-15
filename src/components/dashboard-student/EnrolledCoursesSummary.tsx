@@ -6,26 +6,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen } from "lucide-react";
-import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
+import {
+  useGetEnrolledCoursesQuery,
+  useGetRecentEnrolledCoursesQuery,
+} from "@/services/student/studentApi";
 import { Loading, CoursesLoadingSkeleton } from "./ui/Loading";
 import { LoadingError, EnrolledCoursesError } from "./ui/LoadingError";
 import { CourseStatus } from "./CourseStatus";
+import { use } from "react";
 
 export function EnrolledCoursesSummary() {
-  const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
+  const { data, error, isLoading, refetch } =
+    useGetRecentEnrolledCoursesQuery();
 
   if (isLoading) {
-    return <CoursesLoadingSkeleton />;
+    return <CoursesLoadingSkeleton count={3} />;
   }
   if (error) {
     return <EnrolledCoursesError onRetry={refetch} />;
   }
 
-  const courses = data?.content || [];
-  // Chỉ hiển thị 3 khóa học gần đây nhất
-  const recentCourses = courses.slice(0, 3);
+  const recentCourses = data || [];
 
-  if (courses.length === 0) {
+  if (recentCourses.length === 0) {
     return (
       <Card className="w-full">
         <CardContent className="py-12">

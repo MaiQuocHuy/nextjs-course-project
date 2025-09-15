@@ -80,31 +80,25 @@ export function DiscountUsageTableRow({
 
         {/* User */}
         <TableCell>
-          <div className="space-y-1">
-            <div className="font-medium">{discountUsage.user.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {discountUsage.user.email}
-            </div>
-          </div>
+          <div className="font-medium">{discountUsage.user.name}</div>
         </TableCell>
 
         {/* Discount Percentage */}
-        <TableCell className="text-center">
+        <TableCell className="text-right">
           <span className="inline-flex items-center gap-1">
-            <Percent className="h-3 w-3" />
             {discountUsage.discountPercent}%
           </span>
         </TableCell>
 
         {/* Discount Amount */}
         <TableCell className="text-right">
-          <div className="font-medium text-green-600 whitespace-nowrap">
-            -{safeFormatCurrency(discountUsage.discountAmount)}
+          <div className="font-medium  whitespace-nowrap">
+            {safeFormatCurrency(discountUsage.discountAmount)}
           </div>
         </TableCell>
 
         {/* Used Date */}
-        <TableCell className="text-center">
+        <TableCell>
           <div className="text-sm text-muted-foreground">
             {safeFormatDate(discountUsage.usedAt)}
           </div>
@@ -151,17 +145,19 @@ export function DiscountUsageTableRow({
                   </p>
                 </div>
 
-                {/* Discount Details */}
+                {/* User Details */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
-                    <Tag className="h-3 w-3 text-gray-400" />
+                    <User className="h-3 w-3 text-gray-400" />
                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Discount Details
+                      User Information
                     </span>
                   </div>
                   <p className="text-sm text-gray-900">
-                    {discountUsage.discount.code} -{" "}
-                    {discountUsage.discount.description}
+                    {discountUsage.user.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {discountUsage.user.email}
                   </p>
                 </div>
 
@@ -178,20 +174,25 @@ export function DiscountUsageTableRow({
                   </p>
                 </div>
 
-                {/* User Details */}
+                {/* Discount Details */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
-                    <User className="h-3 w-3 text-gray-400" />
+                    <Tag className="h-3 w-3 text-gray-400" />
                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      User Information
+                      Discount Details
                     </span>
                   </div>
                   <p className="text-sm text-gray-900">
-                    {discountUsage.user.name}
+                    {discountUsage.discount.code}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {discountUsage.user.email}
+                    {discountUsage.discount.description}
                   </p>
+                  {discountUsage.discount.type && (
+                    <p className="text-xs text-gray-500">
+                      Type: {discountUsage.discount.type}
+                    </p>
+                  )}
                 </div>
 
                 {/* Course Details */}

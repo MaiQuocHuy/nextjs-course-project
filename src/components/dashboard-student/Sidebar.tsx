@@ -3,7 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, CreditCard, List, Star, Award, Menu, X } from "lucide-react";
+import {
+  Home,
+  BookOpen,
+  CreditCard,
+  List,
+  Star,
+  Award,
+  Menu,
+  X,
+  Coins,
+  Tag,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,11 +42,6 @@ const navigationItems = [
     icon: Award,
   },
   {
-    label: "Payments",
-    href: "/dashboard/payments",
-    icon: CreditCard,
-  },
-  {
     label: "Quiz Results",
     href: "/dashboard/quiz-results",
     icon: List,
@@ -46,14 +52,19 @@ const navigationItems = [
     icon: Star,
   },
   {
+    label: "Payments",
+    href: "/dashboard/payments",
+    icon: CreditCard,
+  },
+  {
     label: "Affiliate Payouts",
     href: "/dashboard/affiliate-payout",
-    icon: CreditCard,
+    icon: Coins,
   },
   {
     label: "Discount Usage",
     href: "/dashboard/discount-usage",
-    icon: CreditCard,
+    icon: Tag,
   },
 ];
 

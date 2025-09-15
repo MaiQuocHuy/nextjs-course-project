@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetDiscountUsagesQuery } from "@/services/student/studentApi";
 import { DiscountUsageTableHead } from "./DiscountUsageTableHead";
 import { DiscountUsageTableRow } from "./DiscountUsageTableRow";
-import { Tag } from "lucide-react";
+import { Disc, Tag } from "lucide-react";
 import { DiscountUsageMobileCard } from "./DiscountUsageMobileCard";
-import { PaymentTableLoadingSkeleton } from "../ui/Loading";
-import { PaymentsError } from "../ui/LoadingError";
+import { DiscountUsageLoadingSkeleton } from "../ui/Loading";
+import { DiscountUsageError } from "../ui/LoadingError";
 import {
   CustomPagination,
   usePagination,
@@ -32,11 +32,11 @@ export function DiscountUsageTable() {
   } = usePagination(discountUsages?.content || [], 12);
 
   if (isLoading) {
-    return <PaymentTableLoadingSkeleton />;
+    return <DiscountUsageLoadingSkeleton />;
   }
 
   if (error) {
-    return <PaymentsError onRetry={refetch} />;
+    return <DiscountUsageError onRetry={refetch} />;
   }
 
   if (!discountUsages?.content || discountUsages.content.length === 0) {

@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit2, Trash2, EllipsisVertical } from "lucide-react";
+import { Edit2, Trash2, EllipsisVertical, Ellipsis } from "lucide-react";
 import { ChatMessage } from "@/types/chat";
 
 interface MessageActionsProps {
@@ -33,9 +33,9 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 w-2 p-0 rounded-full absolute -top-0 -right-4"
+            className="h-4 w-2 p-0 rounded-full flex items-center"
           >
-            <EllipsisVertical className="w-3 h-3 p-0" />
+            <Ellipsis className="w-3 h-3 p-0" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="z-101 absolute -top-1 -right-1">
