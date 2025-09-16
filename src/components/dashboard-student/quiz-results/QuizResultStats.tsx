@@ -1,12 +1,19 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuizResultsStats } from "@/hooks/student/useQuizResults";
 import { Trophy, Target, TrendingUp, Award } from "lucide-react";
 import { StatsError, StatsLoadingSkeleton } from "../ui";
+import { useGetQuizResultStatisticsQuery } from "@/services/student/studentApi";
 
 export function QuizResultStats() {
-  const { stats, isLoading, error, refetch } = useQuizResultsStats();
+  const { data, isLoading, error, refetch } = useGetQuizResultStatisticsQuery();
+
+  const stats = data || {
+    totalQuizzes: 0,
+    passedQuizzes: 0,
+    failedQuizzes: 0,
+    averageScore: 0,
+  };
 
   if (isLoading) {
     return <StatsLoadingSkeleton />;

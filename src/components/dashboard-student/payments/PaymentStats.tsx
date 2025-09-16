@@ -2,58 +2,30 @@
 
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useGetPaymentsQuery } from "@/services/student/studentApi";
-import { DollarSign, CreditCard, Calendar, TrendingUp } from "lucide-react";
+import {
+  useGetPaymentsQuery,
+  useGetPaymentStatisticsQuery,
+} from "@/services/student/studentApi";
+import {
+  DollarSign,
+  CreditCard,
+  Calendar,
+  TrendingUp,
+  CircleCheckBig,
+  CircleX,
+} from "lucide-react";
 import { StatsLoadingSkeleton } from "../ui/Loading";
 import { StatsError } from "../ui/LoadingError";
 
 export function PaymentStats() {
-  const { data: payments, isLoading, error, refetch } = useGetPaymentsQuery();
+  const {
+    data: payments,
+    isLoading,
+    error,
+    refetch,
+  } = useGetPaymentStatisticsQuery();
 
-  const stats = useMemo(() => {
-    if (!payments) return null;
-
-    // Calculate total amount
-    const totalAmount = payments.reduce((sum, payment) => {
-      if (payment.status === "COMPLETED") {
-        return sum + payment.amount;
-      }
-      return sum;
-    }, 0);
-
-    // Count total payments
-    const totalPayments = payments.length;
-
-    // Count unique payment methods
-    const paymentMethods = new Set(
-      payments.map((payment) => payment.paymentMethod)
-    );
-    const uniqueMethodsCount = paymentMethods.size;
-
-    // Find latest payment date
-    const latestPayment = payments
-      .filter((payment) => payment.status === "COMPLETED")
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      .at(0);
-
-    const latestPaymentDate = latestPayment
-      ? new Intl.DateTimeFormat("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        }).format(new Date(latestPayment.createdAt))
-      : "No payments";
-
-    return {
-      totalAmount,
-      totalPayments,
-      uniqueMethodsCount,
-      latestPaymentDate,
-    };
-  }, [payments]);
+  const stats = payments || null;
 
   if (isLoading) {
     return <StatsLoadingSkeleton />;
@@ -97,7 +69,7 @@ export function PaymentStats() {
         </CardHeader>
         <CardContent>
           <div className="text-xl md:text-2xl font-bold">
-            {formatCurrency(stats.totalAmount)}
+            {formatCurrency(stats.totalAmountSpent)}
           </div>
           <p className="text-xs text-muted-foreground">
             From completed payments
@@ -124,15 +96,17 @@ export function PaymentStats() {
       {/* Payment Methods */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Payment Methods</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">
+            Completed payments
+          </CardTitle>
+          <CircleCheckBig className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-xl md:text-2xl font-bold">
-            {stats.uniqueMethodsCount}
+          <div className="text-xl md:text-2xl font-bold text-green-600">
+            {stats.completedPayments}
           </div>
           <p className="text-xs text-muted-foreground">
-            Different methods used
+            Successful transactions
           </p>
         </CardContent>
       </Card>
@@ -140,15 +114,15 @@ export function PaymentStats() {
       {/* Latest Payment */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Latest Payment</CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Failed payments</CardTitle>
+          <CircleX className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-base md:text-lg font-bold">
-            {stats.latestPaymentDate}
+          <div className="text-base md:text-lg font-bold text-red-600">
+            {stats.failedPayments}
           </div>
           <p className="text-xs text-muted-foreground">
-            Most recent transaction
+            Unsuccessful transactions
           </p>
         </CardContent>
       </Card>

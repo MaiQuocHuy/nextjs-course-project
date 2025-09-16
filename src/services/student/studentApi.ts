@@ -1,7 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
   PaginatedCourses,
-  DashboardStats,
   RecentActivity,
   Course,
   Payment,
@@ -16,7 +15,6 @@ import type {
   QuizSubmissionResponse,
   PaginatedDiscountUsages,
   PaginatedAffiliatePayouts,
-  AffiliatePayoutStats,
   CourseProgress,
   CourseStructure,
 } from "@/types/student/index";
@@ -29,6 +27,13 @@ import {
   CreateCommentRequest,
   UpdateCommentRequest,
 } from "@/types/student";
+import { DashboardStats } from "@/types/instructor/dashboard";
+import {
+  AffiliatePayoutStats,
+  ReviewStats,
+  PaymentStats,
+  QuizResultStats,
+} from "@/types/student/statistics";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
@@ -407,6 +412,37 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
+    getQuizResultStatistics: builder.query<QuizResultStats, void>({
+      query: () => ({
+        url: "/student/quiz-stats",
+        method: "GET",
+      }),
+      providesTags: ["Quiz"],
+      transformResponse: (response: { data: QuizResultStats }) => {
+        return response.data;
+      },
+    }),
+
+    getPaymentStatistics: builder.query<PaymentStats, void>({
+      query: () => ({
+        url: "/student/payment-stats",
+        method: "GET",
+      }),
+      providesTags: ["Payment"],
+      transformResponse: (response: { data: PaymentStats }) => {
+        return response.data;
+      },
+    }),
+    getReviewStatistics: builder.query<ReviewStats, void>({
+      query: () => ({
+        url: "/student/review-stats",
+        method: "GET",
+      }),
+      providesTags: ["Review"],
+      transformResponse: (response: { data: ReviewStats }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -436,4 +472,7 @@ export const {
   useGetDiscountUsagesQuery,
   useGetAffiliatePayoutsQuery,
   useGetAffiliatePayoutStatsQuery,
+  useGetQuizResultStatisticsQuery,
+  useGetPaymentStatisticsQuery,
+  useGetReviewStatisticsQuery,
 } = studentApi;

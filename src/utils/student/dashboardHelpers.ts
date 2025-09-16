@@ -2,10 +2,10 @@ import type {
   Course,
   CourseSections,
   Activity,
-  CourseStats,
   ActivityFeedResponse,
   Lesson,
 } from "@/types/student/index";
+import { CourseStats } from "@/types/student/statistics";
 
 // Types for better type safety
 interface CourseWithSections {

@@ -90,17 +90,6 @@ export interface PaginatedAffiliatePayouts {
   };
 }
 
-export interface AffiliatePayoutStats {
-  totalPayouts: number;
-  pendingPayouts: number;
-  paidPayouts: number;
-  cancelledPayouts: number;
-  totalCommissionAmount: number;
-  pendingCommissionAmount: number;
-  paidCommissionAmount: number;
-  cancelledCommissionAmount: number;
-}
-
 // ==============================
 // Enrolled courses của student
 // ==============================
@@ -183,17 +172,6 @@ export interface Section {
 export type CourseSections = Section[];
 
 // ==============================
-// Thống kê dashboard
-// ==============================
-export interface CourseStats {
-  totalCourses: number; // Tổng số khóa học đã đăng ký
-  completedCourses: number; // Số khóa học đã hoàn thành
-  inProgressCourses: number; // Số khóa học đang học
-  completedLessons: number; // Số bài học đã hoàn thành
-  totalLessons: number; // Tổng số bài học
-}
-
-// ==============================
 // Activity Feed types
 // ==============================
 export type ActivityType =
@@ -223,17 +201,6 @@ export interface ActivityFeedResponse {
     first: boolean;
     last: boolean;
   };
-}
-
-// ==============================
-// Dashboard Statistics Types
-// ==============================
-export interface DashboardStats {
-  totalCourses: number;
-  completedCourses: number;
-  inProgressCourses: number;
-  lessonsCompleted: number;
-  totalLessons: number;
 }
 
 // ==============================
