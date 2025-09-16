@@ -4,6 +4,7 @@ import { authApi } from "@/services/authApi";
 import { coursesApi } from "@/services/coursesApi";
 import { paymentApi } from "@/services/paymentApi";
 import { studentApi } from "@/services/student/studentApi";
+import { notificationApi } from "@/services/notificationApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
 import { profileApi } from "@/services/common/profileApi";
 import { chatApi } from "@/services/websocket/chatApi";
@@ -36,6 +37,7 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
     store.dispatch(profileApi.util.resetApiState());
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
+    store.dispatch(notificationApi.util.resetApiState());
     store.dispatch(geminiApi.util.resetApiState());
     store.dispatch(chatApi.util.resetApiState());
     store.dispatch(certificateApi.util.resetApiState());
@@ -55,6 +57,7 @@ export const makeStore = () => {
       [studentApi.reducerPath]: studentApi.reducer,
       [coursesApi.reducerPath]: coursesApi.reducer,
       [paymentApi.reducerPath]: paymentApi.reducer,
+      [notificationApi.reducerPath]: notificationApi.reducer,
       [profileApi.reducerPath]: profileApi.reducer,
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
@@ -80,6 +83,7 @@ export const makeStore = () => {
         coursesApi.middleware,
         studentApi.middleware,
         paymentApi.middleware,
+        notificationApi.middleware,
         profileApi.middleware,
         settingsApi.middleware,
         geminiApi.middleware,
