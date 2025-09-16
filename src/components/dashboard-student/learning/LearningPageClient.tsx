@@ -9,6 +9,7 @@ import { Menu } from "lucide-react";
 import { LearningLoadingSkeleton } from "../ui/Loading";
 import { LearningPageError } from "../ui";
 import { ChatBubble } from "@/components/chat";
+import { toast } from "sonner";
 
 interface LearningPageClientProps {
   courseId: string;
@@ -53,7 +54,7 @@ export default function LearningPageClient({
 
       // If no saved lesson or saved lesson doesn't exist, find first accessible lesson
       let firstAccessibleLesson = null;
-      
+
       // Find the first accessible lesson across all sections
       for (const section of courseData.sections) {
         for (const lesson of section.lessons) {
@@ -98,7 +99,7 @@ export default function LearningPageClient({
   const handleMarkComplete = (lessonId: string) => {
     // Callback from LearningContent - just log for now
     // The actual API call is handled in LearningContent component
-    console.log("Lesson marked as complete:", lessonId);
+    toast.success("Lesson marked as complete");
   };
 
   if (isLoading) {

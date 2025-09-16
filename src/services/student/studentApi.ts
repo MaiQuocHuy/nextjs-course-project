@@ -27,12 +27,12 @@ import {
   CreateCommentRequest,
   UpdateCommentRequest,
 } from "@/types/student";
-import { DashboardStats } from "@/types/instructor/dashboard";
 import {
   AffiliatePayoutStats,
   ReviewStats,
   PaymentStats,
   QuizResultStats,
+  DashboardStats,
 } from "@/types/student/statistics";
 
 export const studentApi = createApi({

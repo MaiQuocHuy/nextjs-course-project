@@ -26,6 +26,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface AffiliatePayoutTableRowProps {
   affiliatePayout: AffiliatePayout;
@@ -40,7 +41,7 @@ export function AffiliatePayoutTableRow({
     try {
       return formatCurrency(amount, "USD");
     } catch (error) {
-      console.error("Error formatting currency:", error);
+      toast.error("Error formatting currency");
       return `$${amount.toFixed(2)}`;
     }
   };
@@ -50,7 +51,7 @@ export function AffiliatePayoutTableRow({
     try {
       return formatDate(dateString);
     } catch (error) {
-      console.error("Error formatting date:", error);
+      toast.error("Error formatting date");
       return dateString;
     }
   };

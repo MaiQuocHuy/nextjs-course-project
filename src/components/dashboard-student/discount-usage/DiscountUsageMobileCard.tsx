@@ -17,6 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/utils/student";
+import { toast } from "sonner";
 
 interface DiscountUsageMobileCardProps {
   discountUsage: DiscountUsage;
@@ -31,7 +32,7 @@ export function DiscountUsageMobileCard({
     try {
       return formatCurrency(amount, "USD");
     } catch (error) {
-      console.error("Error formatting currency:", error);
+      toast.error("Error formatting currency");
       return `$${amount.toFixed(2)}`;
     }
   };
@@ -41,7 +42,7 @@ export function DiscountUsageMobileCard({
     try {
       return formatDate(dateString);
     } catch (error) {
-      console.error("Error formatting date:", error);
+      toast.error("Error formatting date");
       return dateString;
     }
   };

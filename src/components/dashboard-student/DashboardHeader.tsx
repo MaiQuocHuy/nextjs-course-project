@@ -13,9 +13,20 @@ import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./Sidebar";
 import { useGetDashboardStatsQuery } from "@/services/student/studentApi";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
-import { StatsError, LoadingError, DashboardHeaderError } from "./ui/LoadingError";
+import {
+  StatsError,
+  LoadingError,
+  DashboardHeaderError,
+} from "./ui/LoadingError";
 import { useAuth } from "@/hooks/useAuth";
-import { Mail, User, Settings, LogOut, ChevronDown, ArrowLeft } from "lucide-react";
+import {
+  Mail,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  ArrowLeft,
+} from "lucide-react";
 import Link from "next/link";
 import { NotificationTrigger } from "../common/NotificationTrigger";
 
@@ -29,7 +40,7 @@ import { NotificationTrigger } from "../common/NotificationTrigger";
 // };
 
 export function DashboardHeader() {
-  const { data: dashboardStats, error, isLoading, refetch } = useGetDashboardStatsQuery();
+  const { data, error, isLoading, refetch } = useGetDashboardStatsQuery();
   const { user, logout } = useAuth();
   if (isLoading) {
     return <DashboardHeaderLoadingSkeleton />;
@@ -37,13 +48,8 @@ export function DashboardHeader() {
   if (error) {
     return <DashboardHeaderError onRetry={refetch} />;
   }
-  const {
-    totalCourses = 0,
-    completedCourses = 0,
-    inProgressCourses = 0,
-    lessonsCompleted = 0,
-    totalLessons = 0,
-  } = dashboardStats || {};
+
+  const dashboardStats = data || null;
 
   const handleLogout = async () => {
     await logout();
@@ -66,7 +72,10 @@ export function DashboardHeader() {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Avatar className="h-8 w-8 mr-3 size-10">
-                <AvatarImage src={user?.thumbnailUrl} alt={user?.name || "User"} />
+                <AvatarImage
+                  src={user?.thumbnailUrl}
+                  alt={user?.name || "User"}
+                />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -74,7 +83,8 @@ export function DashboardHeader() {
                   Welcome, {user?.name || "Student"}!
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Completed {lessonsCompleted || 0} of {totalLessons || 0} lessons
+                  Completed {dashboardStats?.lessonsCompleted || 0} of{" "}
+                  {dashboardStats?.totalLessons || 0} lessons
                 </p>
               </div>
             </div>
@@ -82,11 +92,15 @@ export function DashboardHeader() {
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-4 text-sm mr-4">
                 <div className="text-center">
-                  <div className="font-medium">{totalCourses || 0}</div>
+                  <div className="font-medium">
+                    {dashboardStats?.totalCourses || 0}
+                  </div>
                   <div className="text-muted-foreground">Courses</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium">{completedCourses || 0}</div>
+                  <div className="font-medium">
+                    {dashboardStats?.completedCourses || 0}
+                  </div>
                   <div className="text-muted-foreground">Completed</div>
                 </div>
               </div>
@@ -97,14 +111,19 @@ export function DashboardHeader() {
               {/* User Dropdown Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center lg:border">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center lg:border"
+                  >
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user?.name || "Student"}</p>
+                      <p className="text-sm font-medium leading-none">
+                        {user?.name || "Student"}
+                      </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user?.email || "No email"}
                       </p>
@@ -132,7 +151,10 @@ export function DashboardHeader() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-600 focus:text-red-600">
-                    <button onClick={handleLogout} className="flex items-center">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center"
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
                     </button>

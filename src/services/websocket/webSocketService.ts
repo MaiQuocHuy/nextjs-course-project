@@ -1,6 +1,7 @@
 import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import { toast } from "sonner";
 
 export class WebSocketService {
   private client: Client | null = null;
@@ -47,8 +48,7 @@ export class WebSocketService {
             resolve();
           },
           onStompError: (frame) => {
-            console.error("Broker reported error:", frame.headers["message"]);
-            console.error("Additional details:", frame.body);
+            toast.error("WebSocket connection error. Please try again.");
             this.isConnected = false;
             config.onError?.(frame);
             reject(
@@ -73,14 +73,14 @@ export class WebSocketService {
                       this.config?.onReconnect?.();
                     })
                     .catch((error) => {
-                      console.error("Reconnection failed:", error);
+                      toast.error("Reconnection failed. Please try again.");
                     });
                 }
               }, 5000 * this.reconnectAttempts);
             }
           },
           onWebSocketError: (error) => {
-            console.error("WebSocket error:", error);
+            toast.error("WebSocket error. Please try again.");
             config.onError?.(error);
           },
         });
@@ -88,7 +88,7 @@ export class WebSocketService {
         // Activate the client
         this.client.activate();
       } catch (error) {
-        console.error("Error connecting to WebSocket:", error);
+        toast.error("Error connecting to WebSocket. Please try again.");
         reject(error);
       }
     });
@@ -99,7 +99,7 @@ export class WebSocketService {
    */
   private async subscribeToMessages(courseId: string) {
     if (!this.client) {
-      console.error("WebSocket client not initialized");
+      toast.error("WebSocket client not initialized");
       return;
     }
 
@@ -129,7 +129,7 @@ export class WebSocketService {
 
     const connected = await waitForStompConnected(5000);
     if (!connected) {
-      console.error("STOMP client not connected after wait - cannot subscribe");
+      toast.error("STOMP client not connected after wait - cannot subscribe");
       return;
     }
 
@@ -141,20 +141,18 @@ export class WebSocketService {
           const chatMessage: ChatMessage = JSON.parse(message.body);
           // Validate that required fields are present
           if (!chatMessage.content && chatMessage.type === "TEXT") {
-            console.warn("⚠️ Message missing content field:", chatMessage);
-            console.warn("⚠️ Available fields:", Object.keys(chatMessage));
+            toast.warning("Received message with missing content");
           }
 
           this.config?.onMessage(chatMessage);
         } catch (error) {
-          console.error("Error parsing message:", error);
-          console.error("Raw message body:", message.body);
+          toast.error("Error parsing message. Please try again.");
         }
       });
 
       return this.subscription;
     } catch (error) {
-      console.error("Error subscribing to messages:", error);
+      toast.error("Error subscribing to messages. Please try again.");
       throw error;
     }
   }
@@ -185,7 +183,7 @@ export class WebSocketService {
    */
   sendMessage(destination: string, body: any, headers: any = {}) {
     if (!this.client || !this.isConnected) {
-      console.error("WebSocket client not connected");
+      toast.error("WebSocket client not connected");
       return;
     }
 
@@ -264,12 +262,12 @@ export class WebSocketService {
    */
   testSubscription() {
     if (!this.client || !this.isConnected) {
-      console.error("Cannot test subscription: WebSocket not connected");
+      toast.error("Cannot test subscription: WebSocket not connected");
       return false;
     }
 
     if (!this.subscription) {
-      console.error("Cannot test subscription: No active subscription");
+      toast.error("Cannot test subscription: No active subscription");
       return false;
     }
 
