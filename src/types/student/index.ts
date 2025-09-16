@@ -479,3 +479,115 @@ export interface CreateCommentRequest {
 export interface UpdateCommentRequest {
   content: string;
 }
+
+// ==============================
+// Course Progress Types
+// ==============================
+export interface CourseProgressSummary {
+  completedCount: number;
+  totalLessons: number;
+  percentage: number;
+}
+
+export interface LessonProgress {
+  lessonId: string;
+  order: number;
+  status: "COMPLETED" | "UNLOCKED" | "LOCKED";
+  completedAt: string | null;
+}
+
+export interface CourseProgress {
+  summary: CourseProgressSummary;
+  lessons: LessonProgress[];
+}
+
+// ==============================
+// Course Structure Types
+// ==============================
+export interface CourseVideo {
+  id: string;
+  url: string;
+  duration: number;
+  title: string;
+  thumbnail: string;
+}
+
+export interface CourseQuizQuestion {
+  id: string;
+  questionText: string;
+  options: {
+    [key: string]: string;
+  };
+  correctAnswer: string;
+  explanation: string;
+}
+
+export interface CourseQuiz {
+  questions: CourseQuizQuestion[];
+}
+
+export interface CourseLesson {
+  id: string;
+  title: string;
+  type: "VIDEO" | "QUIZ";
+  order: number;
+  video: CourseVideo | null;
+  quiz: CourseQuiz | null;
+}
+
+export interface CourseSection {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  lessonCount: number;
+  lessons: CourseLesson[];
+}
+
+export type CourseStructure = CourseSection[];
+
+// ==============================
+// Learning Page Transformed Types
+// ==============================
+
+// Transformed lesson type with progress information for learning components
+export interface TransformedLesson {
+  id: string;
+  title: string;
+  type: "VIDEO" | "QUIZ";
+  order: number;
+  video: CourseVideo | null;
+  quiz: CourseQuiz | null;
+  isCompleted: boolean;
+  completedAt: string | null;
+  status: "COMPLETED" | "UNLOCKED" | "LOCKED";
+  progressOrder: number;
+}
+
+// Transformed section type with progress information for learning components
+export interface TransformedSection {
+  id: string;
+  title: string;
+  description: string;
+  orderIndex: number;
+  lessonCount: number;
+  lessons: TransformedLesson[];
+}
+
+// Course data with progress for learning page
+export interface CourseWithProgress {
+  course: Course;
+  sections: TransformedSection[];
+  progress: number; // Decimal percentage (0-1)
+  progressSummary: CourseProgressSummary;
+  progressData?: CourseProgress;
+}
+
+// Quiz question type for type safety in learning components
+export interface LearningQuizQuestion {
+  id: string;
+  questionText: string;
+  options: Record<string, string>;
+  correctAnswer: string;
+  explanation: string;
+}

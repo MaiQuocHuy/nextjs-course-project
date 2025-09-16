@@ -17,20 +17,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import type { Course, Section, Lesson } from "@/types/student";
+import type {
+  Course,
+  TransformedLesson,
+  TransformedSection,
+} from "@/types/student";
 
 interface LearningSidebarProps {
   course?: Course;
-  sections?: Section[];
+  sections?: TransformedSection[];
   currentLessonId?: string;
   progress?: number;
   onSelectLesson: (lessonId: string) => void;
   onClose?: () => void; // Add onClose prop for mobile
 }
 
-const getLessonIcon = (lesson: Lesson) => {
+const getLessonIcon = (lesson: TransformedLesson) => {
   if (lesson.isCompleted) {
     return <CheckCircle className="h-4 w-4 text-green-500" />;
+  }
+
+  // Show lock icon for locked lessons
+  if (lesson.status === "LOCKED") {
+    return <Lock className="h-4 w-4 text-gray-400" />;
   }
 
   switch (lesson.type) {
@@ -38,45 +47,15 @@ const getLessonIcon = (lesson: Lesson) => {
       return <Play className="h-4 w-4 text-blue-500" />;
     case "QUIZ":
       return <HelpCircle className="h-4 w-4 text-purple-500" />;
-    case "TEXT":
-      return <FileText className="h-4 w-4 text-gray-500" />;
     default:
       return <Circle className="h-4 w-4 text-gray-400" />;
   }
 };
 
-// Helper function to determine if a lesson is accessible
-const isLessonAccessible = (
-  sections: Section[],
-  targetSectionId: string,
-  targetLessonId: string
-): boolean => {
-  let allLessons: { sectionId: string; lesson: Lesson }[] = [];
-
-  // Flatten all lessons from all sections in order
-  sections.forEach((section) => {
-    section.lessons.forEach((lesson) => {
-      allLessons.push({ sectionId: section.id, lesson });
-    });
-  });
-
-  // Find the index of the target lesson
-  const targetIndex = allLessons.findIndex(
-    (item) =>
-      item.sectionId === targetSectionId && item.lesson.id === targetLessonId
-  );
-
-  if (targetIndex === -1) return false;
-  if (targetIndex === 0) return true; // First lesson is always accessible
-
-  // Check if all previous lessons are completed
-  for (let i = 0; i < targetIndex; i++) {
-    if (!allLessons[i].lesson.isCompleted) {
-      return false;
-    }
-  }
-
-  return true;
+// Helper function to determine if a lesson is accessible based on progress API status
+const isLessonAccessible = (lesson: TransformedLesson): boolean => {
+  // Use the status from the progress API directly
+  return lesson.status === "COMPLETED" || lesson.status === "UNLOCKED";
 };
 
 export function LearningSidebar({
@@ -181,11 +160,7 @@ export function LearningSidebar({
                 <div className="border-t border-gray-200">
                   <div className="space-y-0.5 sm:space-y-1">
                     {section.lessons.map((lesson) => {
-                      const isAccessible = isLessonAccessible(
-                        sections,
-                        section.id,
-                        lesson.id
-                      );
+                      const isAccessible = isLessonAccessible(lesson);
                       const isCurrentLesson = currentLessonId === lesson.id;
 
                       if (!isAccessible) {

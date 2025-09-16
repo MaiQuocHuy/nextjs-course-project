@@ -27,7 +27,12 @@ import {
   useCompleteLessonMutation,
   useSubmitQuizMutation,
 } from "@/services/student/studentApi";
-import type { Lesson, Section, QuizSubmissionResponse } from "@/types/student";
+import type { 
+  QuizSubmissionResponse, 
+  TransformedLesson, 
+  TransformedSection,
+  LearningQuizQuestion 
+} from "@/types/student";
 import { useAppDispatch } from "@/store/hook";
 import {
   markLessonCompleted,
@@ -37,8 +42,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Comments } from "./Comments";
 
 interface LearningContentProps {
-  currentLesson?: Lesson;
-  section?: Section;
+  currentLesson?: TransformedLesson;
+  section?: TransformedSection;
   courseId: string;
   onMarkComplete?: (lessonId: string) => void;
   onRefetchCourse?: () => void;
@@ -55,7 +60,7 @@ const VideoContent = ({
   lesson,
   onAutoComplete,
 }: {
-  lesson: Lesson;
+  lesson: TransformedLesson;
   onAutoComplete?: () => void;
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -718,7 +723,7 @@ const VideoContent = ({
   );
 };
 
-const TextContent = ({ lesson }: { lesson: Lesson }) => {
+const TextContent = ({ lesson }: { lesson: TransformedLesson }) => {
   return (
     <div className="prose prose-sm sm:prose max-w-none">
       <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
@@ -747,8 +752,8 @@ const QuizContent = ({
   onMarkComplete,
   onRefetchCourse,
 }: {
-  lesson: Lesson;
-  section: Section;
+  lesson: TransformedLesson;
+  section: TransformedSection;
   courseId: string;
   onMarkComplete?: () => void;
   onRefetchCourse?: () => void;
@@ -855,7 +860,7 @@ const QuizContent = ({
     // Fallback to client-side calculation if no server result
     const totalQuestions = lesson.quiz!.questions.length;
     const correctAnswers = lesson.quiz!.questions.filter(
-      (q) => quizState.answers[q.id] === q.correctAnswer
+      (q: LearningQuizQuestion) => quizState.answers[q.id] === q.correctAnswer
     ).length;
     return Math.round((correctAnswers / totalQuestions) * 100);
   };
@@ -867,12 +872,12 @@ const QuizContent = ({
 
     // Fallback to client-side calculation
     return lesson.quiz!.questions.filter(
-      (q) => quizState.answers[q.id] === q.correctAnswer
+      (q: LearningQuizQuestion) => quizState.answers[q.id] === q.correctAnswer
     ).length;
   };
 
   const allQuestionsAnswered = lesson.quiz.questions.every(
-    (q) => quizState.answers[q.id]
+    (q: LearningQuizQuestion) => quizState.answers[q.id]
   );
 
   const isPassed = quizState.submissionResult
@@ -940,7 +945,7 @@ const QuizContent = ({
       )}
 
       <div className="space-y-4 sm:space-y-6">
-        {lesson.quiz.questions.map((question, index) => (
+        {lesson.quiz.questions.map((question: LearningQuizQuestion, index: number) => (
           <Card key={question.id} className="border-gray-200">
             <CardHeader className="pb-3 sm:pb-6">
               <CardTitle className="text-base sm:text-lg leading-snug">
@@ -1241,8 +1246,6 @@ export function LearningContent({
         return <Play className="h-5 w-5" />;
       case "QUIZ":
         return <HelpCircle className="h-5 w-5" />;
-      case "TEXT":
-        return <FileText className="h-5 w-5" />;
       default:
         return <FileText className="h-5 w-5" />;
     }
@@ -1269,12 +1272,6 @@ export function LearningContent({
         return (
           <Badge variant="secondary" className="bg-purple-100 text-purple-800">
             Quiz
-          </Badge>
-        );
-      case "TEXT":
-        return (
-          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-            Reading
           </Badge>
         );
       default:
@@ -1333,9 +1330,6 @@ export function LearningContent({
               onMarkComplete={handleAutoComplete}
               onRefetchCourse={onRefetchCourse}
             />
-          )}
-          {currentLesson.type === "TEXT" && (
-            <TextContent key={currentLesson.id} lesson={currentLesson} />
           )}
         </div>
 

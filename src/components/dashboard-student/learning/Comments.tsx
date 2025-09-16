@@ -17,12 +17,12 @@ import {
   usePagination,
 } from "@/components/ui/custom-pagination";
 import { useAuth } from "@/hooks/useAuth";
-import type { Lesson } from "@/types/student";
+import type { TransformedLesson } from "@/types/student";
 import { CommentsLoadingSkeleton } from "../ui/Loading";
 import { CommentsError } from "../ui/LoadingError";
 
 interface CommentsProps {
-  lesson: Lesson;
+  lesson: TransformedLesson;
   onMarkComplete?: (lessonId: string) => void;
 }
 

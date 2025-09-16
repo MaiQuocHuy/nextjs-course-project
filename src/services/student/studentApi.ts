@@ -19,6 +19,8 @@ import type {
   PaginatedDiscountUsages,
   PaginatedAffiliatePayouts,
   AffiliatePayoutStats,
+  CourseProgress,
+  CourseStructure,
 } from "@/types/student/index";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 import {
@@ -109,31 +111,31 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
-    // Get course details with sections and lessons
-    getCourseDetails: builder.query<CourseSections, string>({
+    // Get course progress for a specific course
+    getCourseProgress: builder.query<CourseProgress, string>({
       query: (courseId) => ({
-        url: `/student/courses/${courseId}`,
+        url: `/student/courses/${courseId}/progress`,
         method: "GET",
       }),
       providesTags: (result, error, courseId) => [
         { type: "Course", id: courseId },
         "Lesson",
       ],
-      transformResponse: (response: { data: CourseSections }) => {
+      transformResponse: (response: { data: CourseProgress }) => {
         return response.data;
       },
     }),
-    // Get course sections for a specific course
-    getCourseSections: builder.query<CourseSections, string>({
+    // Get course structure for a specific course
+    getCourseStructure: builder.query<CourseStructure, string>({
       query: (courseId) => ({
-        url: `/student/courses/${courseId}`,
+        url: `/student/courses/${courseId}/structure`,
         method: "GET",
       }),
       providesTags: (result, error, courseId) => [
         { type: "Course", id: courseId },
         "Lesson",
       ],
-      transformResponse: (response: { data: CourseSections }) => {
+      transformResponse: (response: { data: CourseStructure }) => {
         return response.data;
       },
     }),
@@ -424,8 +426,8 @@ export const {
   useGetEnrolledCoursesQuery,
   useGetRecentEnrolledCoursesQuery,
   useGetAllEnrolledCoursesQuery,
-  useGetCourseDetailsQuery,
-  useGetCourseSectionsQuery,
+  useGetCourseProgressQuery,
+  useGetCourseStructureQuery,
   useGetDashboardStatsQuery,
   useGetRecentActivitiesQuery,
   useCompleteLessonMutation,
