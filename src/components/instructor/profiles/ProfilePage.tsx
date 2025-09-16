@@ -1,15 +1,44 @@
 "use client";
 
 import { useGetProfileQuery } from "@/services/common/profileApi";
-import { useUpdateProfileMutation, useUpdateThumbnailMutation } from "@/services/common/settingsApi";
+import {
+  useUpdateProfileMutation,
+  useUpdateThumbnailMutation,
+} from "@/services/common/settingsApi";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Download, Globe, FileText, File, Edit, Upload, X, CheckCircle, Pencil, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  Eye,
+  Download,
+  Globe,
+  FileText,
+  File,
+  Edit,
+  Upload,
+  X,
+  CheckCircle,
+  Pencil,
+  ArrowLeft,
+  Loader2,
+} from "lucide-react";
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +49,9 @@ const ProfilePage = () => {
   const router = useRouter();
   const { data: profileData, isLoading, error, refetch } = useGetProfileQuery();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
-  const [updateThumbnail, { isLoading: isUpdatingThumbnail }] = useUpdateThumbnailMutation();
-  
+  const [updateThumbnail, { isLoading: isUpdatingThumbnail }] =
+    useUpdateThumbnailMutation();
+
   // Basic profile edit states
   const [showEditModal, setShowEditModal] = useState(false);
   const [name, setName] = useState("");
@@ -29,27 +59,32 @@ const ProfilePage = () => {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Applications edit states
   const [showAppEditModal, setShowAppEditModal] = useState(false);
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
-  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({});
-  
+  const [uploadProgress, setUploadProgress] = useState<{
+    [key: string]: number;
+  }>({});
+  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>(
+    {}
+  );
+
   // Mock data for the instructor's applications section
   const mockDocuments = {
     portfolio: "https://github.com/instructor-portfolio",
-    certificate: "https://res.cloudinary.com/dd4znnno1/raw/upload/v1755857896/instructor-documents/instructor-documents/certificate.pdf",
+    certificate:
+      "https://res.cloudinary.com/dd4znnno1/raw/upload/v1755857896/instructor-documents/instructor-documents/certificate.pdf",
     cv: "https://res.cloudinary.com/dd4znnno1/raw/upload/v1755857896/instructor-documents/instructor-documents/cv.pdf",
     otherDocuments: [
       "https://res.cloudinary.com/dd4znnno1/raw/upload/v1755857896/instructor-documents/instructor-documents/recommendation.pdf",
-      "https://res.cloudinary.com/dd4znnno1/raw/upload/v1755857896/instructor-documents/instructor-documents/sample_teaching.docx"
-    ]
+      "https://res.cloudinary.com/dd4znnno1/raw/upload/v1755857896/instructor-documents/instructor-documents/sample_teaching.docx",
+    ],
   };
-  
+
   // Open edit modal and set initial values
   const handleEditProfile = () => {
     if (profileData?.data) {
@@ -60,7 +95,7 @@ const ProfilePage = () => {
       setShowEditModal(true);
     }
   };
-  
+
   // Handle profile image change
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,19 +103,19 @@ const ProfilePage = () => {
       // Validate file type and size
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       const maxSize = 5 * 1024 * 1024; // 5MB
-      
+
       if (!validTypes.includes(file.type)) {
         toast.error("Please upload a valid image file (JPG, PNG, or WebP)");
         return;
       }
-      
+
       if (file.size > maxSize) {
         toast.error("Image size should be less than 5MB");
         return;
       }
-      
+
       setThumbnail(file);
-      
+
       // Create image preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -89,7 +124,7 @@ const ProfilePage = () => {
       reader.readAsDataURL(file);
     }
   };
-  
+
   // Handle removing the image
   const handleRemoveImage = () => {
     setThumbnail(null);
@@ -98,7 +133,7 @@ const ProfilePage = () => {
       fileInputRef.current.value = "";
     }
   };
-  
+
   // Handle saving the profile changes
   const handleSaveProfile = async () => {
     try {
@@ -106,13 +141,13 @@ const ProfilePage = () => {
         toast.error("Name is required");
         return;
       }
-      
+
       if (thumbnail) {
         // Update with new thumbnail
         await updateThumbnail({
           thumbnail,
           bio,
-          currentName: name
+          currentName: name,
         }).unwrap();
       } else {
         // Update just the name and bio
@@ -121,23 +156,25 @@ const ProfilePage = () => {
           bio,
         }).unwrap();
       }
-      
+
       toast.success("Profile updated successfully");
       setShowEditModal(false);
       refetch(); // Refresh profile data
     } catch (error) {
-      console.error("Failed to update profile:", error);
+      // console.error("Failed to update profile:", error);
       toast.error("Failed to update profile. Please try again.");
     }
   };
-  
+
   // Helper functions for applications edit
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    return (
+      Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+    );
   };
 
   const validateFile = (file: File, maxSizeMB = 15) => {
@@ -158,7 +195,8 @@ const ProfilePage = () => {
     }
 
     if (!allowedTypes.includes(file.type)) {
-      const error = "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
+      const error =
+        "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
       toast.error(error);
       return error;
     }
@@ -192,7 +230,7 @@ const ProfilePage = () => {
       });
     }, 200);
   };
-  
+
   // Handle opening application edit modal
   const handleEditApplications = () => {
     setPortfolioUrl(mockDocuments.portfolio || "");
@@ -203,7 +241,7 @@ const ProfilePage = () => {
     setUploadProgress({});
     setShowAppEditModal(true);
   };
-  
+
   // Handle saving application changes (this will be completed by you later)
   const handleSaveApplications = () => {
     toast.info("Application update functionality will be implemented later");
@@ -218,7 +256,9 @@ const ProfilePage = () => {
     return (
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <div className="text-center py-12">
-          <div className="text-red-600 text-lg font-medium mb-2">Error loading profile</div>
+          <div className="text-red-600 text-lg font-medium mb-2">
+            Error loading profile
+          </div>
           <div className="text-gray-500 mb-4">Please try again later</div>
         </div>
       </div>
@@ -228,32 +268,29 @@ const ProfilePage = () => {
   const { data: user } = profileData;
 
   const handleGoBack = () => {
-    router.push('/instructor');
+    router.push("/instructor");
   };
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        onClick={handleGoBack} 
+      <Button
+        variant="ghost"
+        onClick={handleGoBack}
         className="flex items-center gap-2 mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Dashboard
       </Button>
-      
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Profile</h1>
-        <Button 
-          onClick={handleEditProfile} 
-          className="flex items-center gap-2"
-        >
+        <Button onClick={handleEditProfile} className="flex items-center gap-2">
           <Edit className="h-4 w-4" />
           Edit Profile
         </Button>
       </div>
-      
+
       {/* Basic Information Section */}
       <Card className="mb-8">
         <CardHeader className="pb-3">
@@ -264,8 +301,8 @@ const ProfilePage = () => {
             <div className="flex-shrink-0">
               <Avatar className="h-24 w-24 border">
                 {user.thumbnailUrl ? (
-                  <img 
-                    src={user.thumbnailUrl} 
+                  <img
+                    src={user.thumbnailUrl}
                     alt={user.name}
                     className="aspect-square h-full w-full object-cover"
                   />
@@ -288,9 +325,7 @@ const ProfilePage = () => {
               </div>
               <div>
                 <h3 className="text-md font-semibold mb-1">Bio</h3>
-                <p className="text-gray-600">
-                  {user.bio || "No bio provided"}
-                </p>
+                <p className="text-gray-600">{user.bio || "No bio provided"}</p>
               </div>
               {/* <div>
                 <Badge variant={user.isActive ? "default" : "destructive"}>
@@ -301,7 +336,7 @@ const ProfilePage = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Edit Profile Dialog */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="sm:max-w-md">
@@ -317,8 +352,8 @@ const ProfilePage = () => {
               <div className="relative">
                 <Avatar className="h-24 w-24 border">
                   {thumbnailPreview ? (
-                    <img 
-                      src={thumbnailPreview} 
+                    <img
+                      src={thumbnailPreview}
                       alt="Preview"
                       className="aspect-square h-full w-full object-cover"
                     />
@@ -329,7 +364,7 @@ const ProfilePage = () => {
                   )}
                 </Avatar>
                 <div className="absolute -bottom-2 -right-2 flex gap-1">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="rounded-full bg-primary p-1.5 text-white shadow-sm hover:bg-primary/90"
@@ -337,7 +372,7 @@ const ProfilePage = () => {
                     <Pencil className="h-3 w-3" />
                   </button>
                   {thumbnailPreview && (
-                    <button 
+                    <button
                       type="button"
                       onClick={handleRemoveImage}
                       className="rounded-full bg-destructive p-1.5 text-white shadow-sm hover:bg-destructive/90"
@@ -358,7 +393,7 @@ const ProfilePage = () => {
                 Recommended: Square JPG, PNG or WebP, 500x500px (Max 5MB)
               </p>
             </div>
-            
+
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -369,7 +404,7 @@ const ProfilePage = () => {
                 placeholder="Your name"
               />
             </div>
-            
+
             {/* Bio */}
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
@@ -383,16 +418,16 @@ const ProfilePage = () => {
             </div>
           </div>
           <DialogFooter className="flex justify-between sm:justify-between">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowEditModal(false)}
               disabled={isUpdating || isUpdatingThumbnail}
             >
               Cancel
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleSaveProfile}
               disabled={!name.trim() || isUpdating || isUpdatingThumbnail}
             >
@@ -405,7 +440,7 @@ const ProfilePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Applications Dialog */}
       <Dialog open={showAppEditModal} onOpenChange={setShowAppEditModal}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -419,7 +454,10 @@ const ProfilePage = () => {
             <div className="space-y-8 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6">
               {/* Portfolio URL */}
               <div className="space-y-2">
-                <Label htmlFor="portfolioUrl" className="text-sm font-semibold text-gray-700">
+                <Label
+                  htmlFor="portfolioUrl"
+                  className="text-sm font-semibold text-gray-700"
+                >
                   Portfolio URL (Github/LinkedIn) *
                 </Label>
                 <Input
@@ -449,7 +487,10 @@ const ProfilePage = () => {
                       // Generate preview for images
                       if (file.type.startsWith("image/")) {
                         const preview = await generateFilePreview(file);
-                        setFilePreviews((prev) => ({ ...prev, [`cert-${file.name}`]: preview }));
+                        setFilePreviews((prev) => ({
+                          ...prev,
+                          [`cert-${file.name}`]: preview,
+                        }));
                       }
                     }}
                   />
@@ -485,7 +526,10 @@ const ProfilePage = () => {
                       // Generate preview for images
                       if (file.type.startsWith("image/")) {
                         const preview = await generateFilePreview(file);
-                        setFilePreviews((prev) => ({ ...prev, [`cv-${file.name}`]: preview }));
+                        setFilePreviews((prev) => ({
+                          ...prev,
+                          [`cv-${file.name}`]: preview,
+                        }));
                       }
                     }}
                   />
@@ -577,15 +621,15 @@ const ProfilePage = () => {
             </div>
           </div>
           <DialogFooter className="flex justify-between sm:justify-between">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowAppEditModal(false)}
             >
               Cancel
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleSaveApplications}
               disabled={!portfolioUrl.trim() || !certificateFile || !cvFile}
             >
@@ -612,10 +656,7 @@ const ProfilePage = () => {
               <Globe className="h-5 w-5" />
               Portfolio
             </h3>
-            <FileDisplay 
-              file={mockDocuments.portfolio} 
-              label="Portfolio" 
-            />
+            <FileDisplay file={mockDocuments.portfolio} label="Portfolio" />
           </div>
 
           <div className="space-y-3">
@@ -623,10 +664,7 @@ const ProfilePage = () => {
               <FileText className="h-5 w-5" />
               Certificate
             </h3>
-            <FileDisplay 
-              file={mockDocuments.certificate} 
-              label="Certificate" 
-            />
+            <FileDisplay file={mockDocuments.certificate} label="Certificate" />
           </div>
 
           <div className="space-y-3">
@@ -634,29 +672,27 @@ const ProfilePage = () => {
               <FileText className="h-5 w-5" />
               CV
             </h3>
-            <FileDisplay 
-              file={mockDocuments.cv} 
-              label="CV" 
-            />
+            <FileDisplay file={mockDocuments.cv} label="CV" />
           </div>
 
-          {mockDocuments.otherDocuments && mockDocuments.otherDocuments.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <File className="h-5 w-5" />
-                Other Documents
-              </h3>
+          {mockDocuments.otherDocuments &&
+            mockDocuments.otherDocuments.length > 0 && (
               <div className="space-y-3">
-                {mockDocuments.otherDocuments.map((doc, index) => (
-                  <FileDisplay 
-                    key={index}
-                    file={doc} 
-                    label={`Document ${index + 1}`} 
-                  />
-                ))}
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <File className="h-5 w-5" />
+                  Other Documents
+                </h3>
+                <div className="space-y-3">
+                  {mockDocuments.otherDocuments.map((doc, index) => (
+                    <FileDisplay
+                      key={index}
+                      file={doc}
+                      label={`Document ${index + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </CardContent>
       </Card>
     </div>
@@ -668,9 +704,9 @@ const ProfileSkeleton = () => {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        onClick={() => {}} 
+      <Button
+        variant="ghost"
+        onClick={() => {}}
         className="flex items-center gap-2 mb-6 opacity-50"
         disabled
       >
@@ -681,7 +717,7 @@ const ProfileSkeleton = () => {
       <div className="flex justify-between items-center mb-6">
         <Skeleton className="h-10 w-48 animate-pulse" />
       </div>
-      
+
       <Card className="mb-8">
         <CardHeader className="pb-3">
           <Skeleton className="h-7 w-40 animate-pulse" />
@@ -713,7 +749,10 @@ const ProfileSkeleton = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-3 p-3 border border-gray-100 rounded-md">
+            <div
+              key={i}
+              className="space-y-3 p-3 border border-gray-100 rounded-md"
+            >
               <Skeleton className="h-6 w-32 animate-pulse" />
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 animate-pulse" />
@@ -781,8 +820,12 @@ const FileUploadCard = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{file.name}</p>
-              <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {file.name}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {formatFileSize(file.size)}
+              </p>
               {isUploading && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
@@ -800,7 +843,9 @@ const FileUploadCard = ({
               {!isUploading && (
                 <div className="flex items-center gap-1 mt-1">
                   <CheckCircle className="w-3 h-3 text-green-500" />
-                  <span className="text-xs text-green-600 font-medium">Ready to upload</span>
+                  <span className="text-xs text-green-600 font-medium">
+                    Ready to upload
+                  </span>
                 </div>
               )}
             </div>
@@ -871,21 +916,21 @@ const FileDisplay = ({
   file,
   label,
 }: {
-  file: string | { name?: string; type?: string; url?: string; };
+  file: string | { name?: string; type?: string; url?: string };
   label: string;
 }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
-  
+
   // Get file information
   const getFileInfo = () => {
     if (typeof file === "string") {
       const url = file;
       let fileName = "Unknown File";
       let fileExtension = "";
-      
+
       fileName = url.split("/").pop()?.split("?")[0] || "Unknown File";
       fileExtension = fileName.split(".").pop()?.toLowerCase() || "";
-      
+
       // Check for external sites
       if (url.includes("github.com")) {
         return {
@@ -894,13 +939,13 @@ const FileDisplay = ({
           url: url,
         };
       }
-      
+
       // File type detection by extension
       const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"];
       const documentExts = ["pdf", "doc", "docx", "txt", "rtf"];
-      
+
       let fileType = "document";
-      
+
       if (imageExts.includes(fileExtension)) {
         fileType = "image";
       } else if (fileExtension === "pdf") {
@@ -908,41 +953,41 @@ const FileDisplay = ({
       } else if (documentExts.includes(fileExtension)) {
         fileType = "document";
       }
-      
+
       return {
         name: fileName,
         type: fileType,
         url: url,
       };
     }
-    
+
     return {
       name: file.name || "Unknown File",
       type: file.type || "document",
       url: file.url || "",
     };
   };
-  
+
   const fileInfo = getFileInfo();
   const isImage = fileInfo.type === "image";
   const isPDF = fileInfo.type === "pdf";
   const isExternal = fileInfo.type.startsWith("external-");
-  
+
   // Check if file can be previewed
   const canPreview = isImage || isPDF;
-  
+
   // Open file in new tab
   const handleFileOpen = () => {
     if (fileInfo.url) {
       window.open(fileInfo.url, "_blank");
     }
   };
-  
+
   // Open preview dialog
   const handlePreviewOpen = () => {
     setPreviewOpen(true);
   };
-  
+
   // Special handling for external links
   if (isExternal) {
     return (
@@ -968,7 +1013,7 @@ const FileDisplay = ({
       </div>
     );
   }
-  
+
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1027,7 +1072,9 @@ const FileDisplay = ({
             ) : (
               <div className="flex flex-col items-center justify-center p-10">
                 <FileText className="h-16 w-16 text-blue-600 mb-4" />
-                <p className="text-lg font-medium mb-2">Preview not available</p>
+                <p className="text-lg font-medium mb-2">
+                  Preview not available
+                </p>
                 <Button onClick={handleFileOpen} className="mt-2">
                   Open File
                 </Button>
