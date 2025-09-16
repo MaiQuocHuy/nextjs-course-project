@@ -1,4 +1,107 @@
 // ==============================
+// Discount Usage
+// ==============================
+export interface DiscountUsage {
+  id: string;
+  discount: {
+    id: string;
+    code: string;
+    description: string;
+    type: "REFERRAL" | "GENERAL";
+  };
+  user: {
+    name: string;
+    email: string;
+  };
+  course: {
+    id: string;
+    title: string;
+    instructor: {
+      name: string;
+      email: string;
+    };
+    price: number;
+  };
+  usedAt: string;
+  discountPercent: number;
+  discountAmount: number;
+}
+
+export interface PaginatedDiscountUsages {
+  content: DiscountUsage[];
+  page: {
+    number: number;
+    size: number;
+    totalPages: number;
+    totalElements: number;
+    first: boolean;
+    last: boolean;
+  };
+}
+
+// ==============================
+// Affiliate Payout
+// ==============================
+export interface AffiliatePayout {
+  id: string;
+  course: {
+    id: string;
+    title: string;
+    instructor: {
+      name: string;
+      email: string;
+    };
+    price: number;
+  };
+  discountUsage?: {
+    id: string;
+    discount: {
+      id: string;
+      code: string;
+      description: string;
+      type: "REFERRAL" | "GENERAL";
+    };
+    user: {
+      name: string;
+      email: string;
+    };
+    usedAt: string;
+    discountPercent: number;
+    discountAmount: number;
+  } | null;
+  commissionPercent: number;
+  commissionAmount: number;
+  payoutStatus: "PENDING" | "PAID" | "CANCELLED";
+  createdAt: string;
+  paidAt?: string | null;
+  updatedAt: string;
+  cancelledAt?: string | null;
+}
+
+export interface PaginatedAffiliatePayouts {
+  content: AffiliatePayout[];
+  page: {
+    number: number;
+    size: number;
+    totalPages: number;
+    totalElements: number;
+    first: boolean;
+    last: boolean;
+  };
+}
+
+export interface AffiliatePayoutStats {
+  totalPayouts: number;
+  pendingPayouts: number;
+  paidPayouts: number;
+  cancelledPayouts: number;
+  totalCommissionAmount: number;
+  pendingCommissionAmount: number;
+  paidCommissionAmount: number;
+  cancelledCommissionAmount: number;
+}
+
+// ==============================
 // Enrolled courses của student
 // ==============================
 export interface Course {
@@ -125,6 +228,32 @@ export interface ActivityFeedResponse {
 export interface DashboardData {
   stats: CourseStats; // Thống kê chung
   activities: ActivityFeedResponse; // Lịch sử hoạt động
+}
+
+// ==============================
+// Dashboard Statistics Types
+// ==============================
+export interface DashboardStats {
+  totalCourses: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  lessonsCompleted: number;
+  totalLessons: number;
+}
+
+// ==============================
+// Recent Activities Types
+// ==============================
+export interface RecentActivity {
+  activityType: "ENROLLMENT" | "LESSON_COMPLETION" | "QUIZ_SUBMISSION";
+  title: string;
+  description: string;
+  timestamp: string;
+  courseId: string;
+  courseTitle: string;
+  lessonId: string | null;
+  lessonTitle: string | null;
+  score: number | null;
 }
 
 // ==============================

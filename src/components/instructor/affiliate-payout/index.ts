@@ -1,0 +1,1 @@
+export { AffiliatePayoutDetailPage } from "./AffiliatePayoutDetailPage";

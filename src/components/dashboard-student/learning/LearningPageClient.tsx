@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useCourseWithSections } from "@/hooks/student/useDashboard";
+import { useCourseWithSections } from "@/hooks/student/useSection";
 import { LearningSidebar } from "./LearningSidebar";
 import { LearningContent } from "./LearningContent";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle, Menu, X } from "lucide-react";
-import type { Lesson, Section } from "@/types/student/index";
+import { Menu } from "lucide-react";
 import { LearningLoadingSkeleton } from "../ui/Loading";
 import { LearningPageError } from "../ui";
+import { ChatBubble } from "@/components/chat";
 
 interface LearningPageClientProps {
   courseId: string;
@@ -171,6 +169,9 @@ export default function LearningPageClient({
           />
         </div>
       </div>
+
+      {/* Course Chat Bubble */}
+      <ChatBubble courseId={courseId} />
     </div>
   );
 }

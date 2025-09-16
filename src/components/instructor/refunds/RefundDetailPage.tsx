@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { DetailsLoadingSkeleton } from '@/components/instructor/refunds/shared/LoadingSkeleton';
+import { DetailsLoadingSkeleton } from '@/components/instructor/refunds/skeletons/index';
 import {
   formatCurrency,
   formatDateTime,

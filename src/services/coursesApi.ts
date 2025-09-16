@@ -1,10 +1,6 @@
 import { ApiResponse, PaginatedData } from "@/types";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { getSession } from "next-auth/react";
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
-});
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
 
 
@@ -26,6 +22,7 @@ export interface Course {
   averageRating: number;
   sampleVideoUrl: string;
   totalDuration: number;
+  totalHours: number; // Total course duration in hours
   sectionCount: number;
   sections?: Section[];
   categories: Category[];
@@ -35,6 +32,7 @@ export interface Course {
     name: string;
     bio: string;
     thumbnailUrl: string;
+    avatar: string;
   };
   overViewInstructorSummary: {
     average: number;
@@ -114,7 +112,7 @@ export interface CourseReviewData {
 
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: ['Course', 'Category', 'CourseReview'],
   endpoints: (builder) => ({
 

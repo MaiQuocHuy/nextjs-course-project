@@ -1,12 +1,13 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-import { authApi } from '@/services/authApi';
-import { coursesApi } from '@/services/coursesApi';
-import { paymentApi } from '@/services/paymentApi';
-import { studentApi } from '@/services/student/studentApi';
-import { authSlice, logoutState } from './slices/auth/authSlice';
-import { profileApi } from '@/services/common/profileApi';
+import { configureStore } from "@reduxjs/toolkit";
+import { setupListeners } from "@reduxjs/toolkit/query";
+import { authApi } from "@/services/authApi";
+import { coursesApi } from "@/services/coursesApi";
+import { paymentApi } from "@/services/paymentApi";
+import { studentApi } from "@/services/student/studentApi";
+import { authSlice, logoutState } from "./slices/auth/authSlice";
+import { profileApi } from "@/services/common/profileApi";
 import { chatApi } from "@/services/websocket/chatApi";
+import { certificateApi } from "@/services/common/certificateApi";
 
 // Instructor
 import { loadingAnimaSlice } from "./slices/instructor/loadingAnimaSlice";
@@ -14,28 +15,30 @@ import { coursesInstSlice } from "@/services/instructor/courses/courses-api";
 import { sectionsInstSlice } from "@/services/instructor/courses/sections-api";
 import { lessonsInstSlice } from "@/services/instructor/courses/lessons-api";
 import { quizzesInstSlice } from "@/services/instructor/courses/quizzes-api";
-import { earningsInstSlice } from '@/services/instructor/earnings/earnings-ins-api';
-import { refundsInstSlice } from '@/services/instructor/refunds/refunds-ins-api';
-import { dashboardStatsInstSlice } from '@/services/instructor/statistics/dashboard-statistics';
-import { studentsInstSlice } from '@/services/instructor/students/students-ins-api';
+import { earningsInstSlice } from "@/services/instructor/earnings/earnings-ins-api";
+import { refundsInstSlice } from "@/services/instructor/refunds/refunds-ins-api";
+import { dashboardStatsInstSlice } from "@/services/instructor/statistics/dashboard-statistics";
+import { studentsInstSlice } from "@/services/instructor/students/students-ins-api";
+import { affiliatePayoutApi } from "@/services/instructor/affiliate-payout/affiliate-payout-api";
+import { discountUsageApi } from "@/services/instructor/discount-usage/discount-usage-api";
 
-import courseFilterReducer from './slices/student/courseFilterSlice';
-import { settingsApi } from '@/services/common/settingsApi';
-import learningProgressReducer from './slices/student/learningProgressSlice';
-import { geminiApi } from '@/services/quiz/geminiApi';
-
+import courseFilterReducer from "./slices/student/courseFilterSlice";
+import { settingsApi } from "@/services/common/settingsApi";
+import learningProgressReducer from "./slices/student/learningProgressSlice";
+import { geminiApi } from "@/services/quiz/geminiApi";
 
 // Middleware to clear all caches on logout
 const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
   const result = next(action);
 
   // If logout action is dispatched, clear all API caches
-  if (action.type === logoutState.type || action.type === 'auth/logout') {
+  if (action.type === logoutState.type || action.type === "auth/logout") {
     store.dispatch(profileApi.util.resetApiState());
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
     store.dispatch(geminiApi.util.resetApiState());
     store.dispatch(chatApi.util.resetApiState());
+    store.dispatch(certificateApi.util.resetApiState());
   }
 
   return result;
@@ -56,6 +59,7 @@ export const makeStore = () => {
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
       [chatApi.reducerPath]: chatApi.reducer,
+      [certificateApi.reducerPath]: certificateApi.reducer,
 
       // Instructor
       loadingAnima: loadingAnimaSlice.reducer,
@@ -67,6 +71,8 @@ export const makeStore = () => {
       [refundsInstSlice.reducerPath]: refundsInstSlice.reducer,
       [dashboardStatsInstSlice.reducerPath]: dashboardStatsInstSlice.reducer,
       [studentsInstSlice.reducerPath]: studentsInstSlice.reducer,
+      [affiliatePayoutApi.reducerPath]: affiliatePayoutApi.reducer,
+      [discountUsageApi.reducerPath]: discountUsageApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(
@@ -78,6 +84,7 @@ export const makeStore = () => {
         settingsApi.middleware,
         geminiApi.middleware,
         chatApi.middleware,
+        certificateApi.middleware,
         clearCacheOnLogout,
 
         // Instructor
@@ -88,7 +95,9 @@ export const makeStore = () => {
         earningsInstSlice.middleware,
         refundsInstSlice.middleware,
         dashboardStatsInstSlice.middleware,
-        studentsInstSlice.middleware
+        studentsInstSlice.middleware,
+        affiliatePayoutApi.middleware,
+        discountUsageApi.middleware
       ),
   });
 
@@ -100,5 +109,5 @@ export const makeStore = () => {
 
 export type AppStore = ReturnType<typeof makeStore>;
 // Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<AppStore['getState']>;
-export type AppDispatch = AppStore['dispatch'];
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];

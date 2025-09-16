@@ -17,8 +17,8 @@ export default function DashboardPage() {
             <EnrolledCoursesSummary />
           </div>
 
-          {/* Activity Feed - Uses getDashboardData for optimized data fetching */}
-          <div className="lg:col-span-1">
+          {/* Right Column - Activity Feed and Certificates */}
+          <div className="lg:col-span-1 space-y-6">
             <ActivityFeed />
           </div>
         </div>
