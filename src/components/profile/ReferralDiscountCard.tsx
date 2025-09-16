@@ -62,9 +62,9 @@ export function ReferralDiscountCard() {
   // Debug log để xem lỗi chi tiết
   useEffect(() => {
     if (loadError) {
-      console.error("Referral discount load error:", loadError);
-      console.error("Error status:", (loadError as any)?.status);
-      console.error("Error data:", (loadError as any)?.data);
+      // console.error("Referral discount load error:", loadError);
+      // console.error("Error status:", (loadError as any)?.status);
+      // console.error("Error data:", (loadError as any)?.data);
     }
   }, [loadError]);
 
@@ -110,7 +110,7 @@ export function ReferralDiscountCard() {
       setReferralData(result);
       toast.success("Referral discount code created successfully!");
     } catch (error: any) {
-      console.error("Create referral error:", error);
+      // console.error("Create referral error:", error);
 
       let errorMessage = "Failed to create referral code. Please try again.";
 
