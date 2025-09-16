@@ -9,6 +9,7 @@ import {
   UseChatWebSocketConfig,
   UseChatWebSocketReturn,
 } from "@/types/chat";
+import { toast } from "sonner";
 
 export const useChatWebSocket = (
   config: UseChatWebSocketConfig
@@ -60,7 +61,7 @@ export const useChatWebSocket = (
   }, []);
 
   const handleError = useCallback((error: any) => {
-    console.error("Chat WebSocket error:", error);
+    toast.error("WebSocket connection error. Please try again.");
     setError(error?.message || "WebSocket connection error");
     setIsConnected(false);
     configRef.current.onError?.(error);
@@ -115,7 +116,7 @@ export const useChatWebSocket = (
       setIsConnected(statusAfter.isConnected);
       setConnectionState(statusAfter.connectionState);
     } catch (error: any) {
-      console.error("Failed to connect to chat:", error);
+      toast.error("Failed to connect to chat. Please try again.");
       setError(error?.message || "Failed to connect");
       setIsConnected(false);
     } finally {
@@ -137,7 +138,7 @@ export const useChatWebSocket = (
       setConnectionState("DISCONNECTED");
       setError(null);
     } catch (error: any) {
-      console.error("Failed to disconnect from chat:", error);
+      toast.error("Failed to disconnect from chat. Please try again.");
       setError(error?.message || "Failed to disconnect");
     }
   }, []);
@@ -156,7 +157,7 @@ export const useChatWebSocket = (
       setIsConnected(status.isConnected);
       setConnectionState(status.connectionState);
     } catch (error: any) {
-      console.error("Failed to switch course:", error);
+      toast.error("Failed to switch course. Please try again.");
       setError(error?.message || "Failed to switch course");
     }
   }, []);
@@ -172,7 +173,7 @@ export const useChatWebSocket = (
       setIsConnected(status.isConnected);
       setConnectionState(status.connectionState);
     } catch (error: any) {
-      console.error("Failed to reconnect to chat:", error);
+      toast.error("Failed to reconnect to chat. Please try again.");
       setError(error?.message || "Failed to reconnect");
     }
   }, []);
@@ -206,19 +207,19 @@ export const useChatWebSocket = (
     if (shouldAutoConnect) {
       // If autoConnect enabled, ensure we are connected
       connect().catch((error) => {
-        console.error("Auto-connect failed:", error);
+        toast.error("Auto-connect failed. Please try again.");
       });
     } else {
       // If autoConnect disabled, disconnect if connected
       disconnect().catch((error) => {
-        console.error("Auto-disconnect failed:", error);
+        toast.error("Auto-disconnect failed. Please try again.");
       });
     }
 
     // Cleanup on unmount: always attempt to disconnect
     return () => {
       disconnect().catch((error) => {
-        console.error("Cleanup disconnect failed:", error);
+        toast.error("Cleanup disconnect failed. Please try again.");
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -261,7 +262,7 @@ export const useChatWebSocket = (
         }
       } catch (err: any) {
         if (!cancelled) {
-          console.error("Failed to switch/connect to new course:", err);
+          toast.error("Failed to switch course. Please try again.");
           setError(err?.message || "Failed to switch course");
         }
       }

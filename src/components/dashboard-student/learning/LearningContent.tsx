@@ -27,7 +27,12 @@ import {
   useCompleteLessonMutation,
   useSubmitQuizMutation,
 } from "@/services/student/studentApi";
-import type { Lesson, Section, QuizSubmissionResponse } from "@/types/student";
+import type {
+  QuizSubmissionResponse,
+  TransformedLesson,
+  TransformedSection,
+  LearningQuizQuestion,
+} from "@/types/student";
 import { useAppDispatch } from "@/store/hook";
 import {
   markLessonCompleted,
@@ -35,10 +40,11 @@ import {
 } from "@/store/slices/student/learningProgressSlice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Comments } from "./Comments";
+import { toast } from "sonner";
 
 interface LearningContentProps {
-  currentLesson?: Lesson;
-  section?: Section;
+  currentLesson?: TransformedLesson;
+  section?: TransformedSection;
   courseId: string;
   onMarkComplete?: (lessonId: string) => void;
   onRefetchCourse?: () => void;
@@ -55,7 +61,7 @@ const VideoContent = ({
   lesson,
   onAutoComplete,
 }: {
-  lesson: Lesson;
+  lesson: TransformedLesson;
   onAutoComplete?: () => void;
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -718,7 +724,7 @@ const VideoContent = ({
   );
 };
 
-const TextContent = ({ lesson }: { lesson: Lesson }) => {
+const TextContent = ({ lesson }: { lesson: TransformedLesson }) => {
   return (
     <div className="prose prose-sm sm:prose max-w-none">
       <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
@@ -747,8 +753,8 @@ const QuizContent = ({
   onMarkComplete,
   onRefetchCourse,
 }: {
-  lesson: Lesson;
-  section: Section;
+  lesson: TransformedLesson;
+  section: TransformedSection;
   courseId: string;
   onMarkComplete?: () => void;
   onRefetchCourse?: () => void;
@@ -834,8 +840,7 @@ const QuizContent = ({
         );
       }
     } catch (error) {
-      console.error("Failed to submit quiz:", error);
-      // You might want to show an error message to the user here
+      toast.error("There was an error submitting your quiz. Please try again.");
     }
   };
 
@@ -855,7 +860,7 @@ const QuizContent = ({
     // Fallback to client-side calculation if no server result
     const totalQuestions = lesson.quiz!.questions.length;
     const correctAnswers = lesson.quiz!.questions.filter(
-      (q) => quizState.answers[q.id] === q.correctAnswer
+      (q: LearningQuizQuestion) => quizState.answers[q.id] === q.correctAnswer
     ).length;
     return Math.round((correctAnswers / totalQuestions) * 100);
   };
@@ -867,12 +872,12 @@ const QuizContent = ({
 
     // Fallback to client-side calculation
     return lesson.quiz!.questions.filter(
-      (q) => quizState.answers[q.id] === q.correctAnswer
+      (q: LearningQuizQuestion) => quizState.answers[q.id] === q.correctAnswer
     ).length;
   };
 
   const allQuestionsAnswered = lesson.quiz.questions.every(
-    (q) => quizState.answers[q.id]
+    (q: LearningQuizQuestion) => quizState.answers[q.id]
   );
 
   const isPassed = quizState.submissionResult
@@ -940,181 +945,192 @@ const QuizContent = ({
       )}
 
       <div className="space-y-4 sm:space-y-6">
-        {lesson.quiz.questions.map((question, index) => (
-          <Card key={question.id} className="border-gray-200">
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="text-base sm:text-lg leading-snug">
-                Question {index + 1}: {question.questionText}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 sm:space-y-3">
-                {(() => {
-                  // Handle object format: { "A": "Option text", "B": "Option text" }
-                  const options = question.options;
-                  if (!options) return [];
+        {lesson.quiz.questions.map(
+          (question: LearningQuizQuestion, index: number) => (
+            <Card key={question.id} className="border-gray-200">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg leading-snug">
+                  Question {index + 1}: {question.questionText}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 sm:space-y-3">
+                  {(() => {
+                    // Handle object format: { "A": "Option text", "B": "Option text" }
+                    const options = question.options;
+                    if (!options) return [];
 
-                  if (typeof options === "object" && !Array.isArray(options)) {
-                    // Object format like { "A": "Database management", "B": "Building user interfaces" }
-                    return Object.entries(options).map(([key, value]) => {
-                      const optionLetter = key;
-                      const optionText = value as string;
-                      const isSelected =
-                        quizState.answers[question.id] === optionLetter;
-                      const isCorrect = optionLetter === question.correctAnswer;
-                      const showResult = quizState.showResults;
-                      const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
+                    if (
+                      typeof options === "object" &&
+                      !Array.isArray(options)
+                    ) {
+                      // Object format like { "A": "Database management", "B": "Building user interfaces" }
+                      return Object.entries(options).map(([key, value]) => {
+                        const optionLetter = key;
+                        const optionText = value as string;
+                        const isSelected =
+                          quizState.answers[question.id] === optionLetter;
+                        const isCorrect =
+                          optionLetter === question.correctAnswer;
+                        const showResult = quizState.showResults;
+                        const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
 
-                      return (
-                        <button
-                          key={key}
-                          onClick={() =>
-                            handleAnswerSelect(question.id, optionLetter)
-                          }
-                          className={cn(
-                            "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
-                            !quizState.submitted && "hover:border-blue-300",
-                            isSelected &&
-                              !showResult &&
-                              "border-blue-500 bg-blue-50",
-                            showCorrectAnswer &&
-                              isCorrect &&
-                              "border-green-500 bg-green-50",
-                            showResult &&
+                        return (
+                          <button
+                            key={key}
+                            onClick={() =>
+                              handleAnswerSelect(question.id, optionLetter)
+                            }
+                            className={cn(
+                              "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                              !quizState.submitted && "hover:border-blue-300",
                               isSelected &&
-                              !isPassed &&
-                              "border-red-500 bg-red-50",
-                            showResult &&
-                              isSelected &&
-                              isPassed &&
-                              !isCorrect &&
-                              "border-red-500 bg-red-50",
-                            !showResult && !isSelected && "border-gray-200"
-                          )}
-                          disabled={quizState.submitted}
-                        >
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <div
-                              className={cn(
-                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                !showResult &&
+                                "border-blue-500 bg-blue-50",
+                              showCorrectAnswer &&
+                                isCorrect &&
+                                "border-green-500 bg-green-50",
+                              showResult &&
                                 isSelected &&
-                                  !showResult &&
-                                  "border-blue-500 bg-blue-500 text-white",
-                                showCorrectAnswer &&
-                                  isCorrect &&
-                                  "border-green-500 bg-green-500 text-white",
-                                showResult &&
-                                  isSelected &&
-                                  !isPassed &&
-                                  "border-red-500 bg-red-500 text-white",
-                                showResult &&
-                                  isSelected &&
-                                  isPassed &&
-                                  !isCorrect &&
-                                  "border-red-500 bg-red-500 text-white",
-                                !showResult && !isSelected && "border-gray-300"
-                              )}
-                            >
-                              {optionLetter}
-                            </div>
-                            <span className="leading-relaxed">
-                              {optionText}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    });
-                  }
-
-                  // Fallback for array format
-                  if (Array.isArray(options)) {
-                    return options.map((option) => {
-                      const optionLetter = option.charAt(0);
-                      const optionText = option.substring(3);
-                      const isSelected =
-                        quizState.answers[question.id] === optionLetter;
-                      const isCorrect = optionLetter === question.correctAnswer;
-                      const showResult = quizState.showResults;
-                      const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
-
-                      return (
-                        <button
-                          key={option}
-                          onClick={() =>
-                            handleAnswerSelect(question.id, optionLetter)
-                          }
-                          className={cn(
-                            "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
-                            !quizState.submitted && "hover:border-blue-300",
-                            isSelected &&
-                              !showResult &&
-                              "border-blue-500 bg-blue-50",
-                            showCorrectAnswer &&
-                              isCorrect &&
-                              "border-green-500 bg-green-50",
-                            showResult &&
-                              isSelected &&
-                              !isPassed &&
-                              "border-red-500 bg-red-50",
-                            showResult &&
-                              isSelected &&
-                              isPassed &&
-                              !isCorrect &&
-                              "border-red-500 bg-red-50",
-                            !showResult && !isSelected && "border-gray-200"
-                          )}
-                          disabled={quizState.submitted}
-                        >
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <div
-                              className={cn(
-                                "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                !isPassed &&
+                                "border-red-500 bg-red-50",
+                              showResult &&
                                 isSelected &&
+                                isPassed &&
+                                !isCorrect &&
+                                "border-red-500 bg-red-50",
+                              !showResult && !isSelected && "border-gray-200"
+                            )}
+                            disabled={quizState.submitted}
+                          >
+                            <div className="flex items-start gap-2 sm:gap-3">
+                              <div
+                                className={cn(
+                                  "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                  isSelected &&
+                                    !showResult &&
+                                    "border-blue-500 bg-blue-500 text-white",
+                                  showCorrectAnswer &&
+                                    isCorrect &&
+                                    "border-green-500 bg-green-500 text-white",
+                                  showResult &&
+                                    isSelected &&
+                                    !isPassed &&
+                                    "border-red-500 bg-red-500 text-white",
+                                  showResult &&
+                                    isSelected &&
+                                    isPassed &&
+                                    !isCorrect &&
+                                    "border-red-500 bg-red-500 text-white",
                                   !showResult &&
-                                  "border-blue-500 bg-blue-500 text-white",
-                                showCorrectAnswer &&
-                                  isCorrect &&
-                                  "border-green-500 bg-green-500 text-white",
-                                showResult &&
-                                  isSelected &&
-                                  !isPassed &&
-                                  "border-red-500 bg-red-500 text-white",
-                                showResult &&
-                                  isSelected &&
-                                  isPassed &&
-                                  !isCorrect &&
-                                  "border-red-500 bg-red-500 text-white",
-                                !showResult && !isSelected && "border-gray-300"
-                              )}
-                            >
-                              {optionLetter}
+                                    !isSelected &&
+                                    "border-gray-300"
+                                )}
+                              >
+                                {optionLetter}
+                              </div>
+                              <span className="leading-relaxed">
+                                {optionText}
+                              </span>
                             </div>
-                            <span className="leading-relaxed">
-                              {optionText}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    });
-                  }
+                          </button>
+                        );
+                      });
+                    }
 
-                  return [];
-                })()}
-              </div>
+                    // Fallback for array format
+                    if (Array.isArray(options)) {
+                      return options.map((option) => {
+                        const optionLetter = option.charAt(0);
+                        const optionText = option.substring(3);
+                        const isSelected =
+                          quizState.answers[question.id] === optionLetter;
+                        const isCorrect =
+                          optionLetter === question.correctAnswer;
+                        const showResult = quizState.showResults;
+                        const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
 
-              {quizState.showResults && isPassed && (
-                <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h5 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">
-                    Explanation:
-                  </h5>
-                  <p className="text-blue-800 text-sm sm:text-base leading-relaxed">
-                    {question.explanation}
-                  </p>
+                        return (
+                          <button
+                            key={option}
+                            onClick={() =>
+                              handleAnswerSelect(question.id, optionLetter)
+                            }
+                            className={cn(
+                              "w-full text-left p-2.5 sm:p-3 rounded-lg border-2 transition-colors text-sm sm:text-base",
+                              !quizState.submitted && "hover:border-blue-300",
+                              isSelected &&
+                                !showResult &&
+                                "border-blue-500 bg-blue-50",
+                              showCorrectAnswer &&
+                                isCorrect &&
+                                "border-green-500 bg-green-50",
+                              showResult &&
+                                isSelected &&
+                                !isPassed &&
+                                "border-red-500 bg-red-50",
+                              showResult &&
+                                isSelected &&
+                                isPassed &&
+                                !isCorrect &&
+                                "border-red-500 bg-red-50",
+                              !showResult && !isSelected && "border-gray-200"
+                            )}
+                            disabled={quizState.submitted}
+                          >
+                            <div className="flex items-start gap-2 sm:gap-3">
+                              <div
+                                className={cn(
+                                  "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-medium flex-shrink-0 mt-0.5 sm:mt-0",
+                                  isSelected &&
+                                    !showResult &&
+                                    "border-blue-500 bg-blue-500 text-white",
+                                  showCorrectAnswer &&
+                                    isCorrect &&
+                                    "border-green-500 bg-green-500 text-white",
+                                  showResult &&
+                                    isSelected &&
+                                    !isPassed &&
+                                    "border-red-500 bg-red-500 text-white",
+                                  showResult &&
+                                    isSelected &&
+                                    isPassed &&
+                                    !isCorrect &&
+                                    "border-red-500 bg-red-500 text-white",
+                                  !showResult &&
+                                    !isSelected &&
+                                    "border-gray-300"
+                                )}
+                              >
+                                {optionLetter}
+                              </div>
+                              <span className="leading-relaxed">
+                                {optionText}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      });
+                    }
+
+                    return [];
+                  })()}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+
+                {quizState.showResults && isPassed && (
+                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h5 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">
+                      Explanation:
+                    </h5>
+                    <p className="text-blue-800 text-sm sm:text-base leading-relaxed">
+                      {question.explanation}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        )}
       </div>
 
       {!quizState.submitted && (
@@ -1241,8 +1257,6 @@ export function LearningContent({
         return <Play className="h-5 w-5" />;
       case "QUIZ":
         return <HelpCircle className="h-5 w-5" />;
-      case "TEXT":
-        return <FileText className="h-5 w-5" />;
       default:
         return <FileText className="h-5 w-5" />;
     }
@@ -1269,12 +1283,6 @@ export function LearningContent({
         return (
           <Badge variant="secondary" className="bg-purple-100 text-purple-800">
             Quiz
-          </Badge>
-        );
-      case "TEXT":
-        return (
-          <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-            Reading
           </Badge>
         );
       default:
@@ -1333,9 +1341,6 @@ export function LearningContent({
               onMarkComplete={handleAutoComplete}
               onRefetchCourse={onRefetchCourse}
             />
-          )}
-          {currentLesson.type === "TEXT" && (
-            <TextContent key={currentLesson.id} lesson={currentLesson} />
           )}
         </div>
 

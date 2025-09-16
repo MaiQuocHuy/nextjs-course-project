@@ -2,12 +2,24 @@
 import { useMemo } from "react";
 import {
   useGetEnrolledCoursesQuery,
-  useGetCourseSectionsQuery,
+  useGetCourseProgressQuery,
+  useGetCourseStructureQuery,
 } from "@/services/student/studentApi";
+import type {
+  CourseStructure,
+  CourseProgress,
+  CourseWithProgress,
+} from "@/types/student";
+
 /**
  * Hook to get course with sections and progress
  */
-export function useCourseWithSections(courseId: string) {
+export function useCourseWithSections(courseId: string): {
+  data: CourseWithProgress | undefined;
+  isLoading: boolean;
+  error: any;
+  refetch: () => void;
+} {
   // Get enrolled courses to find the specific course
   const {
     data: coursesData,
@@ -15,23 +27,33 @@ export function useCourseWithSections(courseId: string) {
     error: coursesError,
   } = useGetEnrolledCoursesQuery();
 
-  // Get course sections
+  // Get course progress
   const {
-    data: sectionsData,
-    isLoading: sectionsLoading,
-    error: sectionsError,
-    refetch: refetchSections,
-  } = useGetCourseSectionsQuery(courseId, {
+    data: progressData,
+    isLoading: progressLoading,
+    error: progressError,
+    refetch: refetchProgress,
+  } = useGetCourseProgressQuery(courseId, {
+    skip: !courseId,
+  });
+
+  // Get course structure
+  const {
+    data: structureData,
+    isLoading: structureLoading,
+    error: structureError,
+    refetch: refetchStructure,
+  } = useGetCourseStructureQuery(courseId, {
     skip: !courseId,
   });
 
   // Combine loading and error states
-  const isLoading = coursesLoading || sectionsLoading;
-  const error = coursesError || sectionsError;
+  const isLoading = coursesLoading || progressLoading || structureLoading;
+  const error = coursesError || progressError || structureError;
 
   // Calculate course data with progress
   const courseData = useMemo(() => {
-    if (isLoading || error || !coursesData || !sectionsData) {
+    if (isLoading || error || !coursesData || !structureData || !progressData) {
       return undefined;
     }
 
@@ -42,30 +64,49 @@ export function useCourseWithSections(courseId: string) {
       return undefined;
     }
 
-    // Calculate progress based on completed lessons
-    let completedLessons = 0;
-    let totalLessons = 0;
+    // Create a map of lesson progress for quick lookup
+    const progressMap = new Map(
+      progressData.lessons.map((lesson) => [lesson.lessonId, lesson])
+    );
 
-    sectionsData.forEach((section) => {
-      if (section.lessons && Array.isArray(section.lessons)) {
-        totalLessons += section.lessons.length;
-        completedLessons += section.lessons.filter(
-          (lesson) => lesson.isCompleted
-        ).length;
-      }
-    });
+    // Transform structure data to include progress information
+    const sectionsWithProgress = structureData.map((section) => ({
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      orderIndex: section.order,
+      lessonCount: section.lessonCount,
+      lessons: section.lessons.map((lesson) => {
+        const lessonProgress = progressMap.get(lesson.id);
 
-    const progress = totalLessons > 0 ? completedLessons / totalLessons : 0;
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.type,
+          order: lesson.order,
+          video: lesson.video,
+          quiz: lesson.quiz,
+          isCompleted: lessonProgress?.status === "COMPLETED",
+          completedAt: lessonProgress?.completedAt || null,
+          // Add lesson status from progress API for accessibility logic
+          status: lessonProgress?.status || "LOCKED",
+          progressOrder: lessonProgress?.order || lesson.order,
+        };
+      }),
+    }));
 
     return {
       course,
-      sections: sectionsData,
-      progress,
+      sections: sectionsWithProgress,
+      progress: progressData.summary.percentage / 100, // Convert percentage to decimal
+      progressSummary: progressData.summary,
+      progressData, // Include raw progress data for reference
     };
-  }, [coursesData, sectionsData, courseId, isLoading, error]);
+  }, [coursesData, structureData, progressData, courseId, isLoading, error]);
 
   const refetch = () => {
-    refetchSections();
+    refetchProgress();
+    refetchStructure();
   };
 
   return {

@@ -258,7 +258,7 @@ const Chat: React.FC<ChatProps> = ({
         }, 0);
       }
     } catch (error) {
-      console.error("❌ Failed to send message:", error);
+      toast.error("Failed to send message. Please try again.");
     }
   };
 
@@ -278,7 +278,7 @@ const Chat: React.FC<ChatProps> = ({
       setEditingText("");
       if (result?.data) updateInfiniteScrollMessage(messageId, result.data);
     } catch (error) {
-      console.error("❌ Failed to update message:", error);
+      toast.error("Failed to update message. Please try again.");
     } finally {
       setUpdatingMessages((prev) => {
         const newSet = new Set(prev);
@@ -295,7 +295,7 @@ const Chat: React.FC<ChatProps> = ({
       removeMessage(messageId);
       await deleteMessage({ courseId, messageId }).unwrap();
     } catch (error) {
-      console.error("❌ Failed to delete message:", error);
+      toast.error("Failed to delete message. Please try again.");
       setDeletingMessages((prev) => {
         const newSet = new Set(prev);
         newSet.delete(messageId);

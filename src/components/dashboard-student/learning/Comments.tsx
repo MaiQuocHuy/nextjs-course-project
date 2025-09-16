@@ -17,12 +17,13 @@ import {
   usePagination,
 } from "@/components/ui/custom-pagination";
 import { useAuth } from "@/hooks/useAuth";
-import type { Lesson } from "@/types/student";
+import type { TransformedLesson } from "@/types/student";
 import { CommentsLoadingSkeleton } from "../ui/Loading";
 import { CommentsError } from "../ui/LoadingError";
+import { toast } from "sonner";
 
 interface CommentsProps {
-  lesson: Lesson;
+  lesson: TransformedLesson;
   onMarkComplete?: (lessonId: string) => void;
 }
 
@@ -79,7 +80,7 @@ export function Comments({ lesson, onMarkComplete }: CommentsProps) {
         /* ignore */
       }
     } catch (error) {
-      console.error("Failed to create comment:", error);
+      toast.error("Failed to create comment");
     }
   };
 

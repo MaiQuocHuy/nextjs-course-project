@@ -1,9 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
-  CourseSections,
   PaginatedCourses,
-  DashboardData,
-  DashboardStats,
   RecentActivity,
   Course,
   Payment,
@@ -18,19 +15,10 @@ import type {
   QuizSubmissionResponse,
   PaginatedDiscountUsages,
   PaginatedAffiliatePayouts,
-  AffiliatePayoutStats,
+  CourseProgress,
+  CourseStructure,
 } from "@/types/student/index";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
-import {
-  getEmptyDashboardData,
-  extractApiData,
-  generateAllActivities,
-  calculateLessonStatistics,
-  calculateCourseStatistics,
-  sortActivitiesByDate,
-  createPaginatedActivities,
-  fetchCourseSections,
-} from "@/utils/student/dashboardHelpers";
 import {
   Comment,
   CommentCountResponse,
@@ -39,6 +27,13 @@ import {
   CreateCommentRequest,
   UpdateCommentRequest,
 } from "@/types/student";
+import {
+  AffiliatePayoutStats,
+  ReviewStats,
+  PaymentStats,
+  QuizResultStats,
+  DashboardStats,
+} from "@/types/student/statistics";
 
 export const studentApi = createApi({
   reducerPath: "studentApi",
@@ -109,31 +104,31 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
-    // Get course details with sections and lessons
-    getCourseDetails: builder.query<CourseSections, string>({
+    // Get course progress for a specific course
+    getCourseProgress: builder.query<CourseProgress, string>({
       query: (courseId) => ({
-        url: `/student/courses/${courseId}`,
+        url: `/student/courses/${courseId}/progress`,
         method: "GET",
       }),
       providesTags: (result, error, courseId) => [
         { type: "Course", id: courseId },
         "Lesson",
       ],
-      transformResponse: (response: { data: CourseSections }) => {
+      transformResponse: (response: { data: CourseProgress }) => {
         return response.data;
       },
     }),
-    // Get course sections for a specific course
-    getCourseSections: builder.query<CourseSections, string>({
+    // Get course structure for a specific course
+    getCourseStructure: builder.query<CourseStructure, string>({
       query: (courseId) => ({
-        url: `/student/courses/${courseId}`,
+        url: `/student/courses/${courseId}/structure`,
         method: "GET",
       }),
       providesTags: (result, error, courseId) => [
         { type: "Course", id: courseId },
         "Lesson",
       ],
-      transformResponse: (response: { data: CourseSections }) => {
+      transformResponse: (response: { data: CourseStructure }) => {
         return response.data;
       },
     }),
@@ -417,6 +412,37 @@ export const studentApi = createApi({
         return response.data;
       },
     }),
+    getQuizResultStatistics: builder.query<QuizResultStats, void>({
+      query: () => ({
+        url: "/student/quiz-stats",
+        method: "GET",
+      }),
+      providesTags: ["Quiz"],
+      transformResponse: (response: { data: QuizResultStats }) => {
+        return response.data;
+      },
+    }),
+
+    getPaymentStatistics: builder.query<PaymentStats, void>({
+      query: () => ({
+        url: "/student/payment-stats",
+        method: "GET",
+      }),
+      providesTags: ["Payment"],
+      transformResponse: (response: { data: PaymentStats }) => {
+        return response.data;
+      },
+    }),
+    getReviewStatistics: builder.query<ReviewStats, void>({
+      query: () => ({
+        url: "/student/review-stats",
+        method: "GET",
+      }),
+      providesTags: ["Review"],
+      transformResponse: (response: { data: ReviewStats }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
@@ -424,8 +450,8 @@ export const {
   useGetEnrolledCoursesQuery,
   useGetRecentEnrolledCoursesQuery,
   useGetAllEnrolledCoursesQuery,
-  useGetCourseDetailsQuery,
-  useGetCourseSectionsQuery,
+  useGetCourseProgressQuery,
+  useGetCourseStructureQuery,
   useGetDashboardStatsQuery,
   useGetRecentActivitiesQuery,
   useCompleteLessonMutation,
@@ -446,4 +472,7 @@ export const {
   useGetDiscountUsagesQuery,
   useGetAffiliatePayoutsQuery,
   useGetAffiliatePayoutStatsQuery,
+  useGetQuizResultStatisticsQuery,
+  useGetPaymentStatisticsQuery,
+  useGetReviewStatisticsQuery,
 } = studentApi;

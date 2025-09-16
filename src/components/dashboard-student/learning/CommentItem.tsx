@@ -43,6 +43,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Comment } from "@/types/student";
 import { RepliesError, RepliesLoadingSkeleton } from "../ui";
+import { toast } from "sonner";
 
 interface CommentItemProps {
   comment: Comment;
@@ -124,7 +125,7 @@ export function CommentItem({
 
       onReply?.(comment.id, replyContent.trim());
     } catch (error) {
-      console.error("Failed to create reply:", error);
+      toast.error("Failed to create reply");
     }
   };
 
@@ -144,7 +145,7 @@ export function CommentItem({
       setShowEditForm(false);
       onEdit?.(comment.id, editContent.trim());
     } catch (error) {
-      console.error("Failed to update comment:", error);
+      toast.error("Failed to update comment");
     }
   };
 
@@ -158,7 +159,7 @@ export function CommentItem({
       setIsDeleteOpen(false);
       onDelete?.(comment.id);
     } catch (error) {
-      console.error("Failed to delete comment:", error);
+      toast.error("Failed to delete comment");
     }
   };
 

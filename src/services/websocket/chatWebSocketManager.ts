@@ -1,5 +1,6 @@
 import { ChatMessage, WebSocketConfig } from "@/types/chat";
 import { webSocketService } from "./webSocketService";
+import { toast } from "sonner";
 
 export interface ChatWebSocketManagerConfig {
   baseUrl: string;
@@ -20,8 +21,9 @@ export class ChatWebSocketManager {
    * Initialize WebSocket connection
    */
   async initialize(config: ChatWebSocketManagerConfig) {
+    // Prevent re-initialization
     if (this.isInitialized) {
-      console.warn("WebSocket manager already initialized");
+      console.warn("WebSocket manager is already initialized.");
       return;
     }
 
@@ -29,7 +31,7 @@ export class ChatWebSocketManager {
       this.isInitialized = true;
     } catch (error) {
       this.isInitialized = false;
-      console.error("Failed to initialize WebSocket manager:", error);
+      toast.error("Failed to initialize WebSocket manager. Please try again.");
       throw error;
     }
   }
@@ -111,7 +113,7 @@ export class ChatWebSocketManager {
       this.currentCourseId = null;
       this.isInitialized = false;
     } catch (error) {
-      console.error("Failed to disconnect WebSocket manager:", error);
+      toast.error("Failed to disconnect WebSocket manager. Please try again.");
       throw error;
     }
   }
@@ -144,7 +146,7 @@ export class ChatWebSocketManager {
     try {
       await webSocketService.reconnect();
     } catch (error) {
-      console.error("Failed to reconnect WebSocket:", error);
+      toast.error("Failed to reconnect WebSocket. Please try again.");
       throw error;
     }
   }
