@@ -1,11 +1,10 @@
-import { use } from "react";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
   CourseSections,
-  CourseStats,
   PaginatedCourses,
-  ActivityFeedResponse,
   DashboardData,
+  DashboardStats,
+  RecentActivity,
   Course,
   Payment,
   PaymentDetail,
@@ -14,11 +13,12 @@ import type {
   PaginatedReviews,
   UpdateReviewRequest,
   UpdateReviewResponse,
-  Activity,
   PaginatedQuizResults,
   QuizResultDetails,
-  QuizSubmissionRequest,
   QuizSubmissionResponse,
+  PaginatedDiscountUsages,
+  PaginatedAffiliatePayouts,
+  AffiliatePayoutStats,
 } from "@/types/student/index";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 import {
@@ -51,6 +51,8 @@ export const studentApi = createApi({
     "Quiz",
     "Comment",
     "CommentCount",
+    "DiscountUsage",
+    "AffiliatePayout",
   ],
   endpoints: (builder) => ({
     getEnrolledCourses: builder.query<PaginatedCourses, void>({
@@ -66,10 +68,44 @@ export const studentApi = createApi({
     // Get enrolled courses without pagination
     getAllEnrolledCourses: builder.query<Course[], void>({
       query: () => ({
+        method: "GET",
         url: "/student/courses/all", // Assuming a large size to get all courses
       }),
       providesTags: ["Course"],
       transformResponse: (response: { data: Course[] }) => {
+        return response.data;
+      },
+    }),
+    // Get 3 recent enrolled courses for dashboard
+    getRecentEnrolledCourses: builder.query<Course[], void>({
+      query: () => ({
+        url: "/student/courses/recent",
+        method: "GET",
+      }),
+      providesTags: ["Course"],
+      transformResponse: (response: { data: Course[] }) => {
+        return response.data;
+      },
+    }),
+    // Get student dashboard statistics
+    getDashboardStats: builder.query<DashboardStats, void>({
+      query: () => ({
+        url: "/student/courses/dashboard-stats",
+        method: "GET",
+      }),
+      providesTags: ["Course"],
+      transformResponse: (response: { data: DashboardStats }) => {
+        return response.data;
+      },
+    }),
+    // Get recent student activities
+    getRecentActivities: builder.query<RecentActivity[], void>({
+      query: () => ({
+        url: "/student/courses/recent-activities",
+        method: "GET",
+      }),
+      providesTags: ["Course"],
+      transformResponse: (response: { data: RecentActivity[] }) => {
         return response.data;
       },
     }),
@@ -100,79 +136,6 @@ export const studentApi = createApi({
       transformResponse: (response: { data: CourseSections }) => {
         return response.data;
       },
-    }),
-
-    // Get complete dashboard data with detailed activities
-    getDashboardDataComplete: builder.query<
-      DashboardData,
-      { page?: number; size?: number }
-    >({
-      async queryFn(
-        { page = 0, size = 10 },
-        _queryApi,
-        _extraOptions,
-        fetchWithBQ
-      ) {
-        try {
-          // Fetch enrolled courses
-          const coursesResult = await fetchWithBQ({
-            url: "/student/courses",
-            method: "GET",
-          });
-
-          if (coursesResult.error) {
-            return { error: coursesResult.error };
-          }
-
-          const coursesData = extractApiData<PaginatedCourses>(
-            coursesResult as any
-          );
-          const courses = coursesData?.content ?? [];
-
-          // Return empty data if no courses found
-          if (courses.length === 0) {
-            return { data: getEmptyDashboardData(size) };
-          }
-
-          // Fetch sections for all courses with error handling
-          const courseWithSections = await fetchCourseSections(
-            courses,
-            fetchWithBQ
-          );
-
-          // Calculate lesson statistics
-          const lessonStats = calculateLessonStatistics(courseWithSections);
-
-          // Calculate course statistics
-          const stats = calculateCourseStatistics(courses, lessonStats);
-
-          // Generate all activities (enrollment, lessons, quizzes)
-          const activities = generateAllActivities(courses, courseWithSections);
-
-          // Sort activities by date and create paginated response
-          const sortedActivities = sortActivitiesByDate(activities);
-          const paginatedActivities = createPaginatedActivities(
-            sortedActivities,
-            page,
-            size
-          );
-
-          return {
-            data: {
-              stats,
-              activities: paginatedActivities,
-            },
-          };
-        } catch (error) {
-          return {
-            error: {
-              status: "FETCH_ERROR",
-              error: error instanceof Error ? error.message : String(error),
-            },
-          };
-        }
-      },
-      providesTags: ["Course", "Lesson"],
     }),
 
     // Complete a lesson
@@ -415,15 +378,56 @@ export const studentApi = createApi({
         { type: "Comment", id: commentId },
       ],
     }),
+
+    // ==============================
+    // Discount Usage APIs
+    // ==============================
+    getDiscountUsages: builder.query<PaginatedDiscountUsages, void>({
+      query: () => ({
+        url: "/student/discount-usage",
+        method: "GET",
+      }),
+      providesTags: ["DiscountUsage"],
+      transformResponse: (response: { data: PaginatedDiscountUsages }) => {
+        return response.data;
+      },
+    }),
+
+    // ==============================
+    // Affiliate Payout APIs
+    // ==============================
+    getAffiliatePayouts: builder.query<PaginatedAffiliatePayouts, void>({
+      query: () => ({
+        url: "/student/affiliate-payout",
+        method: "GET",
+      }),
+      providesTags: ["AffiliatePayout"],
+      transformResponse: (response: { data: PaginatedAffiliatePayouts }) => {
+        return response.data;
+      },
+    }),
+
+    getAffiliatePayoutStats: builder.query<AffiliatePayoutStats, void>({
+      query: () => ({
+        url: "/student/affiliate-payout/statistics",
+        method: "GET",
+      }),
+      providesTags: ["AffiliatePayout"],
+      transformResponse: (response: { data: AffiliatePayoutStats }) => {
+        return response.data;
+      },
+    }),
   }),
 });
 
 export const {
   useGetEnrolledCoursesQuery,
+  useGetRecentEnrolledCoursesQuery,
   useGetAllEnrolledCoursesQuery,
   useGetCourseDetailsQuery,
   useGetCourseSectionsQuery,
-  useGetDashboardDataCompleteQuery,
+  useGetDashboardStatsQuery,
+  useGetRecentActivitiesQuery,
   useCompleteLessonMutation,
   useGetPaymentsQuery,
   useGetPaymentDetailQuery,
@@ -439,4 +443,7 @@ export const {
   useCreateCommentMutation,
   useUpdateCommentMutation,
   useDeleteCommentMutation,
+  useGetDiscountUsagesQuery,
+  useGetAffiliatePayoutsQuery,
+  useGetAffiliatePayoutStatsQuery,
 } = studentApi;

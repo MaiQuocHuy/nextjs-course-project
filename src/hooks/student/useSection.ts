@@ -3,32 +3,7 @@ import { useMemo } from "react";
 import {
   useGetEnrolledCoursesQuery,
   useGetCourseSectionsQuery,
-  useGetDashboardDataCompleteQuery,
 } from "@/services/student/studentApi";
-import type {
-  DashboardData,
-  Course,
-  CourseSections,
-  CourseStats,
-  ActivityFeedResponse,
-} from "@/types/student/index";
-
-/**
- * Hook to get dashboard data with stats and activities
- * Uses the complete dashboard endpoint to get all lesson and quiz activities
- */
-export function useDashboardData(
-  options: {
-    page?: number;
-    size?: number;
-  } = {}
-) {
-  const { page = 0, size = 10 } = options;
-
-  // Use the complete dashboard data endpoint that includes all activities
-  return useGetDashboardDataCompleteQuery({ page, size });
-}
-
 /**
  * Hook to get course with sections and progress
  */

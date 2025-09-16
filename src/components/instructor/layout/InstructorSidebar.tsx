@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   LayoutDashboard,
   BookOpen,
@@ -12,10 +12,13 @@ import {
   LogOut,
   GraduationCap,
   RefreshCw,
-} from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+  Award,
+  Coins,
+  Tag,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 interface InstructorSidebarProps {
   open: boolean;
@@ -24,12 +27,19 @@ interface InstructorSidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/instructor', icon: LayoutDashboard },
-  { name: 'Courses', href: '/instructor/courses', icon: BookOpen },
-  { name: 'Students', href: '/instructor/students', icon: Users },
-  { name: 'Earnings', href: '/instructor/earnings', icon: DollarSign },
-  { name: 'Refunds', href: '/instructor/refunds', icon: RefreshCw },
-  { name: 'Notifications', href: '/instructor/notifications', icon: Bell },
+  { name: "Dashboard", href: "/instructor", icon: LayoutDashboard },
+  { name: "Courses", href: "/instructor/courses", icon: BookOpen },
+  { name: "Students", href: "/instructor/students", icon: Users },
+  { name: "Certificates", href: "/instructor/certificates", icon: Award },
+  { name: "Earnings", href: "/instructor/earnings", icon: DollarSign },
+  { name: "Refunds", href: "/instructor/refunds", icon: RefreshCw },
+  {
+    name: "Affiliate Payouts",
+    href: "/instructor/affiliate-payout",
+    icon: Coins,
+  },
+  { name: "Discount Usage", href: "/instructor/discount-usage", icon: Tag },
+  { name: "Notifications", href: "/instructor/notifications", icon: Bell },
 ];
 
 const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
@@ -41,7 +51,7 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
       <Link
         href="/instructor"
         className={`flex h-16 items-center px-6 & ${
-          isLoading && 'pointer-events-none'
+          isLoading && "pointer-events-none"
         }`}
       >
         <div className="flex items-center space-x-3">
@@ -64,13 +74,13 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`${isLoading && 'pointer-events-none'}`}
+                className={`${isLoading && "pointer-events-none"}`}
               >
                 <Button
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start h-11 px-4 /80 cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                    isActive && 'bg-accent text-accent-foreground'
+                    "w-full justify-start h-11 px-4 /80 cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                    isActive && "bg-accent text-accent-foreground"
                   )}
                 >
                   <item.icon className="mr-3 h-4 w-4" />

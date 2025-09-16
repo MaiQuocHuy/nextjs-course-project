@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useCourseWithSections } from "@/hooks/student/useDashboard";
+import { useCourseWithSections } from "@/hooks/student/useSection";
 import { LearningSidebar } from "./LearningSidebar";
 import { LearningContent } from "./LearningContent";
 import { Button } from "@/components/ui/button";

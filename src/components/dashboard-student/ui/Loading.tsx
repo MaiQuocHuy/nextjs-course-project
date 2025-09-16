@@ -1,4 +1,4 @@
-import { Loader2, Receipt } from "lucide-react";
+import { Coins, Loader2, Receipt, Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -87,10 +87,10 @@ export function Loading({
 }
 
 // Skeleton loading components for specific use cases
-export function CoursesLoadingSkeleton() {
+export function CoursesLoadingSkeleton({ count }: { count?: number }) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: count || 6 }).map((_, i) => (
         <div key={i} className="border rounded-lg overflow-hidden">
           <Skeleton className="aspect-video w-full" />
           <div className="p-4 space-y-3">
@@ -215,6 +215,149 @@ export function PaymentTableLoadingSkeleton() {
             <Card key={i} className="p-4">
               <div className="flex items-center gap-3 mb-3">
                 <Skeleton className="h-10 w-10 rounded" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden md:block">
+          <div className="rounded-md border overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-24" />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-16" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Affiliate loading skeletons
+export function AffiliateLoadingSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Coins className="h-5 w-5" />
+          Affiliate Payout History
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        {/* Mobile Loading */}
+        <div className="block md:hidden space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop Loading */}
+        <div className="hidden md:block">
+          <div className="rounded-md border overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-24" />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-4 w-16" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <Skeleton className="h-4 w-full" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Discount Usage loading skeletons
+export function DiscountUsageLoadingSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Tag className="h-5 w-5" />
+          Discount Usage History
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Mobile Loading */}
+        <div className="block md:hidden space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1">
                   <Skeleton className="h-4 w-32 mb-1" />
                   <Skeleton className="h-3 w-20" />

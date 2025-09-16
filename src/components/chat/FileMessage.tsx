@@ -5,11 +5,38 @@ import { Button } from "@/components/ui/button";
 import { FileImage, FileText, BookText, Download } from "lucide-react";
 import { formatFileSize } from "@/lib/websocket/config";
 import { ChatMessage } from "@/types/chat";
+import { cn } from "@/lib/utils";
 
 interface FileMessageProps {
   message: ChatMessage;
   isMobile?: boolean;
 }
+
+// Helper function to download file directly
+const downloadFile = async (url: string, fileName: string) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    // Create a temporary URL for the blob
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    // Create a temporary anchor element and trigger download
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error("Download failed:", error);
+    // Fallback to opening in new tab if download fails
+    window.open(url, "_blank");
+  }
+};
 
 export const FileMessage: React.FC<FileMessageProps> = ({
   message,
@@ -30,38 +57,60 @@ export const FileMessage: React.FC<FileMessageProps> = ({
 
   if (isImage) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 w-full max-w-full">
         {message.fileUrl && (
-          <div className="relative rounded-lg overflow-hidden bg-background/10">
+          <div className="relative rounded-lg overflow-hidden bg-background/10 w-full">
             <img
               src={message.thumbnailUrl || message.fileUrl}
               alt={fileName}
-              className="max-w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              className={cn(
+                "w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity",
+                isMobile ? "max-h-32 max-w-[200px]" : "max-h-48 max-w-[280px]"
+              )}
               onClick={() => window.open(message.fileUrl, "_blank")}
             />
             <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
               <Button
                 variant="secondary"
                 size="sm"
-                className="bg-black/50 text-white px-2 py-1 rounded text-xs hover:bg-black/70 border-0"
+                className={cn(
+                  "bg-black/50 text-white rounded hover:bg-black/70 border-0",
+                  isMobile ? "px-1.5 py-1 text-xs" : "px-2 py-1 text-xs"
+                )}
                 onClick={(e) => {
                   e.stopPropagation();
                   window.open(message.fileUrl, "_blank");
                 }}
               >
-                Click to view full size
+                {isMobile ? "View" : "Click to view full size"}
               </Button>
             </div>
           </div>
         )}
-        <div className="flex items-center gap-2 p-2 bg-background/10 rounded-lg">
-          <div className="text-lg">
+        <div
+          className={cn(
+            "flex items-center gap-2 bg-background/10 rounded-lg w-full",
+            isMobile ? "p-1.5" : "p-2"
+          )}
+        >
+          <div
+            className={cn("flex-shrink-0", isMobile ? "text-base" : "text-lg")}
+          >
             <FileImage />
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-xs truncate">{fileName}</div>
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div
+              className={cn(
+                "font-medium truncate",
+                isMobile ? "text-xs" : "text-xs"
+              )}
+            >
+              {fileName}
+            </div>
             {message.fileSize && (
-              <div className="text-xs opacity-70">
+              <div
+                className={cn("opacity-70", isMobile ? "text-xs" : "text-xs")}
+              >
                 {formatFileSize(message.fileSize)}
               </div>
             )}
@@ -70,17 +119,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              asChild
-              className="text-current hover:bg-background/20 h-8 w-8 p-0"
+              className={cn(
+                "text-current hover:bg-background/20 flex-shrink-0",
+                isMobile ? "h-6 w-6 p-0" : "h-8 w-8 p-0"
+              )}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                downloadFile(message.fileUrl!, fileName);
+              }}
+              title="Download image"
             >
-              <a
-                href={message.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Download image"
-              >
-                <Download className="w-3 h-3" />
-              </a>
+              <Download className={cn(isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
             </Button>
           )}
         </div>
@@ -90,14 +140,31 @@ export const FileMessage: React.FC<FileMessageProps> = ({
 
   if (isPdf) {
     return (
-      <div className="flex items-center gap-3 p-3 bg-background/10 rounded-lg border">
-        <div className="text-2xl">
+      <div
+        className={cn(
+          "flex items-center gap-2 bg-background/10 rounded-lg border w-full max-w-full",
+          isMobile ? "p-2" : "p-3"
+        )}
+      >
+        <div className={cn("flex-shrink-0", isMobile ? "text-xl" : "text-2xl")}>
           <FileText />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm truncate">{fileName}</div>
-          <div className="text-xs opacity-70 flex items-center gap-1">
-            <span>PDF Document</span>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div
+            className={cn(
+              "font-medium truncate",
+              isMobile ? "text-xs" : "text-sm"
+            )}
+          >
+            {fileName}
+          </div>
+          <div
+            className={cn(
+              "opacity-70 flex items-center gap-1",
+              isMobile ? "text-xs" : "text-xs"
+            )}
+          >
+            <span>PDF</span>
             {message.fileSize && (
               <>
                 <span>•</span>
@@ -110,17 +177,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            asChild
-            className="text-current hover:bg-background/20"
+            className={cn(
+              "text-current hover:bg-background/20 flex-shrink-0",
+              isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              downloadFile(message.fileUrl!, fileName);
+            }}
+            title="Download PDF"
           >
-            <a
-              href={message.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open PDF in new tab"
-            >
-              <Download className="w-4 h-4" />
-            </a>
+            <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
           </Button>
         )}
       </div>
@@ -129,13 +197,30 @@ export const FileMessage: React.FC<FileMessageProps> = ({
 
   if (isDoc) {
     return (
-      <div className="flex items-center gap-3 p-3 bg-background/10 rounded-lg border">
-        <div className="text-2xl">
+      <div
+        className={cn(
+          "flex items-center gap-2 bg-background/10 rounded-lg border w-full max-w-full",
+          isMobile ? "p-2" : "p-3"
+        )}
+      >
+        <div className={cn("flex-shrink-0", isMobile ? "text-xl" : "text-2xl")}>
           <BookText />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm truncate">{fileName}</div>
-          <div className="text-xs opacity-70 flex items-center gap-1">
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div
+            className={cn(
+              "font-medium truncate",
+              isMobile ? "text-xs" : "text-sm"
+            )}
+          >
+            {fileName}
+          </div>
+          <div
+            className={cn(
+              "opacity-70 flex items-center gap-1",
+              isMobile ? "text-xs" : "text-xs"
+            )}
+          >
             <span>Document</span>
             {message.fileSize && (
               <>
@@ -149,17 +234,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            asChild
-            className="text-current hover:bg-background/20"
+            className={cn(
+              "text-current hover:bg-background/20 flex-shrink-0",
+              isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              downloadFile(message.fileUrl!, fileName);
+            }}
+            title="Download document"
           >
-            <a
-              href={message.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Download document"
-            >
-              <Download className="w-4 h-4" />
-            </a>
+            <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
           </Button>
         )}
       </div>
@@ -168,11 +254,30 @@ export const FileMessage: React.FC<FileMessageProps> = ({
 
   // Generic file
   return (
-    <div className="flex items-center gap-3 p-3 bg-background/10 rounded-lg border">
-      <div className="text-2xl">📎</div>
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm truncate">{fileName}</div>
-        <div className="text-xs opacity-70 flex items-center gap-1">
+    <div
+      className={cn(
+        "flex items-center gap-2 bg-background/10 rounded-lg border w-full max-w-full",
+        isMobile ? "p-2" : "p-3"
+      )}
+    >
+      <div className={cn("flex-shrink-0", isMobile ? "text-lg" : "text-2xl")}>
+        📎
+      </div>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div
+          className={cn(
+            "font-medium truncate",
+            isMobile ? "text-xs" : "text-sm"
+          )}
+        >
+          {fileName}
+        </div>
+        <div
+          className={cn(
+            "opacity-70 flex items-center gap-1",
+            isMobile ? "text-xs" : "text-xs"
+          )}
+        >
           <span>File</span>
           {message.fileSize && (
             <>
@@ -186,17 +291,18 @@ export const FileMessage: React.FC<FileMessageProps> = ({
         <Button
           size="sm"
           variant="ghost"
-          asChild
-          className="text-current hover:bg-background/20"
+          className={cn(
+            "text-current hover:bg-background/20 flex-shrink-0",
+            isMobile ? "h-7 w-7 p-0" : "h-8 w-8 p-0"
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            downloadFile(message.fileUrl!, fileName);
+          }}
+          title="Download file"
         >
-          <a
-            href={message.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Download file"
-          >
-            <Download className="w-4 h-4" />
-          </a>
+          <Download className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")} />
         </Button>
       )}
     </div>

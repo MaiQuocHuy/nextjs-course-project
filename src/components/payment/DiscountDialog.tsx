@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useValidateDiscountMutation } from "@/services/paymentApi";
+import {
+  useValidateDiscountMutation,
+  useGetAvailableDiscountsQuery,
+} from "@/services/paymentApi";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -21,6 +26,8 @@ import {
   DollarSign,
   Tag,
   Loader2,
+  Clock,
+  Users,
 } from "lucide-react";
 
 interface DiscountDialogProps {
@@ -62,6 +69,11 @@ export default function DiscountDialog({
   const [isApplying, setIsApplying] = useState(false);
 
   const [validateDiscount] = useValidateDiscountMutation();
+  const {
+    data: availableDiscounts,
+    isLoading: isLoadingDiscounts,
+    error: discountsError,
+  } = useGetAvailableDiscountsQuery();
 
   // Format price to USD with 2 decimal places
   const formatPrice = (price: number) => {
@@ -106,6 +118,12 @@ export default function DiscountDialog({
     if (!value.trim()) {
       setValidationResult(null);
     }
+  };
+
+  // Handle selecting a discount from available list
+  const handleSelectDiscount = (code: string) => {
+    setDiscountCode(code);
+    // The useEffect will automatically validate this code
   };
 
   const handleApplyDiscount = async () => {
@@ -204,6 +222,82 @@ export default function DiscountDialog({
               </div>
             )}
           </div>
+
+          {/* Available Discount Codes */}
+          {availableDiscounts && availableDiscounts.length > 0 && (
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Gift className="h-4 w-4 flex-shrink-0" />
+                <span>Available Discount Codes</span>
+              </Label>
+              <div className="grid gap-2 max-h-48 overflow-y-auto">
+                {availableDiscounts.map((discount) => (
+                  <Card
+                    key={discount.id}
+                    className={`cursor-pointer transition-colors hover:bg-blue-50 border ${
+                      discountCode === discount.code
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200"
+                    }`}
+                    onClick={() => handleSelectDiscount(discount.code)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-medium text-blue-600">
+                                {discount.code}
+                              </span>
+                              <Badge variant="secondary" className="text-xs">
+                                {discount.discountPercent}% OFF
+                              </Badge>
+                            </div>
+                            {discount.description && (
+                              <span className="text-xs text-gray-600 mt-1">
+                                {discount.description}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end text-right">
+                          {discount.remainingUsageCount !== null && (
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <Users className="h-3 w-3" />
+                              <span>
+                                {discount.remainingUsageCount === -1
+                                  ? "Unlimited"
+                                  : `${discount.remainingUsageCount} left`}
+                              </span>
+                            </div>
+                          )}
+                          {discount.endDate && (
+                            <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                Expires{" "}
+                                {new Date(
+                                  discount.endDate
+                                ).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Loading available discounts */}
+          {isLoadingDiscounts && (
+            <div className="flex items-center justify-center p-4 text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Loading available discounts...
+            </div>
+          )}
 
           {/* Discount Input Form */}
           <div className="space-y-4">

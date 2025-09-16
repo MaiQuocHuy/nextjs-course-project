@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./Sidebar";
-import { useDashboardData } from "@/hooks/student/useDashboard";
+import { useGetDashboardStatsQuery } from "@/services/student/studentApi";
 import { DashboardHeaderLoadingSkeleton } from "./ui/Loading";
 import {
   StatsError,
@@ -40,14 +40,11 @@ import Link from "next/link";
 
 export function DashboardHeader() {
   const {
-    data: dashboardData,
+    data: dashboardStats,
     error,
     isLoading,
     refetch,
-  } = useDashboardData({
-    page: 0,
-    size: 20,
-  });
+  } = useGetDashboardStatsQuery();
   const { user, logout } = useAuth();
   if (isLoading) {
     return <DashboardHeaderLoadingSkeleton />;
@@ -59,9 +56,9 @@ export function DashboardHeader() {
     totalCourses = 0,
     completedCourses = 0,
     inProgressCourses = 0,
-    completedLessons = 0,
+    lessonsCompleted = 0,
     totalLessons = 0,
-  } = dashboardData?.stats || {};
+  } = dashboardStats || {};
 
   const handleLogout = async () => {
     await logout();
@@ -91,12 +88,12 @@ export function DashboardHeader() {
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h1 className="text-xl font-semibold text-foreground">
+                <h1 className="sm:text-sm md:text-xl font-semibold text-foreground">
                   Welcome, {user?.name || "Student"}!
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Completed {dashboardData?.stats?.completedLessons || 0} of{" "}
-                  {dashboardData?.stats?.totalLessons || 0} lessons
+                  Completed {lessonsCompleted || 0} of {totalLessons || 0}{" "}
+                  lessons
                 </p>
               </div>
             </div>
@@ -104,15 +101,11 @@ export function DashboardHeader() {
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-4 text-sm mr-4">
                 <div className="text-center">
-                  <div className="font-medium">
-                    {dashboardData?.stats?.totalCourses || 0}
-                  </div>
+                  <div className="font-medium">{totalCourses || 0}</div>
                   <div className="text-muted-foreground">Courses</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium">
-                    {dashboardData?.stats?.completedCourses || 0}
-                  </div>
+                  <div className="font-medium">{completedCourses || 0}</div>
                   <div className="text-muted-foreground">Completed</div>
                 </div>
               </div>
