@@ -4,8 +4,6 @@ import type {
   Activity,
   CourseStats,
   ActivityFeedResponse,
-  DashboardData,
-  Section,
   Lesson,
 } from "@/types/student/index";
 
@@ -24,32 +22,6 @@ interface LessonStats {
 interface ApiResponse<T = any> {
   data?: { data?: T };
   error?: any;
-}
-
-/**
- * Returns empty dashboard data structure
- */
-export function getEmptyDashboardData(size: number = 10): DashboardData {
-  return {
-    stats: {
-      totalCourses: 0,
-      completedCourses: 0,
-      inProgressCourses: 0,
-      completedLessons: 0,
-      totalLessons: 0,
-    },
-    activities: {
-      content: [],
-      page: {
-        number: 0,
-        size,
-        totalPages: 0,
-        totalElements: 0,
-        first: true,
-        last: true,
-      },
-    },
-  };
 }
 
 /**

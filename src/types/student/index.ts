@@ -225,11 +225,6 @@ export interface ActivityFeedResponse {
   };
 }
 
-export interface DashboardData {
-  stats: CourseStats; // Thống kê chung
-  activities: ActivityFeedResponse; // Lịch sử hoạt động
-}
-
 // ==============================
 // Dashboard Statistics Types
 // ==============================

@@ -1,8 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type {
-  CourseSections,
   PaginatedCourses,
-  DashboardData,
   DashboardStats,
   RecentActivity,
   Course,
@@ -23,16 +21,6 @@ import type {
   CourseStructure,
 } from "@/types/student/index";
 import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
-import {
-  getEmptyDashboardData,
-  extractApiData,
-  generateAllActivities,
-  calculateLessonStatistics,
-  calculateCourseStatistics,
-  sortActivitiesByDate,
-  createPaginatedActivities,
-  fetchCourseSections,
-} from "@/utils/student/dashboardHelpers";
 import {
   Comment,
   CommentCountResponse,
