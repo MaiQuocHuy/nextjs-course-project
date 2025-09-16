@@ -91,26 +91,6 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
           })}
         </nav>
       </ScrollArea>
-
-      {/* Bottom section */}
-      <div className="p-4 space-y-2">
-        <Button
-          disabled={isLoading}
-          variant="ghost"
-          className="w-full justify-start /80 hover: hover:bg-white/10"
-        >
-          <Settings className="mr-3 h-4 w-4" />
-          Settings
-        </Button>
-        <Button
-          disabled={isLoading}
-          variant="ghost"
-          className="w-full justify-start /80 hover: hover:bg-white/10"
-        >
-          <LogOut className="mr-3 h-4 w-4" />
-          Logout
-        </Button>
-      </div>
     </div>
   );
 };
