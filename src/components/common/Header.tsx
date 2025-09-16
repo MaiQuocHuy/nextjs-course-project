@@ -151,12 +151,12 @@ export function Header() {
           <SearchBar className="w-80 transition-all duration-300 focus-within:scale-105 focus-within:shadow-lg relative z-[100]" />
         </div>
 
-        {/* Right side - Desktop */}
-        <div className="hidden md:flex items-center space-x-3">
+        {/* Right side - Desktop & Tablet */}
+        <div className="hidden sm:flex items-center space-x-3">
           {isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                <button className="group inline-flex items-center gap-2 p-2 rounded-lg font-medium transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
                   <Avatar>
                     <AvatarImage
                       className="h-7 w-7 rounded-full"
@@ -170,13 +170,11 @@ export function Header() {
                         .join("")}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">{userName}</span>
-                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-56 mt-2 bg-white/95 dark:bg-black/95 backdrop-blur-xl border border-border/50 shadow-xl"
+                className="w-72 mt-2 bg-white/95 dark:bg-black/95 backdrop-blur-xl border border-border/50 shadow-xl"
               >
                 <DropdownMenuLabel className="flex items-center gap-2 py-3">
                   <Avatar>
@@ -194,7 +192,9 @@ export function Header() {
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-sm text-muted-foreground">{userEmail}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {userEmail}
+                    </span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -209,7 +209,9 @@ export function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
-                    href={`${userRole === "STUDENT" ? "/dashboard" : "/instructor"}`}
+                    href={`${
+                      userRole === "STUDENT" ? "/dashboard" : "/instructor"
+                    }`}
                     className="flex items-center gap-2 cursor-pointer transition-colors hover:bg-primary/10"
                   >
                     <LayoutDashboard className="h-4 w-4" />
@@ -239,24 +241,24 @@ export function Header() {
             <div className="flex items-center space-x-2">
               <Link
                 href="/login"
-                className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="group inline-flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg font-medium text-primary border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               >
                 <LogIn className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                Login
+                <span className="hidden md:inline">Login</span>
               </Link>
               <Link
                 href="/register"
-                className="group inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                className="group inline-flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
                 <UserPlus className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                Register
+                <span className="hidden md:inline">Register</span>
               </Link>
             </div>
           )}
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex md:hidden items-center space-x-2">
+        <div className="flex sm:hidden items-center space-x-2">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
@@ -335,7 +337,9 @@ export function Header() {
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-medium">{userName}</span>
-                          <span className="text-sm text-muted-foreground">{userEmail}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {userEmail}
+                          </span>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -348,7 +352,11 @@ export function Header() {
                           Profile
                         </Link>
                         <Link
-                          href={`${userRole === "STUDENT" ? "/dashboard" : "/instructor"}`}
+                          href={`${
+                            userRole === "STUDENT"
+                              ? "/dashboard"
+                              : "/instructor"
+                          }`}
                           className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary/10 transition-colors"
                           onClick={() => setIsOpen(false)}
                         >
