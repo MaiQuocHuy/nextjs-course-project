@@ -16,9 +16,7 @@ export interface CourseHeaderProps {
   isEdittingCourse?: boolean;
 }
 
-const CourseOverview = ({
-  isEdittingCourse,
-}: CourseHeaderProps) => {
+const CourseOverview = ({ isEdittingCourse }: CourseHeaderProps) => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
