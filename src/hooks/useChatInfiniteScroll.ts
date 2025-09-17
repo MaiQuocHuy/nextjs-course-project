@@ -11,6 +11,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useGetCourseMessagesQuery } from "@/services/websocket/chatApi";
 import { ChatMessage } from "@/types/chat";
+import { toast } from "sonner";
 
 interface UseChatInfiniteScrollProps {
   courseId: string;
@@ -203,7 +204,7 @@ export const useChatInfiniteScroll = ({
       refetchInitial?.();
     } catch (err) {
       // ignore refetch errors here; the normal query state will surface errors
-      console.debug("useChatInfiniteScroll: refetchInitial failed", err);
+      toast.error("Failed to load messages. Please try again.");
     }
   }, [courseId, resetMessages]);
 

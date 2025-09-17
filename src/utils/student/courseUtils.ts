@@ -1,12 +1,12 @@
 import type {
   Course,
   CourseSections,
-  CourseStats,
   Activity,
   ActivityFeedResponse,
   Section,
   Lesson,
 } from "@/types/student";
+import { CourseStats } from "@/types/student/statistics";
 
 /**
  * Calculate lesson statistics from course sections

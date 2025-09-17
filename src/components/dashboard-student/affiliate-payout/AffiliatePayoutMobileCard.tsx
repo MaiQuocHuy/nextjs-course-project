@@ -21,6 +21,7 @@ import {
   formatDate,
   getAffiliateStatusBadge,
 } from "@/utils/student";
+import { toast } from "sonner";
 
 interface AffiliatePayoutMobileCardProps {
   affiliatePayout: AffiliatePayout;
@@ -35,7 +36,7 @@ export function AffiliatePayoutMobileCard({
     try {
       return formatCurrency(amount, "USD");
     } catch (error) {
-      console.error("Error formatting currency:", error);
+      toast.error("Error formatting currency");
       return `$${amount.toFixed(2)}`;
     }
   };
@@ -45,7 +46,7 @@ export function AffiliatePayoutMobileCard({
     try {
       return formatDate(dateString);
     } catch (error) {
-      console.error("Error formatting date:", error);
+      toast.error("Error formatting date");
       return dateString;
     }
   };

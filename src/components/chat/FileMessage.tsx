@@ -6,6 +6,7 @@ import { FileImage, FileText, BookText, Download } from "lucide-react";
 import { formatFileSize } from "@/lib/websocket/config";
 import { ChatMessage } from "@/types/chat";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface FileMessageProps {
   message: ChatMessage;
@@ -32,7 +33,7 @@ const downloadFile = async (url: string, fileName: string) => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(downloadUrl);
   } catch (error) {
-    console.error("Download failed:", error);
+    toast.error("Failed to download file. Please try again.");
     // Fallback to opening in new tab if download fails
     window.open(url, "_blank");
   }

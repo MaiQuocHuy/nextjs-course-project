@@ -68,7 +68,9 @@ export const useFileUpload = ({
             mimeType: file.type,
           }).unwrap();
         } catch (error) {
-          console.error("Failed to send file message after upload:", error);
+          toast.error(
+            "Failed to send file message after upload. Please try again."
+          );
           setPendingMessages((prev) =>
             prev.map((m) =>
               m.tempId === tempId ? { ...m, status: "ERROR" } : m
@@ -81,7 +83,7 @@ export const useFileUpload = ({
       };
 
       uploadToCloudinary(file).catch((err) => {
-        console.error("File upload failed:", err);
+        toast.error(`Upload error: ${err.message}`);
         setPendingMessages((prev) =>
           prev.map((m) => (m.tempId === tempId ? { ...m, status: "ERROR" } : m))
         );
