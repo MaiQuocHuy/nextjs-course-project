@@ -88,7 +88,6 @@ import ExcelFileFormatIns from './ExcelFileFormatIns';
 import VideoUpload from './file-upload/VideoUpload';
 import DocumentUpload from './file-upload/DocumentUpload';
 import ExcelFileUpload from './file-upload/ExcelFileUpload';
-import { fa } from 'zod/v4/locales';
 
 interface CourseContentProps {
   courseId: string;
@@ -1108,7 +1107,7 @@ export default function CourseContent({
                 </div>
 
                 {/* Button remove section */}
-                {currentMode === 'edit' && watchedSections.length > 1 && (
+                {currentMode !== 'view' && watchedSections.length > 1 && (
                   <Button
                     type="button"
                     variant="ghost"
