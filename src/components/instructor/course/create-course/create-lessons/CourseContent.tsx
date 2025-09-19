@@ -1107,7 +1107,7 @@ export default function CourseContent({
                 </div>
 
                 {/* Button remove section */}
-                {currentMode === 'edit' && watchedSections.length > 1 && (
+                {currentMode !== 'view' && watchedSections.length > 1 && (
                   <Button
                     type="button"
                     variant="ghost"
