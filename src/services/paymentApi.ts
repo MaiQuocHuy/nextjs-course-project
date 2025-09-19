@@ -149,7 +149,9 @@ export const paymentApi = createApi({
           discountApplied: priceData.discountApplied || false,
           appliedDiscountCode: priceData.appliedDiscountCode,
           currency: priceData.currency || "VND",
-          message: priceData.discountApplied ? "Discount applied successfully" : "Invalid discount code or discount has expired"
+          message: priceData.discountApplied
+            ? "Discount applied successfully"
+            : "Invalid discount code or discount has expired",
         };
       },
     }),
@@ -189,7 +191,6 @@ export const paymentApi = createApi({
         return response.data;
       },
       transformErrorResponse: (error: any) => {
-        console.error("Create referral discount API error:", error);
         return error.data;
       },
       invalidatesTags: ["ReferralDiscount"],
