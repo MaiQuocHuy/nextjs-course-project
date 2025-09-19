@@ -210,7 +210,7 @@ export const paymentApi = createApi({
         return response.data;
       },
       transformErrorResponse: (error: any) => {
-        console.error("Get user referral discount API error:", error);
+        // console.error("Get user referral discount API error:", error);
         return error.data;
       },
       providesTags: ["ReferralDiscount"],
@@ -228,7 +228,7 @@ export const paymentApi = createApi({
         return response.data;
       },
       transformErrorResponse: (error: any) => {
-        console.error("Get available discounts API error:", error);
+        // console.error("Get available discounts API error:", error);
         return error.data;
       },
       providesTags: ["AvailableDiscounts"],

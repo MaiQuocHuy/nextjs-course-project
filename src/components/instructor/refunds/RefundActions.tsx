@@ -43,8 +43,6 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
   });
   const [failureReason, setFailureReason] = useState('');
 
-  const router = useRouter();
-
   const handleStatusUpdate = (newStatus: 'COMPLETED' | 'FAILED') => {
     setConfirmDialog({
       isOpen: true,
@@ -96,22 +94,36 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
             variant="ghost"
             className="h-8 w-8 p-0 hover:bg-muted transition-colors"
             disabled={isLoading}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
           >
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuContent
+          align="end"
+          className="w-[160px]"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+        >
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem asChild>
             <Link
               href={`/instructor/refunds/${refund.id}`}
               target="_blank"
               className="flex items-center gap-1"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                window.open(`/instructor/refunds/${refund.id}`, '_blank');
+              }}
             >
               <Eye className="mr-2 h-4 w-4" />
               View details
@@ -124,6 +136,7 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   handleStatusUpdate('COMPLETED');
                 }}
                 className="text-green-600 cursor-pointer"
@@ -135,6 +148,7 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   handleStatusUpdate('FAILED');
                 }}
                 className="text-red-600 cursor-pointer"
@@ -153,7 +167,9 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
           setConfirmDialog({ isOpen: open, action: null })
         }
       >
-        <AlertDialogContent>
+        <AlertDialogContent
+          onClick={(e) => e.stopPropagation()}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Refund Status Update</AlertDialogTitle>
             <AlertDialogDescription>
@@ -175,7 +191,12 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
                 id="failure-reason"
                 placeholder="Enter reason for rejecting the refund..."
                 value={failureReason}
-                onChange={(e) => setFailureReason(e.target.value)}
+                onChange={(e) => {
+                  setFailureReason(e.target.value);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 rows={3}
               />
             </div>
