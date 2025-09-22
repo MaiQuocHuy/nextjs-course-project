@@ -20,7 +20,7 @@ import {
   usePagination,
 } from "@/components/ui/custom-pagination";
 
-const COURSES_PER_PAGE = 8;
+const COURSES_PER_PAGE = 6;
 
 type CourseListProps = {
   cols?: number;
@@ -116,16 +116,15 @@ export function CourseList({ cols }: CourseListProps) {
 
   if (courses.length === 0) {
     return (
-      <Card className="p-6 text-center">
-        <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No courses enrolled</h3>
-        <p className="text-muted-foreground mb-4">
-          Start your learning journey by browsing and enrolling in courses.
-        </p>
-        <Button asChild>
-          <Link href="/courses">Browse Courses</Link>
-        </Button>
-      </Card>
+      <div className="space-y-6">
+        <CourseFilter />
+        <EmptyState
+          hasFilter={
+            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+          }
+          onClearFilter={() => dispatch(resetFilters())}
+        />
+      </div>
     );
   }
 

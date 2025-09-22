@@ -155,9 +155,14 @@ export function AffiliatePayoutTableRow({
                         Payout ID
                       </span>
                     </div>
-                    <p className="text-sm text-gray-900 font-mono break-all">
-                      {affiliatePayout.id}
-                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-sm text-gray-900 font-mono overflow-hidden text-ellipsis">
+                          {affiliatePayout.id}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>{affiliatePayout.id}</TooltipContent>
+                    </Tooltip>
                   </div>
 
                   {/* Discount Info */}

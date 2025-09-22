@@ -141,9 +141,15 @@ export function DiscountUsageTableRow({
                       Usage ID
                     </span>
                   </div>
-                  <p className="text-sm text-gray-900 font-mono break-all">
-                    {discountUsage.id}
-                  </p>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-sm text-gray-900 font-mono overflow-hidden text-ellipsis">
+                        {discountUsage.id}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>{discountUsage.id}</TooltipContent>
+                  </Tooltip>
                 </div>
 
                 {/* User Details */}

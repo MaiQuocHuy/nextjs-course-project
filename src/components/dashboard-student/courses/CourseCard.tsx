@@ -30,7 +30,11 @@ export function CourseCard({ course }: CourseCardProps) {
               className="bg-white/90 hover:bg-white"
             >
               <Link href={`/dashboard/learning/${course.courseId}`}>
-                Continue Learning
+                {course.progress === 0
+                  ? "Start Course"
+                  : course.progress === 1
+                  ? "Continue"
+                  : "Continue Learning"}
               </Link>
             </Button>
           </div>
@@ -41,7 +45,7 @@ export function CourseCard({ course }: CourseCardProps) {
         <div className="space-y-3">
           {/* Course Title and Status */}
           <div className="space-y-2">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2 h-[56px]">
               <CardTitle className="text-lg line-clamp-2 flex-1">
                 <Link
                   href={`/dashboard/learning/${course.courseId}`}
@@ -73,7 +77,11 @@ export function CourseCard({ course }: CourseCardProps) {
           <div className="pt-2">
             <Button asChild className="w-full">
               <Link href={`/dashboard/learning/${course.courseId}`}>
-                Continue Learning
+                {course.progress === 0
+                  ? "Start Course"
+                  : course.progress === 1
+                  ? "Continue"
+                  : "Continue Learning"}
               </Link>
             </Button>
           </div>

@@ -133,7 +133,7 @@ export default function CertificateDetailModal({
 
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="w-[95vw] max-w-7xl h-[95vh] p-0 flex flex-col">
+        <DialogContent className="w-[95vw] !max-w-7xl h-[95vh] p-0 flex flex-col">
           <DialogHeader className="p-4 md:p-6 pb-2 flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export default function CertificateDetailModal({
     <div>
       <CertificatePreview />
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] !max-w-4xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Award className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
