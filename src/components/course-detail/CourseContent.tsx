@@ -302,7 +302,7 @@ export function CourseContent({
 
           {/* Preview Video Section */}
           {course.sampleVideoUrl && (
-            <Card>
+            <Card data-course-preview>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Course Preview</span>

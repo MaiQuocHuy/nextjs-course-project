@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import Link from "next/link";
 import { getContactInfo } from "@/app/data/contact";
+import { InteractiveMap } from "@/components/maps/InteractiveMap";
 
 const iconMap = {
   Mail,
@@ -85,35 +86,32 @@ export function ContactInfoSection() {
         </div>
 
         {/* Map Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-bold mb-4">Visit Our Campus</h3>
-          <p className="text-muted-foreground mb-6">
-            Our beautiful campus is open for visits. Schedule a tour to see our
-            facilities and meet our team in person.
-          </p>
-
-          {/* Mock Map Placeholder */}
-          <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-64 mb-6 flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500 dark:text-gray-400">
-                Interactive Map Coming Soon
-              </p>
-            </div>
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-2xl p-8">
+          <div className="text-center mb-8">
+            <h3 className="text-3xl font-bold mb-4">Visit Our Campus</h3>
+            <p className="text-muted-foreground text-lg">
+              Our beautiful campus is open for visits. Schedule a tour to see
+              our facilities and meet our team in person.
+            </p>
           </div>
 
-          <Button
-            asChild
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 font-semibold px-8 py-3 rounded-lg"
-          >
-            <Link
-              href="https://maps.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Interactive Map */}
+          <InteractiveMap className="mb-6" />
+
+          <div className="text-center">
+            <Button
+              asChild
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 font-semibold px-8 py-3 rounded-lg"
             >
-              Schedule a Campus Tour
-            </Link>
-          </Button>
+              <Link
+                href="mailto:admissions@vku.udn.vn?subject=Campus Tour Request"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Schedule a Campus Tour
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </section>
