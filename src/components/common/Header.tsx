@@ -83,7 +83,7 @@ export function Header() {
     try {
       await authLogout("/");
     } catch (error) {
-      console.error("Logout failed:", error);
+      // console.error("Logout failed:", error);
       // Force redirect if logout fails
       router.push("/login");
     }

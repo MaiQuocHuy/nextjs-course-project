@@ -52,6 +52,8 @@ const PUBLIC_PATHS = [
   '/about',
   '/contact',
   '/courses',
+  '/privacy',
+  '/terms',
   '/access-denied',
   '/certificates'
 ];

@@ -6,7 +6,10 @@ import { CourseList } from "@/components/common/CourseList";
 import { CourseSidebar } from "@/components/course/CourseSidebar";
 import { CourseHeader } from "@/components/course/CourseHeader";
 import { CoursePagination } from "@/components/course/CoursePagination";
-import { CourseSkeleton, SidebarSkeleton } from "@/components/course/CourseSkeleton";
+import {
+  CourseSkeleton,
+  SidebarSkeleton,
+} from "@/components/course/CourseSkeleton";
 import { EmptyState } from "@/components/course/EmptyState";
 import { useCourses } from "@/hooks/useCourses";
 import { Course, useGetCoursesQuery } from "@/services/coursesApi";
@@ -50,10 +53,14 @@ function CoursesPageContent() {
       page: currentPage - 1, // API sử dụng 0-based indexing
       size: itemsPerPage,
       search: searchQuery.trim() || undefined,
-      categoryId: filters.categories.length > 0 ? filters.categories[0] : undefined,
+      categoryId:
+        filters.categories.length > 0 ? filters.categories[0] : undefined,
       // Chỉ gửi price khi khác default [0, 500]
       minPrice: filters.priceRange[0] !== 0 ? filters.priceRange[0] : undefined,
-      maxPrice: filters.priceRange[1] !== 500 ? filters.priceRange[1] : undefined,
+      maxPrice:
+        filters.priceRange[1] !== 500 ? filters.priceRange[1] : undefined,
+      // Chỉ gửi rating khi khác default 0
+      averageRating: filters.rating > 0 ? filters.rating : undefined,
       sort:
         sortBy === "newest"
           ? "createdAt,desc"
