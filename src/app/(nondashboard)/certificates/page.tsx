@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import {
@@ -23,15 +23,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 // Import the API hook and types
-import {
-  useLazyGetCertificateByCodeQuery,
-  type TransformedCertificateResponse,
-} from "@/services";
+import { useLazyGetCertificateByCodeQuery, type TransformedCertificateResponse } from "@/services";
 
 // Use the transformed certificate type
 type CertificateData = TransformedCertificateResponse;
 
-export default function CertificateSearchPage() {
+function CertificateSearchContent() {
   const searchParams = useSearchParams();
   const [searchCode, setSearchCode] = useState("");
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
@@ -40,8 +37,7 @@ export default function CertificateSearchPage() {
   const [showCaptcha, setShowCaptcha] = useState(false);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
-  const [getCertificateByCode, { isLoading }] =
-    useLazyGetCertificateByCodeQuery();
+  const [getCertificateByCode, { isLoading }] = useLazyGetCertificateByCodeQuery();
 
   // Handle query parameter on component mount
   useEffect(() => {
@@ -151,9 +147,7 @@ export default function CertificateSearchPage() {
     viewUrl = viewUrl.replace("/fl_attachment", "");
 
     // Transform URL to be absolute if needed
-    const url = viewUrl.startsWith("http")
-      ? viewUrl
-      : `${window.location.origin}${viewUrl}`;
+    const url = viewUrl.startsWith("http") ? viewUrl : `${window.location.origin}${viewUrl}`;
 
     // Open in new tab
     window.open(url, "_blank");
@@ -171,20 +165,14 @@ export default function CertificateSearchPage() {
     switch (status) {
       case "GENERATED":
         return (
-          <Badge
-            variant="default"
-            className="bg-green-100 text-green-800 border-green-200"
-          >
+          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
             <CheckCircle className="h-3 w-3 mr-1" />
             Generated
           </Badge>
         );
       case "PENDING":
         return (
-          <Badge
-            variant="secondary"
-            className="bg-yellow-100 text-yellow-800 border-yellow-200"
-          >
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
             <AlertCircle className="h-3 w-3 mr-1" />
             Processing
           </Badge>
@@ -209,12 +197,10 @@ export default function CertificateSearchPage() {
               <Award className="h-8 w-8 text-blue-600" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Certificate Lookup
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Certificate Lookup</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Enter the certificate code to verify authenticity and view detailed
-            information about course completion certificate
+            Enter the certificate code to verify authenticity and view detailed information about
+            course completion certificate
           </p>
         </div>
 
@@ -307,9 +293,7 @@ export default function CertificateSearchPage() {
                   </h2>
                   <p className="text-gray-600">Certificate Code</p>
                 </div>
-                <div className="text-right">
-                  {getStatusBadge(certificate.fileStatus)}
-                </div>
+                <div className="text-right">{getStatusBadge(certificate.fileStatus)}</div>
               </div>
 
               <Separator className="my-8" />
@@ -324,17 +308,11 @@ export default function CertificateSearchPage() {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Full Name
-                      </label>
-                      <p className="text-lg font-medium text-gray-900">
-                        {certificate.userName}
-                      </p>
+                      <label className="text-sm font-medium text-gray-600">Full Name</label>
+                      <p className="text-lg font-medium text-gray-900">{certificate.userName}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Email
-                      </label>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
                       <p className="text-gray-900">{certificate.userEmail}</p>
                     </div>
                   </div>
@@ -348,20 +326,12 @@ export default function CertificateSearchPage() {
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Course Name
-                      </label>
-                      <p className="text-lg font-medium text-gray-900">
-                        {certificate.courseTitle}
-                      </p>
+                      <label className="text-sm font-medium text-gray-600">Course Name</label>
+                      <p className="text-lg font-medium text-gray-900">{certificate.courseTitle}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Instructor
-                      </label>
-                      <p className="text-gray-900">
-                        {certificate.instructorName}
-                      </p>
+                      <label className="text-sm font-medium text-gray-600">Instructor</label>
+                      <p className="text-gray-900">{certificate.instructorName}</p>
                     </div>
                   </div>
                 </div>
@@ -405,9 +375,7 @@ export default function CertificateSearchPage() {
                   }
                 >
                   <Download className="h-4 w-4" />
-                  {certificate.fileStatus === "PENDING"
-                    ? "Processing..."
-                    : "Download"}
+                  {certificate.fileStatus === "PENDING" ? "Processing..." : "Download"}
                 </Button>
               </div>
 
@@ -415,8 +383,7 @@ export default function CertificateSearchPage() {
                 <Alert className="mt-8">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Certificate is being generated. Please come back in a few
-                    minutes to download.
+                    Certificate is being generated. Please come back in a few minutes to download.
                   </AlertDescription>
                 </Alert>
               )}
@@ -438,8 +405,7 @@ export default function CertificateSearchPage() {
                   </div>
                   <h4 className="font-semibold mb-2">Enter Certificate Code</h4>
                   <p className="text-sm text-gray-600">
-                    Enter the certificate code you received after completing the
-                    course
+                    Enter the certificate code you received after completing the course
                   </p>
                 </div>
                 <div className="text-center">
@@ -466,5 +432,42 @@ export default function CertificateSearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function CertificateSearchLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-blue-100 rounded-full">
+              <Award className="h-8 w-8 text-blue-600" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Certificate Lookup</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">Loading certificate search...</p>
+        </div>
+        <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-8">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-12 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function CertificateSearchPage() {
+  return (
+    <Suspense fallback={<CertificateSearchLoading />}>
+      <CertificateSearchContent />
+    </Suspense>
   );
 }

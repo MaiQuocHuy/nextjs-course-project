@@ -53,6 +53,7 @@ import { useGetProfileQuery } from "@/services";
 import { useAuth } from "@/hooks/useAuth";
 import { FileDisplay } from "@/components/settings/FileDisplay";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 // Avatar constraints
 const MAX_AVATAR_SIZE = 10 * 1024 * 1024; // 10MB
@@ -167,7 +168,7 @@ const EditableField = React.memo(
 );
 EditableField.displayName = "EditableField";
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   // API import
   const { refreshSession, user } = useAuth();
   const userRole = user?.role;
@@ -923,5 +924,35 @@ export default function SettingsPage() {
         </Dialog>
       </div>
     </div>
+  );
+}
+
+// Loading component for Settings page
+function SettingsPageLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="bg-white rounded-lg p-6 space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<SettingsPageLoading />}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }
