@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Review } from "./ReviewsPage";
+import { Review } from "@/types/student";
 
 interface DeleteReviewAlertProps {
   review: Review;
@@ -37,7 +37,7 @@ export function DeleteReviewAlert({
           <AlertDialogTitle>Delete Review</AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to delete your review for "
-            {review.courseTitle}"? This action cannot be undone.
+            {review.course.title}"? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

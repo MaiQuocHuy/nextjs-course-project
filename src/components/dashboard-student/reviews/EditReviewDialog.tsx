@@ -13,7 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Star } from "lucide-react";
-import { Review } from "./ReviewsPage";
+import { Review } from "@/types/student";
 
 interface EditReviewDialogProps {
   review: Review;
@@ -22,26 +22,26 @@ interface EditReviewDialogProps {
   onSave: (updatedReview: Partial<Review>) => void;
 }
 
-export function EditReviewDialog({ 
-  review, 
-  isOpen, 
-  onOpenChange, 
-  onSave 
+export function EditReviewDialog({
+  review,
+  isOpen,
+  onOpenChange,
+  onSave,
 }: EditReviewDialogProps) {
-  const [editedContent, setEditedContent] = useState(review.content);
+  const [editedContent, setEditedContent] = useState(review.reviewText);
   const [editedRating, setEditedRating] = useState(review.rating);
   const [hoveredRating, setHoveredRating] = useState(0);
 
   const handleSave = () => {
     onSave({
-      content: editedContent,
+      reviewText: editedContent,
       rating: editedRating,
     });
     onOpenChange(false);
   };
 
   const handleCancel = () => {
-    setEditedContent(review.content);
+    setEditedContent(review.reviewText);
     setEditedRating(review.rating);
     onOpenChange(false);
   };
@@ -52,10 +52,10 @@ export function EditReviewDialog({
         <DialogHeader>
           <DialogTitle>Edit Review</DialogTitle>
           <DialogDescription>
-            Update your review for "{review.courseTitle}"
+            Update your review for "{review.course.title}"
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {/* Rating Section */}
           <div className="space-y-2">
@@ -105,7 +105,7 @@ export function EditReviewDialog({
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={editedContent.trim().length === 0}
           >
