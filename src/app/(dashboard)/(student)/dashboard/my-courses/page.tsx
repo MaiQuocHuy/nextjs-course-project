@@ -12,7 +12,7 @@ export default function MyCoursesPage() {
           </p>
         </div>
 
-        <CourseList />
+        <CourseList cols={3} />
       </div>
     </DashboardLayout>
   );

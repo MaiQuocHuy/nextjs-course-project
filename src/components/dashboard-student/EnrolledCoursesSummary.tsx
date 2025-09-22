@@ -106,7 +106,11 @@ export function EnrolledCoursesSummary() {
 
                   <Button className="w-full">
                     <Link href={`/dashboard/learning/${enrollment.courseId}`}>
-                      Continue Learning
+                      {enrollment.progress === 0
+                        ? "Start Course"
+                        : enrollment.progress === 1
+                        ? "Continue"
+                        : "Continue Learning"}
                     </Link>
                   </Button>
                 </div>
