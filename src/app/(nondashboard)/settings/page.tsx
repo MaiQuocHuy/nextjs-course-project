@@ -49,7 +49,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useGetProfileQuery } from "@/services/common/profileApi";
+import { useGetProfileQuery } from "@/services";
 import { useAuth } from "@/hooks/useAuth";
 import { FileDisplay } from "@/components/settings/FileDisplay";
 import { useRouter, useSearchParams } from "next/navigation";

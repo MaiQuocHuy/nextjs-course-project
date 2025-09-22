@@ -1,5 +1,5 @@
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
-import { apiResponse, ApplicationDetailResponse, ReSubmitAppplicationRequest, ReSubmitAppplicationResponse } from '@/types';
+import { apiResponse, ApplicationDetailResponse, ReSubmitAppplicationRequest, ReSubmitAppplicationResponse, User } from '@/types';
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 
@@ -26,8 +26,20 @@ interface UpdateThumbnailRequest {
 export const settingsApi = createApi({
   reducerPath: 'settingsApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Settings' , 'InstructorApplication'],
+  tagTypes: ['Settings' , 'InstructorApplication','Profile'],
   endpoints: (builder) => ({
+    getProfile: builder.query<apiResponse<User>, void>({
+      query: () => {
+        return {
+          url: '/users/profile',
+          method: 'GET',
+        };
+      },
+      providesTags: ['Profile'],
+      // no cache
+      keepUnusedDataFor: 0,
+    }),
+
     resetPassword: builder.mutation<void, ResetPasswordRequest>({
       query: (body) => ({
         url: '/auth/reset-password',
@@ -56,7 +68,7 @@ export const settingsApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: ['Settings'],
+      invalidatesTags: ['Settings', 'Profile'],
     }),  
 
     updateThumbnail: builder.mutation<void, UpdateThumbnailRequest>({
@@ -71,7 +83,7 @@ export const settingsApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: ['Settings'],
+      invalidatesTags: ['Settings', 'Profile'],
     }),
 
     getApplicationDetail: builder.query<apiResponse<ApplicationDetailResponse>, string>({
@@ -106,6 +118,7 @@ export const settingsApi = createApi({
 });
 
 export const { 
+  useGetProfileQuery,
   useResetPasswordMutation, 
   useUpdateProfileMutation,
   useUpdateThumbnailMutation,
