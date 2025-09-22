@@ -306,18 +306,15 @@ export function InstructorProfile({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => console.log("View full profile")}
+                onClick={() =>
+                  window.open(
+                    "https://www.linkedin.com/in/sundarpichai",
+                    "_blank"
+                  )
+                }
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 View Full Profile
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => console.log("Send message")}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Send Message
               </Button>
             </div>
 

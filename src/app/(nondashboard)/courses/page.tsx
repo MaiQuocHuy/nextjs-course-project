@@ -59,6 +59,8 @@ export default function CoursesPage() {
       minPrice: filters.priceRange[0] !== 0 ? filters.priceRange[0] : undefined,
       maxPrice:
         filters.priceRange[1] !== 500 ? filters.priceRange[1] : undefined,
+      // Chỉ gửi rating khi khác default 0
+      averageRating: filters.rating > 0 ? filters.rating : undefined,
       sort:
         sortBy === "newest"
           ? "createdAt,desc"

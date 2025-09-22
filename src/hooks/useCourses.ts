@@ -31,6 +31,12 @@ export const useCourses = (filters: CoursesFilter) => {
       params.level = filters.level.trim();
     }
     
+    // Chỉ thêm averageRating filter khi > 0
+    if (filters.averageRating !== undefined && filters.averageRating > 0) {
+      params.averageRating = filters.averageRating;
+      console.log('Adding averageRating filter:', filters.averageRating);
+    }
+    
     if (filters.sort?.trim()) {
       params.sort = filters.sort.trim();
     }
@@ -45,6 +51,7 @@ export const useCourses = (filters: CoursesFilter) => {
     filters.minPrice,
     filters.maxPrice,
     filters.level,
+    filters.averageRating,
     filters.sort,
   ]);
 

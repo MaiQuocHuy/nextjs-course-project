@@ -66,7 +66,7 @@ export default function CertificateSearchPage() {
       const result = await getCertificateByCode(code.trim()).unwrap();
       setCertificate(result);
     } catch (error: any) {
-      console.error("Search error:", error);
+      // console.error("Search error:", error);
       if (error.status === 404) {
         setSearchError("Certificate not found with this code");
       } else {
@@ -119,7 +119,7 @@ export default function CertificateSearchPage() {
 
     const downloadUrl = certificate.fileUrl || certificate.certificateUrl;
     if (!downloadUrl) {
-      console.error("No download URL available");
+      // console.error("No download URL available");
       return;
     }
 
@@ -143,7 +143,7 @@ export default function CertificateSearchPage() {
 
     let viewUrl = certificate.fileUrl || certificate.certificateUrl;
     if (!viewUrl) {
-      console.error("No view URL available");
+      // console.error("No view URL available");
       return;
     }
 

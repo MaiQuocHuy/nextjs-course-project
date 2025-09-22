@@ -54,6 +54,7 @@ export interface CoursesFilter {
   minPrice?: number;
   maxPrice?: number;
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  averageRating?: number;
   sort?: string;
 }
 
@@ -155,6 +156,12 @@ export const coursesApi = createApi({
     if (filters.level?.trim()) {
       params.append('level', filters.level.trim());
       console.log("Adding level filter:", filters.level.trim());
+    }
+    
+    // Thêm averageRating filter
+    if (filters.averageRating !== undefined && filters.averageRating !== null && filters.averageRating > 0) {
+      params.append('averageRating', filters.averageRating.toString());
+      console.log("Adding averageRating filter:", filters.averageRating);
     }
     
     if (filters.sort?.trim()) {
