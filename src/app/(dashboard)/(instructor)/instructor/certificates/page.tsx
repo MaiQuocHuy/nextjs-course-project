@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { useGetCoursesQuery } from "@/services/instructor/courses/courses-api";
 import { useGetCertificatesByCourseQuery } from "@/services/common/certificateApi";
-import { Course } from "@/types/instructor/courses";
+import { Course } from "@/types/instructor/courses/courses";
 import { Award, User, Eye, BookOpen, Users, Search } from "lucide-react";
 import CertificateDetailModal from "@/components/common/CertificateDetailModal";
 import { Certificate } from "@/types/certificate";
@@ -292,33 +292,33 @@ export default function InstructorCertificatesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCertificates.map((certificate: CertificateListItem, index: number) => (
-                        <TableRow key={certificate.id}>
-                          <TableCell className="text-gray-500 font-medium">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {certificate.certificateCode}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <User className="h-4 w-4 text-gray-400" />
-                              {certificate.userName}
-                            </div>
-                          </TableCell>
+                      {filteredCertificates.map(
+                        (certificate: CertificateListItem, index: number) => (
+                          <TableRow key={certificate.id}>
+                            <TableCell className="text-gray-500 font-medium">{index + 1}</TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {certificate.certificateCode}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <User className="h-4 w-4 text-gray-400" />
+                                {certificate.userName}
+                              </div>
+                            </TableCell>
 
-                          <TableCell>{getStatusBadge(certificate.fileStatus)}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewCertificateDetail(certificate)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            <TableCell>{getStatusBadge(certificate.fileStatus)}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewCertificateDetail(certificate)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      )}
                     </TableBody>
                   </Table>
                 </div>

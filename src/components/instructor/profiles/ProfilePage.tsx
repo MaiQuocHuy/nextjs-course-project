@@ -1,18 +1,12 @@
 "use client";
 
-import { useGetProfileQuery } from "@/services/common/profileApi";
+import { useGetProfileQuery } from "@/services";
 import {
   useUpdateProfileMutation,
   useUpdateThumbnailMutation,
 } from "@/services/common/settingsApi";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -49,8 +43,7 @@ const ProfilePage = () => {
   const router = useRouter();
   const { data: profileData, isLoading, error, refetch } = useGetProfileQuery();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
-  const [updateThumbnail, { isLoading: isUpdatingThumbnail }] =
-    useUpdateThumbnailMutation();
+  const [updateThumbnail, { isLoading: isUpdatingThumbnail }] = useUpdateThumbnailMutation();
 
   // Basic profile edit states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -69,9 +62,7 @@ const ProfilePage = () => {
   const [uploadProgress, setUploadProgress] = useState<{
     [key: string]: number;
   }>({});
-  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>(
-    {}
-  );
+  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({});
 
   // Mock data for the instructor's applications section
   const mockDocuments = {
@@ -172,9 +163,7 @@ const ProfilePage = () => {
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (
-      Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-    );
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const validateFile = (file: File, maxSizeMB = 15) => {
@@ -195,8 +184,7 @@ const ProfilePage = () => {
     }
 
     if (!allowedTypes.includes(file.type)) {
-      const error =
-        "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
+      const error = "File type not supported. Please upload PDF, DOCX, JPG, or PNG files.";
       toast.error(error);
       return error;
     }
@@ -256,9 +244,7 @@ const ProfilePage = () => {
     return (
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <div className="text-center py-12">
-          <div className="text-red-600 text-lg font-medium mb-2">
-            Error loading profile
-          </div>
+          <div className="text-red-600 text-lg font-medium mb-2">Error loading profile</div>
           <div className="text-gray-500 mb-4">Please try again later</div>
         </div>
       </div>
@@ -274,11 +260,7 @@ const ProfilePage = () => {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       {/* Back Button */}
-      <Button
-        variant="ghost"
-        onClick={handleGoBack}
-        className="flex items-center gap-2 mb-6"
-      >
+      <Button variant="ghost" onClick={handleGoBack} className="flex items-center gap-2 mb-6">
         <ArrowLeft className="h-4 w-4" />
         Back to Dashboard
       </Button>
@@ -431,11 +413,7 @@ const ProfilePage = () => {
               onClick={handleSaveProfile}
               disabled={!name.trim() || isUpdating || isUpdatingThumbnail}
             >
-              {isUpdating || isUpdatingThumbnail ? (
-                <>Saving...</>
-              ) : (
-                <>Save Changes</>
-              )}
+              {isUpdating || isUpdatingThumbnail ? <>Saving...</> : <>Save Changes</>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -454,10 +432,7 @@ const ProfilePage = () => {
             <div className="space-y-8 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6">
               {/* Portfolio URL */}
               <div className="space-y-2">
-                <Label
-                  htmlFor="portfolioUrl"
-                  className="text-sm font-semibold text-gray-700"
-                >
+                <Label htmlFor="portfolioUrl" className="text-sm font-semibold text-gray-700">
                   Portfolio URL (Github/LinkedIn) *
                 </Label>
                 <Input
@@ -555,8 +530,7 @@ const ProfilePage = () => {
                 {!supportingFile ? (
                   <div className="space-y-3">
                     <Label className="text-sm font-medium text-gray-700">
-                      Supporting Document{" "}
-                      <span className="text-gray-500 text-sm">(Optional)</span>
+                      Supporting Document <span className="text-gray-500 text-sm">(Optional)</span>
                     </Label>
                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all duration-200 cursor-pointer group">
                       <input
@@ -621,11 +595,7 @@ const ProfilePage = () => {
             </div>
           </div>
           <DialogFooter className="flex justify-between sm:justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowAppEditModal(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setShowAppEditModal(false)}>
               Cancel
             </Button>
             <Button
@@ -675,24 +645,19 @@ const ProfilePage = () => {
             <FileDisplay file={mockDocuments.cv} label="CV" />
           </div>
 
-          {mockDocuments.otherDocuments &&
-            mockDocuments.otherDocuments.length > 0 && (
+          {mockDocuments.otherDocuments && mockDocuments.otherDocuments.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <File className="h-5 w-5" />
+                Other Documents
+              </h3>
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <File className="h-5 w-5" />
-                  Other Documents
-                </h3>
-                <div className="space-y-3">
-                  {mockDocuments.otherDocuments.map((doc, index) => (
-                    <FileDisplay
-                      key={index}
-                      file={doc}
-                      label={`Document ${index + 1}`}
-                    />
-                  ))}
-                </div>
+                {mockDocuments.otherDocuments.map((doc, index) => (
+                  <FileDisplay key={index} file={doc} label={`Document ${index + 1}`} />
+                ))}
               </div>
-            )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -749,10 +714,7 @@ const ProfileSkeleton = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="space-y-3 p-3 border border-gray-100 rounded-md"
-            >
+            <div key={i} className="space-y-3 p-3 border border-gray-100 rounded-md">
               <Skeleton className="h-6 w-32 animate-pulse" />
               <div className="flex gap-4">
                 <Skeleton className="h-16 w-16 animate-pulse" />
@@ -820,12 +782,8 @@ const FileUploadCard = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {file.name}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {formatFileSize(file.size)}
-              </p>
+              <p className="text-sm font-semibold text-gray-900 truncate">{file.name}</p>
+              <p className="text-xs text-gray-500 mt-1">{formatFileSize(file.size)}</p>
               {isUploading && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
@@ -843,9 +801,7 @@ const FileUploadCard = ({
               {!isUploading && (
                 <div className="flex items-center gap-1 mt-1">
                   <CheckCircle className="w-3 h-3 text-green-500" />
-                  <span className="text-xs text-green-600 font-medium">
-                    Ready to upload
-                  </span>
+                  <span className="text-xs text-green-600 font-medium">Ready to upload</span>
                 </div>
               )}
             </div>
@@ -1018,11 +974,7 @@ const FileDisplay = ({
     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {isImage ? (
-          <img
-            src={fileInfo.url}
-            alt={fileInfo.name}
-            className="w-10 h-10 object-cover rounded"
-          />
+          <img src={fileInfo.url} alt={fileInfo.name} className="w-10 h-10 object-cover rounded" />
         ) : (
           <FileText className="h-10 w-10 p-2 bg-blue-100 text-blue-600 rounded" />
         )}
@@ -1058,11 +1010,7 @@ const FileDisplay = ({
         <DialogContent className="max-w-[95vw] w-full sm:max-w-3xl md:max-w-5xl max-h-[95vh] overflow-auto p-2 sm:p-4">
           <div className="flex justify-center h-full">
             {isImage ? (
-              <img
-                src={fileInfo.url}
-                alt={fileInfo.name}
-                className="max-h-full object-contain"
-              />
+              <img src={fileInfo.url} alt={fileInfo.name} className="max-h-full object-contain" />
             ) : isPDF ? (
               <iframe
                 src={`${fileInfo.url}#view=FitH`}
@@ -1072,9 +1020,7 @@ const FileDisplay = ({
             ) : (
               <div className="flex flex-col items-center justify-center p-10">
                 <FileText className="h-16 w-16 text-blue-600 mb-4" />
-                <p className="text-lg font-medium mb-2">
-                  Preview not available
-                </p>
+                <p className="text-lg font-medium mb-2">Preview not available</p>
                 <Button onClick={handleFileOpen} className="mt-2">
                   Open File
                 </Button>

@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { sectionId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ sectionId: string }> }
 ) {
   try {
-    const { sectionId } = params;
+    const { sectionId } = await params;
     const url = new URL(req.url);
     const lessonId = url.searchParams.get('lessonId');
     

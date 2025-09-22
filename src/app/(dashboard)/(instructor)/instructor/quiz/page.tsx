@@ -1,24 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import {
-  useGenerateQuestionsMutation,
-  useSaveQuestionsMutation,
-} from '@/services/quiz/geminiApi';
-import type { QuestionType } from '@/services/quiz/geminiApi';
+import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useGenerateQuestionsMutation, useSaveQuestionsMutation } from "@/services/quiz/geminiApi";
+import type { QuestionType } from "@/services/quiz/geminiApi";
 
 export default function QuizPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [extractPreview, setExtractPreview] = useState('');
+  const [extractPreview, setExtractPreview] = useState("");
   const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [sectionId, setSectionId] = useState('section-001');
-  const [lessonId, setLessonId] = useState('lesson-002');
+  const [sectionId, setSectionId] = useState("section-001");
+  const [lessonId, setLessonId] = useState("lesson-002");
   const [error, setError] = useState<string | null>(null);
 
-  const [generateQuestions, { isLoading: generating }] =
-    useGenerateQuestionsMutation();
+  const [generateQuestions, { isLoading: generating }] = useGenerateQuestionsMutation();
   const [saveQuestions, { isLoading: saving }] = useSaveQuestionsMutation();
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,13 +25,13 @@ export default function QuizPage() {
 
   const handleGenerate = async () => {
     if (!file) {
-      alert('Please select a .docx file first.');
+      alert("Please select a .docx file first.");
       return;
     }
     setError(null);
 
     try {
-      const mammoth = (await import('mammoth')).default;
+      const mammoth = (await import("mammoth")).default;
       const arrayBuffer = await file.arrayBuffer();
       const { value } = await mammoth.extractRawText({ arrayBuffer });
       const cleanedText = value.trim();
@@ -44,23 +40,23 @@ export default function QuizPage() {
       const data = await generateQuestions({
         sectionId,
         lessonId,
-        text: cleanedText,
+        texts: [cleanedText],
         numQuestions: 5,
       }).unwrap();
 
-      console.log('Generated questions data:', data);
+      console.log("Generated questions data:", data);
 
       // Kiểm tra xem data có phải array không
       if (!Array.isArray(data)) {
-        console.error('Data is not an array:', data);
-        throw new Error('Invalid response format: expected array of questions');
+        console.error("Data is not an array:", data);
+        throw new Error("Invalid response format: expected array of questions");
       }
 
       const normalized: QuestionType[] = data.map((q: any, idx: number) => {
         // Chuyển đổi options thành format A, B, C, D
         const originalOptions = q.options ?? {};
         const standardOptions: Record<string, string> = {};
-        const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const optionLabels = ["A", "B", "C", "D", "E", "F"];
 
         let labelIndex = 0;
         Object.entries(originalOptions).forEach(([key, value]) => {
@@ -71,7 +67,7 @@ export default function QuizPage() {
         });
 
         // Tìm correct answer key mới
-        let newCorrectAnswer = q.correctAnswer ?? '';
+        let newCorrectAnswer = q.correctAnswer ?? "";
         if (originalOptions[newCorrectAnswer]) {
           const originalKeys = Object.keys(originalOptions);
           const originalIndex = originalKeys.indexOf(newCorrectAnswer);
@@ -82,42 +78,42 @@ export default function QuizPage() {
 
         return {
           id: q.id || uuidv4(),
-          questionText: q.questionText ?? q.question ?? '',
+          questionText: q.questionText ?? q.question ?? "",
           options: standardOptions,
           correctAnswer: newCorrectAnswer,
-          explanation: q.explanation ?? '',
+          explanation: q.explanation ?? "",
         };
       });
 
       setQuestions(normalized);
     } catch (err: any) {
-      console.error('Generate error:', err);
-      console.error('Error details:', {
+      console.error("Generate error:", err);
+      console.error("Error details:", {
         message: err.message,
         stack: err.stack,
         originalError: err,
       });
-      setError(err?.data?.message || err?.message || 'Generate failed');
+      setError(err?.data?.message || err?.message || "Generate failed");
     }
   };
 
   const acceptAll = async () => {
     if (!sectionId || !lessonId) {
-      alert('Missing sectionId or lessonId.');
+      alert("Missing sectionId or lessonId.");
       return;
     }
     if (questions.length === 0) {
-      alert('No questions to save.');
+      alert("No questions to save.");
       return;
     }
     setError(null);
 
     try {
       await saveQuestions({ sectionId, lessonId, questions }).unwrap();
-      alert('Saved successfully!');
+      alert("Saved successfully!");
     } catch (err: any) {
-      console.error('Save error:', err);
-      setError(err.message || 'Save failed');
+      console.error("Save error:", err);
+      setError(err.message || "Save failed");
     }
   };
 
@@ -133,12 +129,12 @@ export default function QuizPage() {
   const addNewOption = (qIndex: number) => {
     const copy = [...questions];
     const currentOptions = copy[qIndex].options;
-    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const optionLabels = ["A", "B", "C", "D", "E", "F"];
     const usedLabels = Object.keys(currentOptions);
     const nextLabel = optionLabels.find((label) => !usedLabels.includes(label));
 
     if (nextLabel) {
-      copy[qIndex].options[nextLabel] = '';
+      copy[qIndex].options[nextLabel] = "";
       setQuestions(copy);
     }
   };
@@ -148,7 +144,7 @@ export default function QuizPage() {
     delete copy[qIndex].options[optionKey];
     // Nếu đáp án đúng bị xóa, reset về rỗng
     if (copy[qIndex].correctAnswer === optionKey) {
-      copy[qIndex].correctAnswer = '';
+      copy[qIndex].correctAnswer = "";
     }
     setQuestions(copy);
   };
@@ -161,19 +157,14 @@ export default function QuizPage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">
-            Generate MCQ from Word Document
-          </h1>
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">Generate MCQ from Word Document</h1>
           <p className="text-gray-600 mb-6">
-            Upload a Word document and generate multiple choice questions using
-            AI
+            Upload a Word document and generate multiple choice questions using AI
           </p>
 
           <div className="mb-6 flex gap-4">
             <label className="flex-1">
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                Section ID
-              </div>
+              <div className="mb-2 text-sm font-medium text-gray-700">Section ID</div>
               <input
                 value={sectionId}
                 onChange={(e) => setSectionId(e.target.value)}
@@ -181,9 +172,7 @@ export default function QuizPage() {
               />
             </label>
             <label className="flex-1">
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                Lesson ID
-              </div>
+              <div className="mb-2 text-sm font-medium text-gray-700">Lesson ID</div>
               <input
                 value={lessonId}
                 onChange={(e) => setLessonId(e.target.value)}
@@ -196,9 +185,7 @@ export default function QuizPage() {
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <label className="block">
-                  <div className="mb-2 text-sm font-medium text-gray-700">
-                    Upload Word Document
-                  </div>
+                  <div className="mb-2 text-sm font-medium text-gray-700">Upload Word Document</div>
                   <input
                     type="file"
                     accept=".docx"
@@ -218,7 +205,7 @@ export default function QuizPage() {
                     Processing...
                   </>
                 ) : (
-                  'Generate MCQ'
+                  "Generate MCQ"
                 )}
               </button>
             </div>
@@ -235,13 +222,9 @@ export default function QuizPage() {
 
         {extractPreview && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h4 className="font-semibold text-lg mb-3 text-gray-900">
-              Document Preview
-            </h4>
+            <h4 className="font-semibold text-lg mb-3 text-gray-900">Document Preview</h4>
             <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 max-h-60 overflow-y-auto">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                {extractPreview}
-              </pre>
+              <pre className="whitespace-pre-wrap text-sm text-gray-700">{extractPreview}</pre>
             </div>
           </div>
         )}
@@ -249,9 +232,7 @@ export default function QuizPage() {
         {questions.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Generated Questions
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900">Generated Questions</h2>
               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                 {questions.length} questions
               </span>
@@ -259,16 +240,11 @@ export default function QuizPage() {
 
             <div className="space-y-6">
               {questions.map((q, idx) => (
-                <div
-                  key={q.id}
-                  className="p-6 border border-gray-200 rounded-lg bg-gray-50"
-                >
+                <div key={q.id} className="p-6 border border-gray-200 rounded-lg bg-gray-50">
                   {editingIndex === idx ? (
                     <>
                       <label className="block mb-4">
-                        <div className="text-sm text-gray-600 mb-2 font-medium">
-                          Question
-                        </div>
+                        <div className="text-sm text-gray-600 mb-2 font-medium">Question</div>
                         <textarea
                           className="w-full border p-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           rows={3}
@@ -285,19 +261,14 @@ export default function QuizPage() {
                       <div className="mb-4">
                         <h4 className="font-medium mb-2">Options:</h4>
                         {Object.keys(q.options).map((key) => (
-                          <div
-                            key={key}
-                            className="flex gap-2 items-center mb-2"
-                          >
+                          <div key={key} className="flex gap-2 items-center mb-2">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-800">
                               {key}
                             </div>
                             <input
                               className="flex-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               value={q.options[key]}
-                              onChange={(e) =>
-                                updateOption(idx, key, e.target.value)
-                              }
+                              onChange={(e) => updateOption(idx, key, e.target.value)}
                               placeholder={`Option ${key}...`}
                             />
                             {Object.keys(q.options).length > 2 && (
@@ -321,9 +292,7 @@ export default function QuizPage() {
 
                       <div className="mb-4">
                         <label className="block">
-                          <div className="text-sm text-gray-600 mb-2">
-                            Correct Answer
-                          </div>
+                          <div className="text-sm text-gray-600 mb-2">Correct Answer</div>
                           <select
                             className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             value={q.correctAnswer}
@@ -337,7 +306,7 @@ export default function QuizPage() {
                             {Object.keys(q.options).map((key) => (
                               <option key={key} value={key}>
                                 {key}: {q.options[key].substring(0, 50)}
-                                {q.options[key].length > 50 ? '...' : ''}
+                                {q.options[key].length > 50 ? "..." : ""}
                               </option>
                             ))}
                           </select>
@@ -345,9 +314,7 @@ export default function QuizPage() {
                       </div>
 
                       <label className="block">
-                        <div className="text-sm text-gray-600 mb-2 font-medium">
-                          Explanation
-                        </div>
+                        <div className="text-sm text-gray-600 mb-2 font-medium">Explanation</div>
                         <textarea
                           className="w-full border p-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           rows={3}
@@ -397,15 +364,15 @@ export default function QuizPage() {
                             key={k}
                             className={`flex items-start gap-3 p-2 rounded ${
                               k === q.correctAnswer
-                                ? 'bg-green-50 border border-green-200'
-                                : 'bg-gray-50'
+                                ? "bg-green-50 border border-green-200"
+                                : "bg-gray-50"
                             }`}
                           >
                             <div
                               className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${
                                 k === q.correctAnswer
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-blue-100 text-blue-800'
+                                  ? "bg-green-500 text-white"
+                                  : "bg-blue-100 text-blue-800"
                               }`}
                             >
                               {k}
@@ -425,12 +392,8 @@ export default function QuizPage() {
                       {q.explanation && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                           <p className="text-sm">
-                            <strong className="text-blue-800">
-                              Explanation:
-                            </strong>
-                            <span className="text-gray-700 ml-2">
-                              {q.explanation}
-                            </span>
+                            <strong className="text-blue-800">Explanation:</strong>
+                            <span className="text-gray-700 ml-2">{q.explanation}</span>
                           </p>
                         </div>
                       )}
@@ -452,7 +415,7 @@ export default function QuizPage() {
                     Saving...
                   </>
                 ) : (
-                  'Accept All & Save to Database'
+                  "Accept All & Save to Database"
                 )}
               </button>
             </div>

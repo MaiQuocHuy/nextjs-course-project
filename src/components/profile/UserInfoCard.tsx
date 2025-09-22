@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, User, Edit, ShieldUser } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useGetProfileQuery } from "@/services/common/profileApi";
+import { useGetProfileQuery } from "@/services";
 
 export function UserInfoCard() {
   const { data: profileResponse } = useGetProfileQuery();

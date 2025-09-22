@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CourseList } from "@/components/common/CourseList";
 import { CourseSidebar } from "@/components/course/CourseSidebar";
 import { CourseHeader } from "@/components/course/CourseHeader";
 import { CoursePagination } from "@/components/course/CoursePagination";
-import {
-  CourseSkeleton,
-  SidebarSkeleton,
-} from "@/components/course/CourseSkeleton";
+import { CourseSkeleton, SidebarSkeleton } from "@/components/course/CourseSkeleton";
 import { EmptyState } from "@/components/course/EmptyState";
 import { useCourses } from "@/hooks/useCourses";
 import { Course, useGetCoursesQuery } from "@/services/coursesApi";
@@ -20,7 +17,7 @@ interface FilterState {
   rating: number;
 }
 
-export default function CoursesPage() {
+function CoursesPageContent() {
   const searchParams = useSearchParams();
 
   // State management
@@ -53,12 +50,10 @@ export default function CoursesPage() {
       page: currentPage - 1, // API sử dụng 0-based indexing
       size: itemsPerPage,
       search: searchQuery.trim() || undefined,
-      categoryId:
-        filters.categories.length > 0 ? filters.categories[0] : undefined,
+      categoryId: filters.categories.length > 0 ? filters.categories[0] : undefined,
       // Chỉ gửi price khi khác default [0, 500]
       minPrice: filters.priceRange[0] !== 0 ? filters.priceRange[0] : undefined,
-      maxPrice:
-        filters.priceRange[1] !== 500 ? filters.priceRange[1] : undefined,
+      maxPrice: filters.priceRange[1] !== 500 ? filters.priceRange[1] : undefined,
       sort:
         sortBy === "newest"
           ? "createdAt,desc"
@@ -270,5 +265,54 @@ export default function CoursesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function CoursesPageLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex gap-8">
+          {/* Sidebar Skeleton */}
+          <aside className="hidden lg:block w-80 flex-shrink-0">
+            <SidebarSkeleton />
+          </aside>
+
+          {/* Main Content Skeleton */}
+          <main className="flex-1">
+            <div className="space-y-6">
+              {/* Header Skeleton */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                  <div className="flex gap-4">
+                    <div className="h-10 bg-gray-200 rounded flex-1"></div>
+                    <div className="h-10 bg-gray-200 rounded w-32"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Grid Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <CourseSkeleton key={index} />
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function CoursesPage() {
+  return (
+    <Suspense fallback={<CoursesPageLoading />}>
+      <CoursesPageContent />
+    </Suspense>
   );
 }
