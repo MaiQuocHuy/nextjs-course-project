@@ -1,24 +1,21 @@
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import {
   LayoutDashboard,
   BookOpen,
   Users,
   DollarSign,
-  Bell,
-  Settings,
-  LogOut,
   GraduationCap,
   RefreshCw,
   Award,
   Coins,
   Tag,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 interface InstructorSidebarProps {
   open: boolean;
@@ -27,19 +24,18 @@ interface InstructorSidebarProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/instructor", icon: LayoutDashboard },
-  { name: "Courses", href: "/instructor/courses", icon: BookOpen },
-  { name: "Students", href: "/instructor/students", icon: Users },
-  { name: "Certificates", href: "/instructor/certificates", icon: Award },
-  { name: "Earnings", href: "/instructor/earnings", icon: DollarSign },
-  { name: "Refunds", href: "/instructor/refunds", icon: RefreshCw },
+  { name: 'Dashboard', href: '/instructor', icon: LayoutDashboard },
+  { name: 'Courses', href: '/instructor/courses', icon: BookOpen },
+  { name: 'Students', href: '/instructor/students', icon: Users },
+  { name: 'Certificates', href: '/instructor/certificates', icon: Award },
+  { name: 'Earnings', href: '/instructor/earnings', icon: DollarSign },
+  { name: 'Refunds', href: '/instructor/refunds', icon: RefreshCw },
   {
-    name: "Affiliate Payouts",
-    href: "/instructor/affiliate-payout",
+    name: 'Affiliate Payouts',
+    href: '/instructor/affiliate-payout',
     icon: Coins,
   },
-  { name: "Discount Usage", href: "/instructor/discount-usage", icon: Tag },
-  { name: "Notifications", href: "/instructor/notifications", icon: Bell },
+  { name: 'Discount Usage', href: '/instructor/discount-usage', icon: Tag },
 ];
 
 const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
@@ -51,7 +47,7 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
       <Link
         href="/instructor"
         className={`flex h-16 items-center px-6 & ${
-          isLoading && "pointer-events-none"
+          isLoading && 'pointer-events-none'
         }`}
       >
         <div className="flex items-center space-x-3">
@@ -69,18 +65,27 @@ const SidebarContent = ({ isLoading }: { isLoading: boolean }) => {
       <ScrollArea className="flex-1 px-4">
         <nav className="space-y-2 py-4">
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            let isActive = false;
+            
+            if (item.href === '/instructor') {
+              // Dashboard should only be active on exact match
+              isActive = pathname === '/instructor';
+            } else {
+              // Other items should be active if pathname starts with the href
+              isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            }
+            
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`${isLoading && "pointer-events-none"}`}
+                className={`${isLoading && 'pointer-events-none'}`}
               >
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start h-11 px-4 /80 cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                    isActive && "bg-accent text-accent-foreground"
+                    'w-full justify-start h-11 px-4 /80 cursor-pointer text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isActive && 'bg-accent text-accent-foreground'
                   )}
                 >
                   <item.icon className="mr-3 h-4 w-4" />

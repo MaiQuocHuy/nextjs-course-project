@@ -23,7 +23,6 @@ export const EnrolledStudentList = ({
   enrolledStudents,
   searchTerm,
 }: EnrolledStudentListProps) => {
-  console.log(enrolledStudents);
 
   const getAverageProgress = (enrolledCourses: EnrolledCourse[]) => {
     const progressValues = enrolledCourses.map((course) => course.progress);

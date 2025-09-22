@@ -3,13 +3,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SectionType } from '@/utils/instructor/course/create-course-validations/course-content-validations';
-import { AlertCircle, Brain, Video } from 'lucide-react';
+import { AlertCircle, Brain, Loader2, Video } from 'lucide-react';
 
 type Props = {
   courseStatus: 'draft' | 'published';
   sections: SectionType[];
   onBackToEdit: () => void;
   handleFinalSubmit: () => void;
+  isCreating?: boolean;
 };
 
 const ReviewCourse = ({
@@ -17,6 +18,7 @@ const ReviewCourse = ({
   sections,
   onBackToEdit,
   handleFinalSubmit,
+  isCreating = false,
 }: Props) => {
   return (
     <div className="container mx-auto py-8">
@@ -98,7 +100,14 @@ const ReviewCourse = ({
               Back to Edit
             </Button>
             <Button onClick={handleFinalSubmit}>
-              Confirm and Submit for Approval
+              {isCreating ? (
+                <>
+                  <span>Submitting...</span>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                </>
+              ) : (
+                'Confirm and Submit for Approval'
+              )}
             </Button>
           </div>
         </CardContent>

@@ -52,9 +52,6 @@ export const RevenueStatistics = ({
                       <span className="font-bold">
                         ${Math.floor(item.revenue)}
                       </span>
-                      {Math.floor(item.revenue) > 0 ? (
-                        <TrendingUp className="h-4 w-4 text-success" />
-                      ) : null}
                     </div>
                   </div>
                 ))}

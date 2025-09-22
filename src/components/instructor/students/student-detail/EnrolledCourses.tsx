@@ -33,7 +33,7 @@ export const EnrolledCourses = ({ enrolledCourses }: EnrolledCoursesProps) => {
             >
               <div className="relative aspect-video">
                 <Image
-                  src={course.thumbnailUrl || '/images/empty-course.webp'}
+                  src={course.thumbnailUrl || '/images/empty-course.jpg'}
                   alt={course.title || 'Course Thumbnail'}
                   fill
                   style={{ objectFit: 'cover' }}

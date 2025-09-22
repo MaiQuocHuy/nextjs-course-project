@@ -51,7 +51,6 @@ import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import WarningAlert from '../commom/WarningAlert';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
@@ -66,7 +65,7 @@ const coursesParams: CoursesFilter = {
   size: 10,
   sort: 'createdAt,DESC',
   minPrice: 0,
-  maxPrice: 1000,
+  maxPrice: 999.99,
   search: '',
 };
 
@@ -74,7 +73,11 @@ export const CoursesPage = () => {
   const [filters, setFilters] = useState(coursesParams);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isGridLoading, setIsGridLoading] = useState(false);
-  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 999.99 });
+  const priceRangeInit = useRef({
+    isInit: false,
+    minPrice: 0,
+    maxPrice: 1000,
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -140,7 +143,6 @@ export const CoursesPage = () => {
         courses.content.length > 0 &&
         !priceRangeInit.current.isInit
       ) {
-        // Update price range from the custom hook without triggering filter updates
         priceRangeInit.current.minPrice = minPrice;
         priceRangeInit.current.maxPrice = maxPrice;
         priceRangeInit.current.isInit = true;
@@ -185,6 +187,7 @@ export const CoursesPage = () => {
 
   // Update filters with debounced price range
   useEffect(() => {
+    if (debouncedPriceRange[1] === 1000) return;
     setIsGridLoading(true);
     setFilters((prev) => ({
       ...prev,
@@ -220,15 +223,6 @@ export const CoursesPage = () => {
     handleFilterCourse(filterField, categoryIds);
   };
 
-  // const handleFilterCourseWithPriceRange = (value: any) => {
-  //   setIsGridLoading(true);
-  //   const minPrice = value[0];
-  //   const maxPrice = value[1];
-  //   setFilters((prev) => {
-  //     return { ...prev, minPrice, maxPrice };
-  //   });
-  // };
-
   const handleFilterCourse = (filterField: string, value: any) => {
     setIsGridLoading(true);
     setFilters((prev) => {
@@ -254,14 +248,12 @@ export const CoursesPage = () => {
   const handleDeleteCourse = async (id: string) => {
     try {
       setIsDeleteDialogOpen(false);
-      loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
+      toast.info('Deleting course. Please wait...');
       const res = await deleteCourse(id).unwrap();
       if (res.statusCode === 200) {
-        loadingAnimation(false, dispatch);
         toast.success('Delete course successfully!');
       }
     } catch (error) {
-      loadingAnimation(false, dispatch);
       toast.error('Delete course failed!');
     }
   };
@@ -388,99 +380,96 @@ export const CoursesPage = () => {
             <div className="mt-4 p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center justify-between gap-4">
                 {/* Filter by price */}
-                {filters.minPrice !== undefined &&
-                  filters.maxPrice !== undefined && (
-                    <div className="flex-1 max-w-[300px]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium ">
-                          Price Range
-                        </span>
-                        <Button variant="outline" onClick={resetRangePrice}>
-                          Reset
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${priceRange[0]}
-                        </span>
-                        <span className="text-muted-foreground">-</span>
-                        <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${priceRange[1]}
-                        </span>
-                      </div>
-
-                      <SliderPrimitive.Root
-                        className={cn(
-                          'relative flex w-full touch-none select-none items-center my-3'
-                        )}
-                        value={priceRange}
-                        onValueChange={(value) =>
-                          setPriceRange(value as [number, number])
-                        }
-                        min={priceRangeInit.current.minPrice}
-                        max={priceRangeInit.current.maxPrice}
-                        step={0.01}
-                      >
-                        <SliderPrimitive.Track
-                          className="relative h-1 w-full grow overflow-hidden rounded-full bg-slider-track shadow-inner"
-                          style={{
-                            boxShadow: 'inset 0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                          }}
-                        >
-                          <SliderPrimitive.Range
-                            className="absolute h-full rounded-full"
-                            style={{
-                              background:
-                                'linear-gradient(135deg, hsl(var(--slider-range)), hsl(var(--slider-range) / 0.8))',
-                              boxShadow:
-                                '0 1px 3px 0 hsl(var(--slider-range) / 0.3)',
-                            }}
-                          />
-                        </SliderPrimitive.Track>
-
-                        <SliderPrimitive.Thumb
-                          className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                          style={{
-                            transition: 'var(--transition-smooth)',
-                            boxShadow: 'var(--shadow-elegant)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb-hover))';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb))';
-                          }}
-                        />
-
-                        <SliderPrimitive.Thumb
-                          className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                          style={{
-                            transition: 'var(--transition-smooth)',
-                            boxShadow: 'var(--shadow-elegant)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb-hover))';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb))';
-                          }}
-                        />
-                      </SliderPrimitive.Root>
-
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>${priceRange[0]}</span>
-                        <span>${priceRange[1]}</span>
-                      </div>
+                {priceRangeInit.current.isInit && (
+                  <div className="flex-1 max-w-[300px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium ">Price Range</span>
+                      <Button variant="outline" onClick={resetRangePrice}>
+                        Reset
+                      </Button>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2">
+                      <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
+                        ${priceRange[0]}
+                      </span>
+                      <span className="text-muted-foreground">-</span>
+                      <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
+                        ${priceRange[1]}
+                      </span>
+                    </div>
+
+                    <SliderPrimitive.Root
+                      className={cn(
+                        'relative flex w-full touch-none select-none items-center my-3'
+                      )}
+                      value={priceRange}
+                      onValueChange={(value) =>
+                        setPriceRange(value as [number, number])
+                      }
+                      min={priceRangeInit.current.minPrice}
+                      max={priceRangeInit.current.maxPrice}
+                      step={0.01}
+                    >
+                      <SliderPrimitive.Track
+                        className="relative h-1 w-full grow overflow-hidden rounded-full bg-slider-track shadow-inner"
+                        style={{
+                          boxShadow: 'inset 0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                        }}
+                      >
+                        <SliderPrimitive.Range
+                          className="absolute h-full rounded-full"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, hsl(var(--slider-range)), hsl(var(--slider-range) / 0.8))',
+                            boxShadow:
+                              '0 1px 3px 0 hsl(var(--slider-range) / 0.3)',
+                          }}
+                        />
+                      </SliderPrimitive.Track>
+
+                      <SliderPrimitive.Thumb
+                        className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                        style={{
+                          transition: 'var(--transition-smooth)',
+                          boxShadow: 'var(--shadow-elegant)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.1)';
+                          e.currentTarget.style.borderColor =
+                            'hsl(var(--slider-thumb-hover))';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.borderColor =
+                            'hsl(var(--slider-thumb))';
+                        }}
+                      />
+
+                      <SliderPrimitive.Thumb
+                        className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                        style={{
+                          transition: 'var(--transition-smooth)',
+                          boxShadow: 'var(--shadow-elegant)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.1)';
+                          e.currentTarget.style.borderColor =
+                            'hsl(var(--slider-thumb-hover))';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.borderColor =
+                            'hsl(var(--slider-thumb))';
+                        }}
+                      />
+                    </SliderPrimitive.Root>
+
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>${priceRange[0]}</span>
+                      <span>${priceRange[1]}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Rating */}
                 <div>
