@@ -19,6 +19,14 @@ export function CourseCard({
   className = "",
   variant = "grid",
 }: CourseCardProps) {
+  // Debug log để kiểm tra enrollment status
+  console.log("CourseCard Debug:", {
+    courseSlug: course.slug,
+    courseTitle: course.title,
+    isEnrolled: course.isEnrolled,
+    courseData: course,
+  });
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -47,6 +55,34 @@ export function CourseCard({
     // Fallback estimation: 10 minutes per lesson
     const totalMinutes = getTotalLessons() * 10;
     return Math.round(totalMinutes / 60);
+  };
+
+  const renderEnrollButton = (className: string) => {
+    if (course.isEnrolled) {
+      return (
+        <Button
+          disabled
+          className={`${className} bg-green-600 hover:bg-green-600 text-white border-0 shadow-lg cursor-default`}
+        >
+          <span>Enrolled</span>
+          <Award className="w-4 h-4 ml-2" />
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        asChild
+        className={`${className} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 font-semibold rounded-lg group`}
+      >
+        <Link href={`/courses/${course.slug}`}>
+          <span className="group-hover:translate-x-0.5 transition-transform duration-300">
+            Enroll Now
+          </span>
+          <PlayCircle className="w-4 h-4 ml-2 group-hover:scale-105 transition-transform duration-300" />
+        </Link>
+      </Button>
+    );
   };
 
   const isListView = variant === "list";
@@ -188,17 +224,7 @@ export function CourseCard({
 
               {/* Button - Reduced margin */}
               <div className="flex justify-end">
-                <Button
-                  asChild
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 font-semibold px-6 py-2 rounded-lg group"
-                >
-                  <Link href={`/courses/${course.slug}`}>
-                    <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-                      Enroll Now
-                    </span>
-                    <PlayCircle className="w-4 h-4 ml-2 group-hover:scale-105 transition-transform duration-300" />
-                  </Link>
-                </Button>
+                {renderEnrollButton("px-6 py-2")}
               </div>
             </div>
           </div>
@@ -377,17 +403,7 @@ export function CourseCard({
       </CardContent>
 
       <CardFooter className="p-5 pt-0 relative z-10">
-        <Button
-          asChild
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 font-semibold py-3 rounded-lg group"
-        >
-          <Link href={`/courses/${course.slug}`}>
-            <span className="group-hover:translate-x-0.5 transition-transform duration-300">
-              Enroll Now
-            </span>
-            <PlayCircle className="w-4 h-4 ml-2 group-hover:scale-105 transition-transform duration-300" />
-          </Link>
-        </Button>
+        {renderEnrollButton("w-full py-3")}
       </CardFooter>
     </Card>
   );
