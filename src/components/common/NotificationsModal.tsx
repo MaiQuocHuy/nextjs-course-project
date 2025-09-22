@@ -10,7 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomPagination } from "@/components/ui/custom-pagination";
-import { Bell, BellRing, Check, Trash2, AlertCircle, Settings, ExternalLink } from "lucide-react";
+import {
+  Bell,
+  BellRing,
+  Check,
+  Trash2,
+  AlertCircle,
+  Settings,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import {
   useGetNotificationsByUserIdQuery,
   useMarkNotificationAsReadMutation,
@@ -26,13 +35,13 @@ const useIsMobile = () => {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+      setIsMobile(window.innerWidth < 768 || "ontouchstart" in window);
     };
 
     checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
+    window.addEventListener("resize", checkIsMobile);
 
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
   return isMobile;
@@ -87,13 +96,20 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     isLoading,
     error,
     refetch,
-  } = useGetNotificationsByUserIdQuery({
-    userId,
-    page: currentPage - 1,
-    size: pageSize,
-    sortBy: "createdAt",
-    sortDir: "DESC",
-  });
+  } = useGetNotificationsByUserIdQuery(
+    {
+      userId,
+      page: currentPage - 1,
+      size: pageSize,
+      sortBy: "createdAt",
+      sortDir: "DESC",
+    },
+    {
+      pollingInterval: 300000, // 5 phút
+      refetchOnFocus: true, // refetch khi user quay lại tab
+      refetchOnReconnect: true, // refetch khi mạng reconnect
+    }
+  );
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [deleteNotification] = useDeleteNotificationMutation();
@@ -133,7 +149,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const handleMouseEnter = () => {
     if (isMobile) return; // Disable hover on mobile
-    
+
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
@@ -143,7 +159,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const handleMouseLeave = () => {
     if (isMobile) return; // Disable hover on mobile
-    
+
     const timeout = setTimeout(() => {
       setOpen(false);
     }, 200); // 200ms delay before closing
@@ -152,7 +168,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const handlePopoverMouseEnter = () => {
     if (isMobile) return; // Disable hover on mobile
-    
+
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
@@ -161,7 +177,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const handlePopoverMouseLeave = () => {
     if (isMobile) return; // Disable hover on mobile
-    
+
     const timeout = setTimeout(() => {
       setOpen(false);
     }, 200);
@@ -194,6 +210,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   };
 
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Failed to refresh notifications:", error);
+    }
+  };
+
   const defaultTrigger = (
     <Button
       ref={triggerRef}
@@ -220,8 +244,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         {triggerButton ? (
-          <div 
-            onMouseEnter={handleMouseEnter} 
+          <div
+            onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={handleTriggerClick}
           >
@@ -236,7 +260,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         className="w-96 p-0 animate-in slide-in-from-top-2 duration-200"
         align="end"
         side="bottom"
-        sideOffset={8}
+        sideOffset={0}
         onMouseEnter={handlePopoverMouseEnter}
         onMouseLeave={handlePopoverMouseLeave}
         onInteractOutside={(e) => {
@@ -259,17 +283,28 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   </Badge>
                 )}
               </div>
-              {unreadCount > 0 && (
+              <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleMarkAllAsRead}
+                  onClick={handleRefresh}
                   className="text-xs h-7 px-2"
+                  title="Refresh notifications"
                 >
-                  <Check className="h-3 w-3 mr-1" />
-                  Mark all read
+                  <RefreshCw className="h-3 w-3" />
                 </Button>
-              )}
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs h-7 px-2"
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    Mark all read
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
