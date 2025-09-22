@@ -39,16 +39,16 @@ export const contactInfo: ContactInfo[] = [
     type: 'phone',
     icon: 'Phone',
     label: 'Call Us',
-    value: '+1 (555) 123-4567',
-    href: 'tel:+15551234567'
+    value: '+84 888 194 225',
+    href: 'tel:+84888194225'
   },
   {
     id: '3',
     type: 'address',
     icon: 'MapPin',
     label: 'Visit Us',
-    value: '123 Education Street, Learning City, LC 12345',
-    href: 'https://maps.google.com'
+    value: '470 Tran Dai Nghia, Ngu Hanh Son, Da Nang, Vietnam',
+    href: 'https://www.google.com/maps/place/Tr%C6%B0%E1%BB%9Dng+%C4%90%E1%BA%A1i+h%E1%BB%8Dc+C%C3%B4ng+ngh%E1%BB%87+Th%C3%B4ng+tin+v%C3%A0+Truy%E1%BB%81n+th%C3%B4ng+Vi%E1%BB%87t+-+H%C3%A0n,+%C4%90%E1%BA%A1i+h%E1%BB%8Dc+%C4%90%C3%A0+N%E1%BA%B5ng/@15.9752603,108.2506521,846m/data=!3m2!1e3!4b1!4m6!3m5!1s0x3142108997dc971f:0x1295cb3d313469c9!8m2!3d15.9752603!4d108.253227!16s%2Fg%2F1yjg80dyy?entry=ttu&g_ep=EgoyMDI1MDkxNy4wIKXMDSoASAFQAw%3D%3D'
   },
   {
     id: '4',
