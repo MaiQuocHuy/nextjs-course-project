@@ -7,6 +7,28 @@ import { getSession } from "next-auth/react";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
+  prepareHeaders: async (headers, { getState }) => {
+    try {
+      // Get session to check if user is authenticated
+      const session = await getSession();
+      
+      // If user is logged in, add Authorization header
+      if (session?.user?.accessToken) {
+        headers.set("Authorization", `Bearer ${session.user.accessToken}`);
+        console.log("Added Authorization token for authenticated user");
+      } else {
+        console.log("No authentication token - anonymous access");
+      }
+      
+      // Set content type for JSON requests
+      headers.set("Content-Type", "application/json");
+      
+      return headers;
+    } catch (error) {
+      console.error("Error preparing headers:", error);
+      return headers;
+    }
+  },
 });
 
 // Interfaces cho Course API
@@ -54,6 +76,7 @@ export interface CoursesFilter {
   minPrice?: number;
   maxPrice?: number;
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  averageRating?: number;
   sort?: string;
 }
 
@@ -155,6 +178,12 @@ export const coursesApi = createApi({
     if (filters.level?.trim()) {
       params.append('level', filters.level.trim());
       console.log("Adding level filter:", filters.level.trim());
+    }
+    
+    // Thêm averageRating filter
+    if (filters.averageRating !== undefined && filters.averageRating !== null && filters.averageRating > 0) {
+      params.append('averageRating', filters.averageRating.toString());
+      console.log("Adding averageRating filter:", filters.averageRating);
     }
     
     if (filters.sort?.trim()) {

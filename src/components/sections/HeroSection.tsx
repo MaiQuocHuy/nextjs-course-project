@@ -90,7 +90,7 @@ export function HeroSection() {
               className="group bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white hover:text-black px-8 py-3 text-lg font-semibold rounded-full transition-all duration-300 hover:scale-105"
               asChild
             >
-              <Link href="/about">
+              <Link href="/courses/flutter-mobile-app-development?scrollTo=course-preview">
                 <Play className="mr-2 w-5 h-5" />
                 Watch Demo
               </Link>

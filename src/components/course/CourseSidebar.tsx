@@ -44,7 +44,7 @@ CourseSidebarProps) {
   // Debounce price range để delay API calls
   const [debouncedPriceRange, resetDebounce] = useDebounce(
     localPriceRange,
-    500
+    1000
   );
 
   // Lấy categories từ API riêng

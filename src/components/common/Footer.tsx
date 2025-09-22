@@ -119,7 +119,7 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="text-center text-sm text-muted-foreground flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-muted/20 to-primary/5 backdrop-blur-sm">
-            <span>© 2025 SybauEducation. Stay Young, Beautiful and Unique</span>
+            <span>© 2025 SybauEducation. Stay Young, Beautiful And Unique</span>
           </div>
         </div>
       </div>
