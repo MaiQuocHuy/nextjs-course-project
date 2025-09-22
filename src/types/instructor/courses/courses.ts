@@ -1,5 +1,4 @@
 import { Page } from '@/types/common';
-import { User } from '../profile';
 
 export interface VideoContent {
   id: string;
@@ -42,13 +41,14 @@ export interface SectionOverview {
 
 export interface Review {
   id: string;
-  user_id: string;
-  course_id: string;
   rating: number;
-  review_text: string | null;
-  reviewed_at: string;
-  updated_at: string;
-  user?: User;
+  reviewText: string;
+  reviewedAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
 }
 
 export interface Category {
@@ -94,7 +94,6 @@ export interface CoursesFilter {
   rating?: 'THREE' | 'FOUR' | 'FIVE';
   minPrice?: number;
   maxPrice?: number;
-  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' ;
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   isPublished?: boolean;
 }
-

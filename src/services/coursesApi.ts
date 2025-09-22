@@ -193,7 +193,7 @@ export const coursesApi = createApi({
         method: 'GET',
       }),
       transformResponse: (response: ApiResponse<Category[]>) => {
-        console.log("Categories API Response:", response);
+        // console.log("Categories API Response:", response);
         if (response.statusCode !== 200) {
           throw new Error(response.message || 'Failed to fetch categories');
         }

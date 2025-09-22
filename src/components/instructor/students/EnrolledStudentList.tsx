@@ -111,17 +111,7 @@ export const EnrolledStudentList = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-300">
-                      {/* Chat and send email */}
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <MessageSquare className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Mail className="h-3 w-3" />
-                        </Button>
-                      </div>
-
+                    <div className="flex justify-end pt-2 border-t border-gray-300">
                       {/* View detail information */}
                       <Button
                         variant="outline"

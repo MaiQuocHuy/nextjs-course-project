@@ -12,8 +12,8 @@ import {
   Edit,
   Trash2,
   Eye,
-  ArrowRight,
 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 
 import { cn } from '@/lib/utils';
 import * as SliderPrimitive from '@radix-ui/react-slider';
@@ -58,6 +58,7 @@ import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 import { ErrorComponent } from '../commom/ErrorComponent';
 import { CoursesSkeleton } from './skeletons/index';
 import { CoursesGridSkeleton } from './skeletons/index';
+import { useGetMinAndMaxPrice } from '@/hooks/instructor/useGetMinAndMaxPrice';
 import { Pagination } from '@/components/common/Pagination';
 
 const coursesParams: CoursesFilter = {
@@ -66,16 +67,28 @@ const coursesParams: CoursesFilter = {
   sort: 'createdAt,DESC',
   minPrice: 0,
   maxPrice: 1000,
+  search: '',
 };
 
 export const CoursesPage = () => {
   const [filters, setFilters] = useState(coursesParams);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isGridLoading, setIsGridLoading] = useState(false);
-  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 1000 });
+  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 999.99 });
   const [showFilters, setShowFilters] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
+  // Local states for immediate UI updates
+  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    filters.minPrice || 0,
+    filters.maxPrice || 1000,
+  ]);
+
+  // Debounced values for API calls
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+  const [debouncedPriceRange] = useDebounce(priceRange, 300);
 
   const router = useRouter();
   const dispatch: AppDispatch = useDispatch();
@@ -94,6 +107,9 @@ export const CoursesPage = () => {
 
   const [deleteCourse, { isLoading: isDeletingCourse }] =
     useDeleteCourseMutation();
+
+  // Use the custom hook to calculate price range
+  const { minPrice, maxPrice } = useGetMinAndMaxPrice(courses?.content || []);
 
   const getCourseStatus = useCallback(() => {
     if (filters.status) {
@@ -124,12 +140,16 @@ export const CoursesPage = () => {
         courses.content.length > 0 &&
         !priceRangeInit.current.isInit
       ) {
-        // Get course that have the most min and max price
-        getPriceRange(courses.content);
+        // Update price range from the custom hook without triggering filter updates
+        priceRangeInit.current.minPrice = minPrice;
+        priceRangeInit.current.maxPrice = maxPrice;
         priceRangeInit.current.isInit = true;
+
+        // Update local state for immediate UI updates only
+        setPriceRange([minPrice, maxPrice]);
       }
     }
-  }, [courses]);
+  }, [courses, minPrice, maxPrice]);
 
   // Check if any filter is applied
   useEffect(() => {
@@ -154,24 +174,29 @@ export const CoursesPage = () => {
     filters.rating,
   ]);
 
-  const getPriceRange = (courses: Course[]) => {
-    const coursePrices = courses.map((course) => course.price);
-    const minPrice = Math.min(...coursePrices);
-    const maxPrice = Math.max(...coursePrices);
-    priceRangeInit.current.minPrice = minPrice;
-    priceRangeInit.current.maxPrice = maxPrice;
-
+  // Update filters with debounced search term
+  useEffect(() => {
+    setIsGridLoading(true);
     setFilters((prev) => ({
       ...prev,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
+      search: debouncedSearchTerm,
     }));
-  };
+  }, [debouncedSearchTerm]);
+
+  // Update filters with debounced price range
+  useEffect(() => {
+    setIsGridLoading(true);
+    setFilters((prev) => ({
+      ...prev,
+      minPrice: debouncedPriceRange[0],
+      maxPrice: debouncedPriceRange[1],
+    }));
+  }, [debouncedPriceRange]);
 
   const resetRangePrice = () => {
     const minPrice = priceRangeInit.current.minPrice;
     const maxPrice = priceRangeInit.current.maxPrice;
-    handleFilterCourseWithPriceRange([minPrice, maxPrice]);
+    setPriceRange([minPrice, maxPrice]);
   };
 
   const handleFilterCourseWithStatus = (filterField: string, value: any) => {
@@ -195,14 +220,14 @@ export const CoursesPage = () => {
     handleFilterCourse(filterField, categoryIds);
   };
 
-  const handleFilterCourseWithPriceRange = (value: any) => {
-    setIsGridLoading(true);
-    const minPrice = value[0];
-    const maxPrice = value[1];
-    setFilters((prev) => {
-      return { ...prev, minPrice, maxPrice };
-    });
-  };
+  // const handleFilterCourseWithPriceRange = (value: any) => {
+  //   setIsGridLoading(true);
+  //   const minPrice = value[0];
+  //   const maxPrice = value[1];
+  //   setFilters((prev) => {
+  //     return { ...prev, minPrice, maxPrice };
+  //   });
+  // };
 
   const handleFilterCourse = (filterField: string, value: any) => {
     setIsGridLoading(true);
@@ -218,6 +243,11 @@ export const CoursesPage = () => {
     setIsGridLoading(true);
     const minPrice = priceRangeInit.current.minPrice;
     const maxPrice = priceRangeInit.current.maxPrice;
+
+    // Reset local states
+    setSearchTerm('');
+    setPriceRange([minPrice, maxPrice]);
+
     setFilters({ ...coursesParams, minPrice, maxPrice });
   };
 
@@ -271,8 +301,8 @@ export const CoursesPage = () => {
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search courses by title or description"
-                value={filters.search}
-                onChange={(e) => handleFilterCourse('search', e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -371,11 +401,11 @@ export const CoursesPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${filters.minPrice}
+                          ${priceRange[0]}
                         </span>
                         <span className="text-muted-foreground">-</span>
                         <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${filters.maxPrice}
+                          ${priceRange[1]}
                         </span>
                       </div>
 
@@ -383,9 +413,9 @@ export const CoursesPage = () => {
                         className={cn(
                           'relative flex w-full touch-none select-none items-center my-3'
                         )}
-                        value={[filters.minPrice, filters.maxPrice]}
+                        value={priceRange}
                         onValueChange={(value) =>
-                          handleFilterCourseWithPriceRange(value)
+                          setPriceRange(value as [number, number])
                         }
                         min={priceRangeInit.current.minPrice}
                         max={priceRangeInit.current.maxPrice}
@@ -446,8 +476,8 @@ export const CoursesPage = () => {
                       </SliderPrimitive.Root>
 
                       <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>${filters.minPrice}</span>
-                        <span>${filters.maxPrice}</span>
+                        <span>${priceRange[0]}</span>
+                        <span>${priceRange[1]}</span>
                       </div>
                     </div>
                   )}
@@ -669,7 +699,7 @@ export const CoursesPage = () => {
                   <CardContent>
                     <div className="space-y-3">
                       {/* Categories */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           {course.categories.slice(0, 2).map((category) => {
                             return (
@@ -680,7 +710,11 @@ export const CoursesPage = () => {
                           })}
                         </div>
 
-                        {course.categories.length > 2 && <ArrowRight />}
+                        {course.categories.length > 2 && (
+                          <Badge variant="default">{`+${
+                            course.categories.length - 2
+                          } more`}</Badge>
+                        )}
                       </div>
 
                       {/* Total students and sections */}

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,10 +32,11 @@ export const EnrolledCourses = ({ enrolledCourses }: EnrolledCoursesProps) => {
               className="overflow-hidden transition-shadow hover:shadow-md"
             >
               <div className="relative aspect-video">
-                <img
-                  src={course.thumbnailUrl}
-                  alt={course.title}
-                  className="object-cover w-full h-full min-h-[220px]"
+                <Image
+                  src={course.thumbnailUrl || '/images/empty-course.webp'}
+                  alt={course.title || 'Course Thumbnail'}
+                  fill
+                  style={{ objectFit: 'cover' }}
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">
                   <h4 className="text-sm font-medium truncate">

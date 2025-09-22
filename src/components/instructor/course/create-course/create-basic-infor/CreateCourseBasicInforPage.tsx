@@ -506,8 +506,8 @@ export function CreateCourseBasicInforPage({
                             'min-h-32 resize-none',
                             errors.description && 'border-red-500',
                             !errors.description &&
-                              field.value &&
-                              'border-green-500'
+                            field.value &&
+                            'border-green-500'
                           )}
                           {...field}
                         />
@@ -518,7 +518,7 @@ export function CreateCourseBasicInforPage({
                               /2000 characters
                             </span>
                             <span>
-                              {getWordCount(field.value)} words (min: 20)
+                              (min: 20 characters)
                             </span>
                           </div>
                           {!errors.description &&
@@ -660,8 +660,8 @@ export function CreateCourseBasicInforPage({
                             'pl-8',
                             errors.price && 'border-red-500',
                             !errors.price &&
-                              field.value >= 0 &&
-                              'border-green-500'
+                            field.value >= 0 &&
+                            'border-green-500'
                           )}
                           {...field}
                           onChange={(e) =>
