@@ -8,13 +8,21 @@ import { SectionType } from '@/utils/instructor/course/create-course-validations
 import { Button } from '@/components/ui/button';
 import CourseContentSkeleton from './skeletons/CourseContentSkeleton';
 import { useParams } from 'next/navigation';
+import { useGetCourseByIdQuery } from '@/services/instructor/courses/courses-api';
 
 const CourseContentPage = () => {
   const { id } = useParams<{ id: string }>();
+
+  const {
+    data: courseInfo,
+    isLoading: isCourseLoading,
+    isError: isErrorLoadingCourse,
+  } = useGetCourseByIdQuery(id, { skip: !id });
+
   const {
     data: sections,
-    isLoading: isFetchingSections,
-    isError,
+    isLoading: isSectionsLoading,
+    isError: isErrorLoadingSections,
   } = useGetSectionsQuery(id, { skip: !id });
 
   const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
@@ -63,11 +71,11 @@ const CourseContentPage = () => {
     fetchFiles();
   }, [sections]);
 
-  if (isFetchingSections || isSettingUp) {
+  if (isCourseLoading || isSectionsLoading || isSettingUp) {
     return <CourseContentSkeleton />;
   }
 
-  if (isError) {
+  if (isErrorLoadingSections || isErrorLoadingCourse) {
     return <p>Error fetching course content!</p>;
   }
 
@@ -80,11 +88,16 @@ const CourseContentPage = () => {
               courseId={id}
               sections={updatedSections}
               mode="view"
+              canEditContent={courseInfo && courseInfo.approved ? false : true}
             />
           ) : (
             <>
               {createContent ? (
-                <CreateCourseContentForm courseId={id} mode="create" />
+                <CreateCourseContentForm
+                  courseId={id}
+                  mode="create"
+                  canEditContent={true}
+                />
               ) : (
                 <>
                   <div className="text-center space-y-4">
@@ -114,17 +127,19 @@ const CreateCourseContentForm = ({
   courseId,
   sections,
   mode,
+  canEditContent = false,
 }: {
   courseId: string;
   sections?: SectionType[];
   mode: 'create' | 'view';
+  canEditContent: boolean;
 }) => {
   return (
     <CourseContent
       courseId={courseId}
       mode={mode}
       sections={sections}
-      canEditContent={true}
+      canEditContent={canEditContent}
     />
   );
 };

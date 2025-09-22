@@ -1,16 +1,10 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Students } from '@/types/instructor/students';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
-import { EmptyState } from '@/components/instructor/commom/EmptyState';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Students } from "@/types/instructor/students";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Users } from "lucide-react";
+import { EmptyState } from "@/components/instructor/commom/EmptyState";
 
 interface StudentStatisticsProps {
   enrolledStudents?: Students[];
@@ -18,10 +12,7 @@ interface StudentStatisticsProps {
   onRefresh?: () => void;
 }
 
-export const StudentStatistics = ({
-  enrolledStudents,
-  onRefresh,
-}: StudentStatisticsProps) => {
+export const StudentStatistics = ({ enrolledStudents, onRefresh }: StudentStatisticsProps) => {
   return (
     <Card className="shadow-card gap-3">
       <CardHeader>
@@ -32,10 +23,7 @@ export const StudentStatistics = ({
         {enrolledStudents && enrolledStudents.length > 0 ? (
           <>
             {enrolledStudents
-              .slice(
-                0,
-                enrolledStudents.length > 3 ? 3 : enrolledStudents.length
-              )
+              .slice(0, enrolledStudents.length > 3 ? 3 : enrolledStudents.length)
               .map((student) => (
                 <Link
                   href={`/instructor/students/${student.id}`}
@@ -44,19 +32,17 @@ export const StudentStatistics = ({
                   className="flex items-center space-x-4 hover:bg-accent px-3 rounded-md min-h-[56px]"
                 >
                   <Avatar>
-                    <AvatarImage src={student.avatar} alt={student.name} />
+                    <AvatarImage src={student.thumbnailUrl} alt={student.name} />
                     <AvatarFallback>
                       {student.name
-                        .split(' ')
+                        .split(" ")
                         .map((n) => n[0])
-                        .join('')}
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 space-y-1">
                     <h4 className="text-sm font-medium">{student.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {student.email}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{student.email}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">

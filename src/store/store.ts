@@ -6,7 +6,6 @@ import { paymentApi } from "@/services/paymentApi";
 import { studentApi } from "@/services/student/studentApi";
 import { notificationApi } from "@/services/notificationApi";
 import { authSlice, logoutState } from "./slices/auth/authSlice";
-import { profileApi } from "@/services/common/profileApi";
 import { chatApi } from "@/services/websocket/chatApi";
 import { certificateApi } from "@/services/common/certificateApi";
 
@@ -34,7 +33,6 @@ const clearCacheOnLogout = (store: any) => (next: any) => (action: any) => {
 
   // If logout action is dispatched, clear all API caches
   if (action.type === logoutState.type || action.type === "auth/logout") {
-    store.dispatch(profileApi.util.resetApiState());
     store.dispatch(studentApi.util.resetApiState());
     store.dispatch(paymentApi.util.resetApiState());
     store.dispatch(notificationApi.util.resetApiState());
@@ -58,7 +56,6 @@ export const makeStore = () => {
       [coursesApi.reducerPath]: coursesApi.reducer,
       [paymentApi.reducerPath]: paymentApi.reducer,
       [notificationApi.reducerPath]: notificationApi.reducer,
-      [profileApi.reducerPath]: profileApi.reducer,
       [settingsApi.reducerPath]: settingsApi.reducer,
       [geminiApi.reducerPath]: geminiApi.reducer,
       [chatApi.reducerPath]: chatApi.reducer,
@@ -84,7 +81,6 @@ export const makeStore = () => {
         studentApi.middleware,
         paymentApi.middleware,
         notificationApi.middleware,
-        profileApi.middleware,
         settingsApi.middleware,
         geminiApi.middleware,
         chatApi.middleware,
