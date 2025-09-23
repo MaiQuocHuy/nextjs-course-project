@@ -12,8 +12,8 @@ import {
   Edit,
   Trash2,
   Eye,
-  ArrowRight,
 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 
 import { cn } from '@/lib/utils';
 import * as SliderPrimitive from '@radix-ui/react-slider';
@@ -51,34 +51,52 @@ import { useGetCategoriesQuery } from '@/services/coursesApi';
 import { useRouter } from 'next/navigation';
 import { AppDispatch } from '@/store/store';
 import { useDispatch } from 'react-redux';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import WarningAlert from '../commom/WarningAlert';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 import { ErrorComponent } from '../commom/ErrorComponent';
 import { CoursesSkeleton } from './skeletons/index';
 import { CoursesGridSkeleton } from './skeletons/index';
+import { useGetMinAndMaxPrice } from '@/hooks/instructor/useGetMinAndMaxPrice';
 import { Pagination } from '@/components/common/Pagination';
+import { set } from 'zod';
+import { de } from 'zod/v4/locales';
 
 const coursesParams: CoursesFilter = {
   page: 0,
   size: 10,
   sort: 'createdAt,DESC',
   minPrice: 0,
-  maxPrice: 1000,
+  maxPrice: 999.99,
+  search: '',
 };
 
 export const CoursesPage = () => {
   const [filters, setFilters] = useState(coursesParams);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isGridLoading, setIsGridLoading] = useState(false);
-  const priceRangeInit = useRef({ isInit: false, minPrice: 0, maxPrice: 1000 });
+  const [isClearFilters, setIsClearFilters] = useState(false);
+  const priceRangeInit = useRef({
+    isInit: false,
+    minPrice: 0,
+    maxPrice: 1000,
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
+  // Local states for immediate UI updates
+  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    filters.minPrice || 0,
+    filters.maxPrice || 999.99,
+  ]);
+
+  // Debounced values for API calls
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+  const [debouncedPriceRange] = useDebounce(priceRange, 300);
+
   const router = useRouter();
-  const dispatch: AppDispatch = useDispatch();
 
   const {
     data: courses,
@@ -92,8 +110,10 @@ export const CoursesPage = () => {
     error: errorFetchCategories,
   } = useGetCategoriesQuery();
 
-  const [deleteCourse, { isLoading: isDeletingCourse }] =
-    useDeleteCourseMutation();
+  const [deleteCourse] = useDeleteCourseMutation();
+
+  // Use the custom hook to calculate price range
+  const { minPrice, maxPrice } = useGetMinAndMaxPrice(courses?.content || []);
 
   const getCourseStatus = useCallback(() => {
     if (filters.status) {
@@ -124,12 +144,20 @@ export const CoursesPage = () => {
         courses.content.length > 0 &&
         !priceRangeInit.current.isInit
       ) {
-        // Get course that have the most min and max price
-        getPriceRange(courses.content);
-        priceRangeInit.current.isInit = true;
+        priceRangeInit.current.minPrice = minPrice;
+        priceRangeInit.current.maxPrice = maxPrice;
+
+        // Update local state for immediate UI updates only
+        setPriceRange([minPrice, maxPrice]);
+
+        setFilters((prev) => ({
+          ...prev,
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+        }));
       }
     }
-  }, [courses]);
+  }, [courses, minPrice, maxPrice]);
 
   // Check if any filter is applied
   useEffect(() => {
@@ -154,30 +182,52 @@ export const CoursesPage = () => {
     filters.rating,
   ]);
 
-  const getPriceRange = (courses: Course[]) => {
-    const coursePrices = courses.map((course) => course.price);
-    const minPrice = Math.min(...coursePrices);
-    const maxPrice = Math.max(...coursePrices);
-    priceRangeInit.current.minPrice = minPrice;
-    priceRangeInit.current.maxPrice = maxPrice;
-
+  // Update filters with debounced search term
+  useEffect(() => {
+    setIsGridLoading(true);
     setFilters((prev) => ({
       ...prev,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
+      search: debouncedSearchTerm,
     }));
-  };
+    if (debouncedSearchTerm === '') {
+      setIsGridLoading(false);
+    }
+  }, [debouncedSearchTerm]);
+
+  // Update filters with debounced price range
+  useEffect(() => {
+    if (priceRangeInit.current.maxPrice !== 1000) {
+      // Prevent updating show grid on initial price range setup
+      if (priceRangeInit.current.isInit) {
+        setIsGridLoading(true);
+        setFilters((prev) => ({
+          ...prev,
+          minPrice: debouncedPriceRange[0],
+          maxPrice: debouncedPriceRange[1],
+        }));
+        if (
+          debouncedPriceRange[0] === priceRangeInit.current.minPrice &&
+          debouncedPriceRange[1] === priceRangeInit.current.maxPrice
+        ) {
+          setIsGridLoading(false);
+        }
+      } else {
+        priceRangeInit.current.isInit = true;
+      }
+    }
+  }, [debouncedPriceRange]);
 
   const resetRangePrice = () => {
     const minPrice = priceRangeInit.current.minPrice;
     const maxPrice = priceRangeInit.current.maxPrice;
-    handleFilterCourseWithPriceRange([minPrice, maxPrice]);
+    setPriceRange([minPrice, maxPrice]);
   };
 
   const handleFilterCourseWithStatus = (filterField: string, value: any) => {
     if (value === 'DRAFT') {
       filterField = 'isPublished';
       value = false;
+      setFilters((prev) => ({ ...prev, status: undefined }));
     } else {
       setFilters((prev) => ({ ...prev, isPublished: undefined }));
     }
@@ -195,15 +245,6 @@ export const CoursesPage = () => {
     handleFilterCourse(filterField, categoryIds);
   };
 
-  const handleFilterCourseWithPriceRange = (value: any) => {
-    setIsGridLoading(true);
-    const minPrice = value[0];
-    const maxPrice = value[1];
-    setFilters((prev) => {
-      return { ...prev, minPrice, maxPrice };
-    });
-  };
-
   const handleFilterCourse = (filterField: string, value: any) => {
     setIsGridLoading(true);
     setFilters((prev) => {
@@ -215,28 +256,35 @@ export const CoursesPage = () => {
   };
 
   const handleClearFilters = () => {
-    setIsGridLoading(true);
     const minPrice = priceRangeInit.current.minPrice;
     const maxPrice = priceRangeInit.current.maxPrice;
-    setFilters({ ...coursesParams, minPrice, maxPrice });
+
+    // Reset local states
+    setSearchTerm('');
+    setPriceRange([minPrice, maxPrice]);
+
+    // Explicitly clear all filter properties to ensure query refetch
+    setFilters({
+      ...coursesParams,
+      minPrice,
+      maxPrice,
+    });
   };
 
   const handleDeleteCourse = async (id: string) => {
     try {
       setIsDeleteDialogOpen(false);
-      loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
+      toast.info('Deleting course. Please wait...');
       const res = await deleteCourse(id).unwrap();
       if (res.statusCode === 200) {
-        loadingAnimation(false, dispatch);
         toast.success('Delete course successfully!');
       }
     } catch (error) {
-      loadingAnimation(false, dispatch);
       toast.error('Delete course failed!');
     }
   };
 
-  if (isFetchingCourses || isDeletingCourse || isFetchingCategories) {
+  if (isFetchingCourses || isFetchingCategories) {
     return <CoursesSkeleton />;
   }
 
@@ -271,8 +319,8 @@ export const CoursesPage = () => {
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search courses by title or description"
-                value={filters.search}
-                onChange={(e) => handleFilterCourse('search', e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -358,99 +406,96 @@ export const CoursesPage = () => {
             <div className="mt-4 p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center justify-between gap-4">
                 {/* Filter by price */}
-                {filters.minPrice !== undefined &&
-                  filters.maxPrice !== undefined && (
-                    <div className="flex-1 max-w-[300px]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium ">
-                          Price Range
-                        </span>
-                        <Button variant="outline" onClick={resetRangePrice}>
-                          Reset
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${filters.minPrice}
-                        </span>
-                        <span className="text-muted-foreground">-</span>
-                        <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
-                          ${filters.maxPrice}
-                        </span>
-                      </div>
+                {/*{priceRangeInit.current.isInit && (
+                )}*/}
+                <div className="flex-1 max-w-[300px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium ">Price Range</span>
+                    <Button variant="outline" onClick={resetRangePrice}>
+                      Reset
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
+                      ${priceRange[0]}
+                    </span>
+                    <span className="text-muted-foreground">-</span>
+                    <span className="bg-primary/5 text-primary px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm border border-primary/20">
+                      ${priceRange[1]}
+                    </span>
+                  </div>
 
-                      <SliderPrimitive.Root
-                        className={cn(
-                          'relative flex w-full touch-none select-none items-center my-3'
-                        )}
-                        value={[filters.minPrice, filters.maxPrice]}
-                        onValueChange={(value) =>
-                          handleFilterCourseWithPriceRange(value)
-                        }
-                        min={priceRangeInit.current.minPrice}
-                        max={priceRangeInit.current.maxPrice}
-                        step={0.01}
-                      >
-                        <SliderPrimitive.Track
-                          className="relative h-1 w-full grow overflow-hidden rounded-full bg-slider-track shadow-inner"
-                          style={{
-                            boxShadow: 'inset 0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                          }}
-                        >
-                          <SliderPrimitive.Range
-                            className="absolute h-full rounded-full"
-                            style={{
-                              background:
-                                'linear-gradient(135deg, hsl(var(--slider-range)), hsl(var(--slider-range) / 0.8))',
-                              boxShadow:
-                                '0 1px 3px 0 hsl(var(--slider-range) / 0.3)',
-                            }}
-                          />
-                        </SliderPrimitive.Track>
+                  <SliderPrimitive.Root
+                    className={cn(
+                      'relative flex w-full touch-none select-none items-center my-3'
+                    )}
+                    value={priceRange}
+                    onValueChange={(value) =>
+                      setPriceRange(value as [number, number])
+                    }
+                    min={priceRangeInit.current.minPrice}
+                    max={priceRangeInit.current.maxPrice}
+                    step={0.01}
+                  >
+                    <SliderPrimitive.Track
+                      className="relative h-1 w-full grow overflow-hidden rounded-full bg-slider-track shadow-inner"
+                      style={{
+                        boxShadow: 'inset 0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                      }}
+                    >
+                      <SliderPrimitive.Range
+                        className="absolute h-full rounded-full"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, hsl(var(--slider-range)), hsl(var(--slider-range) / 0.8))',
+                          boxShadow:
+                            '0 1px 3px 0 hsl(var(--slider-range) / 0.3)',
+                        }}
+                      />
+                    </SliderPrimitive.Track>
 
-                        <SliderPrimitive.Thumb
-                          className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                          style={{
-                            transition: 'var(--transition-smooth)',
-                            boxShadow: 'var(--shadow-elegant)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb-hover))';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb))';
-                          }}
-                        />
+                    <SliderPrimitive.Thumb
+                      className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                      style={{
+                        transition: 'var(--transition-smooth)',
+                        boxShadow: 'var(--shadow-elegant)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.borderColor =
+                          'hsl(var(--slider-thumb-hover))';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.borderColor =
+                          'hsl(var(--slider-thumb))';
+                      }}
+                    />
 
-                        <SliderPrimitive.Thumb
-                          className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                          style={{
-                            transition: 'var(--transition-smooth)',
-                            boxShadow: 'var(--shadow-elegant)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb-hover))';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.borderColor =
-                              'hsl(var(--slider-thumb))';
-                          }}
-                        />
-                      </SliderPrimitive.Root>
+                    <SliderPrimitive.Thumb
+                      className="block h-4 w-4 rounded-full border-2 border-slider-thumb bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                      style={{
+                        transition: 'var(--transition-smooth)',
+                        boxShadow: 'var(--shadow-elegant)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                        e.currentTarget.style.borderColor =
+                          'hsl(var(--slider-thumb-hover))';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.borderColor =
+                          'hsl(var(--slider-thumb))';
+                      }}
+                    />
+                  </SliderPrimitive.Root>
 
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>${filters.minPrice}</span>
-                        <span>${filters.maxPrice}</span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>${priceRange[0]}</span>
+                    <span>${priceRange[1]}</span>
+                  </div>
+                </div>
 
                 {/* Rating */}
                 <div>
@@ -669,7 +714,7 @@ export const CoursesPage = () => {
                   <CardContent>
                     <div className="space-y-3">
                       {/* Categories */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           {course.categories.slice(0, 2).map((category) => {
                             return (
@@ -680,7 +725,11 @@ export const CoursesPage = () => {
                           })}
                         </div>
 
-                        {course.categories.length > 2 && <ArrowRight />}
+                        {course.categories.length > 2 && (
+                          <Badge variant="default">{`+${
+                            course.categories.length - 2
+                          } more`}</Badge>
+                        )}
                       </div>
 
                       {/* Total students and sections */}

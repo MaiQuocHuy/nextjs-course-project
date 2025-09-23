@@ -1,12 +1,9 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { AppDispatch } from "@/store/store";
-import { useDispatch } from "react-redux";
-import { v4 as uuidv4 } from "uuid";
-import pdfToText from "react-pdftotext";
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { v4 as uuidv4 } from 'uuid';
+import pdfToText from 'react-pdftotext';
 import {
   Plus,
   Trash2,
@@ -21,12 +18,13 @@ import {
   X,
   Upload,
   CheckCircle,
-} from "lucide-react";
+  Loader2,
+} from 'lucide-react';
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -35,18 +33,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from '@/components/ui/form';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/instructor/commom/Collapsible";
-import { Textarea } from "@/components/ui/textarea";
-import { DragDropReorder } from "./DragDropReorder";
+} from '@/components/instructor/commom/Collapsible';
+import { Textarea } from '@/components/ui/textarea';
+import { DragDropReorder } from './DragDropReorder';
 import {
   courseContentSchema,
   QuizQuestionType,
@@ -55,16 +53,19 @@ import {
   type CourseContentType,
   type LessonType,
   type SectionType,
-} from "@/utils/instructor/course/create-course-validations/course-content-validations";
-import { parseExcelFile } from "@/utils/instructor/course/excel/excel-parser";
-import { QuizEditor } from "./quiz/QuizEditor";
-import { getCharacterCount, getWordCount } from "@/utils/instructor/course/course-helper-functions";
+} from '@/utils/instructor/course/create-course-validations/course-content-validations';
+import { parseExcelFile } from '@/utils/instructor/course/excel/excel-parser';
+import { QuizEditor } from './quiz/QuizEditor';
+import {
+  getCharacterCount,
+  getWordCount,
+} from '@/utils/instructor/course/course-helper-functions';
 import {
   useCreateSectionMutation,
   useDeleteSectionMutation,
   useReorderSectionsMutation,
   useUpdateSectionMutation,
-} from "@/services/instructor/courses/sections-api";
+} from '@/services/instructor/courses/sections-api';
 import {
   useCreateLessonMutation,
   useCreateLessonWithQuizMutation,
@@ -72,23 +73,22 @@ import {
   useReorderLessonsMutation,
   useUpdateVideoLessonMutation,
   useUpdateQuizLessonMutation,
-} from "@/services/instructor/courses/lessons-api";
-import { loadingAnimation } from "@/utils/instructor/loading-animation";
-import { toast } from "sonner";
-import { useGenerateQuestionsMutation } from "@/services/instructor/courses/quizzes-api";
-import WarningAlert from "@/components/instructor/commom/WarningAlert";
-import { useUpdateCourseStatusMutation } from "@/services/instructor/courses/courses-api";
-import CreateCourseSuccess from "./CreateCourseSuccess";
-import ReviewCourse from "./ReviewCourse";
-import TogglePublishCourse from "../../TogglePublishCourse";
-import ExcelFileFormatIns from "./ExcelFileFormatIns";
-import VideoUpload from "./file-upload/VideoUpload";
-import DocumentUpload from "./file-upload/DocumentUpload";
-import ExcelFileUpload from "./file-upload/ExcelFileUpload";
+} from '@/services/instructor/courses/lessons-api';
+import { toast } from 'sonner';
+import { useGenerateQuestionsMutation } from '@/services/instructor/courses/quizzes-api';
+import WarningAlert from '@/components/instructor/commom/WarningAlert';
+import { useUpdateCourseStatusMutation } from '@/services/instructor/courses/courses-api';
+import CreateCourseSuccess from './CreateCourseSuccess';
+import ReviewCourse from './ReviewCourse';
+import TogglePublishCourse from '../../TogglePublishCourse';
+import ExcelFileFormatIns from './ExcelFileFormatIns';
+import VideoUpload from './file-upload/VideoUpload';
+import DocumentUpload from './file-upload/DocumentUpload';
+import ExcelFileUpload from './file-upload/ExcelFileUpload';
 
 interface CourseContentProps {
   courseId: string;
-  mode: "view" | "edit" | "create";
+  mode: 'view' | 'edit' | 'create';
   sections?: SectionType[];
   onSectionsChange?: (sections: SectionType[]) => void;
   onSave?: () => void;
@@ -106,17 +106,28 @@ export default function CourseContent({
   canEditContent,
   setProgress,
 }: CourseContentProps) {
-  const [currentMode, setCurrentMode] = useState<"view" | "edit" | "create">(mode);
-  const [step, setStep] = useState<"create" | "review" | "success">("create");
-  const [courseStatus, setCourseStatus] = useState<"draft" | "published">("draft");
+  const [currentMode, setCurrentMode] = useState<'view' | 'edit' | 'create'>(
+    mode
+  );
+  const [step, setStep] = useState<'create' | 'review' | 'success'>('create');
+  const [courseStatus, setCourseStatus] = useState<'draft' | 'published'>(
+    'draft'
+  );
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [canSaveChanges, setCanSaveChanges] = useState(false);
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const [expandedLessons, setExpandedLessons] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set()
+  );
+  const [expandedLessons, setExpandedLessons] = useState<Set<string>>(
+    new Set()
+  );
 
-  const [lessonsData, setLessonsData] = useState<CourseContentType | null>(null);
+  const [lessonsData, setLessonsData] = useState<CourseContentType | null>(
+    null
+  );
 
   const [isParsingExcel, setIsParsingExcel] = useState(false);
   const [isValidInputs, setIsValidInput] = useState(true);
@@ -132,31 +143,41 @@ export default function CourseContent({
     lessonIndex: number;
   } | null>(null);
 
-  const [isDeleteSectionDialogOpen, setIsDeleteSectionDialogOpen] = useState(false);
-  const [isDeleteLessonDialogOpen, setIsDeleteLessonDialogOpen] = useState(false);
+  const [isDeleteSectionDialogOpen, setIsDeleteSectionDialogOpen] =
+    useState(false);
+  const [isDeleteLessonDialogOpen, setIsDeleteLessonDialogOpen] =
+    useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const [tempSections, setTempSections] = useState<SectionType[]>([]);
-
-  const dispatch: AppDispatch = useDispatch();
 
   const [updateCourseStatus, { isLoading: isUpdatingCourseStatus }] =
     useUpdateCourseStatusMutation();
 
-  const [updatedSections, { isLoading: isUpdatingSections }] = useUpdateSectionMutation();
-  const [createSection, { isLoading: isCreatingSection }] = useCreateSectionMutation();
-  const [deleteSection, { isLoading: isDeletingSection }] = useDeleteSectionMutation();
-  const [reorderSections, { isLoading: isReorderingSections }] = useReorderSectionsMutation();
+  const [updatedSections, { isLoading: isUpdatingSections }] =
+    useUpdateSectionMutation();
+  const [createSection, { isLoading: isCreatingSection }] =
+    useCreateSectionMutation();
+  const [deleteSection, { isLoading: isDeletingSection }] =
+    useDeleteSectionMutation();
+  const [reorderSections, { isLoading: isReorderingSections }] =
+    useReorderSectionsMutation();
 
-  const [createLesson, { isLoading: isCreatingLesson }] = useCreateLessonMutation();
+  const [createLesson, { isLoading: isCreatingLesson }] =
+    useCreateLessonMutation();
   const [createLessonWithQuiz, { isLoading: isCreatingLessonWithQuiz }] =
     useCreateLessonWithQuizMutation();
   const [updateVideoLessons, { isLoading: isUpdatingVideoLessons }] =
     useUpdateVideoLessonMutation();
-  const [updateQuizLessons, { isLoading: isUpdatingQuizLessons }] = useUpdateQuizLessonMutation();
-  const [deleteLesson, { isLoading: isDeletingLesson }] = useDeleteLessonMutation();
-  const [reorderLessons, { isLoading: isReorderingLessons }] = useReorderLessonsMutation();
+  const [updateQuizLessons, { isLoading: isUpdatingQuizLessons }] =
+    useUpdateQuizLessonMutation();
+  const [deleteLesson, { isLoading: isDeletingLesson }] =
+    useDeleteLessonMutation();
+  const [reorderLessons, { isLoading: isReorderingLessons }] =
+    useReorderLessonsMutation();
 
-  const [generateQuestions, { isLoading: isGeneratingQuizs }] = useGenerateQuestionsMutation();
+  const [generateQuestions, { isLoading: isGeneratingQuizs }] =
+    useGenerateQuestionsMutation();
 
   const form = useForm({
     defaultValues: {
@@ -165,29 +186,29 @@ export default function CourseContent({
             ...section,
             lessons: section.lessons.map((lesson) => ({
               ...lesson,
-              type: (lesson.type || "VIDEO") as "VIDEO" | "QUIZ",
+              type: (lesson.type || 'VIDEO') as 'VIDEO' | 'QUIZ',
             })),
           }))
         : [
             {
               id: `new-section-${crypto.randomUUID()}`,
-              title: "",
-              description: "",
+              title: '',
+              description: '',
               orderIndex: 0,
               isCollapsed: false,
               lessons: [
                 {
                   id: `new-lesson-${crypto.randomUUID()}`,
-                  title: "",
+                  title: '',
                   orderIndex: 0,
-                  type: "VIDEO" as const,
+                  type: 'VIDEO' as const,
                   isCollapsed: false,
                 },
               ],
             },
           ],
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   const {
@@ -195,7 +216,7 @@ export default function CourseContent({
     formState: { errors, isDirty, dirtyFields },
   } = form;
 
-  const watchedSections = watch("sections");
+  const watchedSections = watch('sections');
 
   // Get input errors
   useEffect(() => {
@@ -213,20 +234,39 @@ export default function CourseContent({
     }
   }, [form.formState]);
 
-  // Controlling loading state
   useEffect(() => {
     if (
-      isUpdatingCourseStatus ||
-      isUpdatingSections ||
       isCreatingSection ||
-      isDeletingSection ||
+      isUpdatingSections ||
       isReorderingSections ||
       isCreatingLesson ||
       isCreatingLessonWithQuiz ||
-      isUpdatingVideoLessons ||
       isUpdatingQuizLessons ||
+      isUpdatingVideoLessons ||
+      isReorderingLessons
+    ) {
+      setIsSaving(true);
+    } else {
+      setIsSaving(false);
+    }
+  }, [
+    isCreatingSection,
+    isUpdatingSections,
+    isReorderingSections,
+    isCreatingLesson,
+    isCreatingLessonWithQuiz,
+    isUpdatingQuizLessons,
+    isUpdatingVideoLessons,
+    isReorderingLessons,
+  ]);
+
+  // Controlling loading state
+  useEffect(() => {
+    if (
+      isSaving ||
+      isUpdatingCourseStatus ||
+      isDeletingSection ||
       isDeletingLesson ||
-      isReorderingLessons ||
       isGeneratingQuizs
     ) {
       setIsLoading(true);
@@ -234,17 +274,10 @@ export default function CourseContent({
       setIsLoading(false);
     }
   }, [
+    isSaving,
     isUpdatingCourseStatus,
-    isUpdatingSections,
-    isCreatingSection,
     isDeletingSection,
-    isReorderingSections,
-    isCreatingLesson,
-    isCreatingLessonWithQuiz,
-    isUpdatingVideoLessons,
-    isUpdatingQuizLessons,
     isDeletingLesson,
-    isReorderingLessons,
     isGeneratingQuizs,
   ]);
 
@@ -259,7 +292,13 @@ export default function CourseContent({
     } else {
       setCanSaveChanges(false);
     }
-  }, [dirtyFields, isValidInputs, isReorderLesson, isReorderSection, isLoading]);
+  }, [
+    dirtyFields,
+    isValidInputs,
+    isReorderLesson,
+    isReorderSection,
+    isLoading,
+  ]);
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections);
@@ -284,38 +323,38 @@ export default function CourseContent({
   const addSection = () => {
     const newSection: SectionType = {
       id: `new-section-${crypto.randomUUID()}`,
-      description: "",
-      title: "",
+      description: '',
+      title: '',
       orderIndex: watchedSections.length,
       isCollapsed: false,
       lessons: [
         {
           id: `new-lesson-${crypto.randomUUID()}`,
-          title: "",
+          title: '',
           orderIndex: 0,
-          type: "VIDEO",
+          type: 'VIDEO',
           isCollapsed: false,
         },
       ],
     };
-    const currentSections = form.getValues("sections");
+    const currentSections = form.getValues('sections');
     const updatedSections = [...currentSections, newSection];
-    form.setValue("sections", updatedSections);
+    form.setValue('sections', updatedSections);
     onSectionsChange?.(updatedSections);
   };
 
   const removeSection = async (sectionIndex: number) => {
-    loadingAnimation(true, dispatch, "Deleting section. Please wait...");
+    toast.info('Deleting section. Please wait...');
 
     let isDeleteSuccess = true;
-    const currentSections = form.getValues("sections");
+    const currentSections = form.getValues('sections');
     const deletedSection = currentSections[sectionIndex];
 
     try {
       // Check if the deleted section is existed or not.
       // If no then just delete section in client side.
       // else perform delete both client and server side.
-      if (deletedSection && !deletedSection.id.includes("new-section")) {
+      if (deletedSection && !deletedSection.id.includes('new-section')) {
         const data = {
           courseId,
           sectionId: deletedSection.id,
@@ -330,21 +369,20 @@ export default function CourseContent({
 
       if (isDeleteSuccess) {
         // Handling reoder UI
-        const updatedSections = currentSections.filter((_, index) => index !== sectionIndex);
+        const updatedSections = currentSections.filter(
+          (_, index) => index !== sectionIndex
+        );
         updatedSections.forEach((section, idx) => {
           section.orderIndex = idx;
         });
-        form.setValue("sections", updatedSections);
-        loadingAnimation(false, dispatch);
-        toast.success("Delete section successfully!");
+        form.setValue('sections', updatedSections);
+        toast.success('Delete section successfully!');
       } else {
-        loadingAnimation(false, dispatch);
-        toast.error("Delete section failed!");
+        toast.error('Delete section failed!');
       }
     } catch (error) {
-      console.log(error);
-      loadingAnimation(false, dispatch);
-      toast.error("Delete section failed!");
+      // console.log(error);
+      toast.error('Delete section failed!');
       return;
     }
   };
@@ -353,17 +391,20 @@ export default function CourseContent({
     const currentLessons = form.getValues(`sections.${sectionIndex}.lessons`);
     const newLesson: LessonType = {
       id: `new-lesson-${crypto.randomUUID()}`,
-      title: "",
+      title: '',
       orderIndex: currentLessons.length,
-      type: "VIDEO",
+      type: 'VIDEO',
       isCollapsed: false,
     };
 
-    form.setValue(`sections.${sectionIndex}.lessons`, [...currentLessons, newLesson]);
+    form.setValue(`sections.${sectionIndex}.lessons`, [
+      ...currentLessons,
+      newLesson,
+    ]);
   };
 
   const removeLesson = async (sectionIndex: number, lessonIndex: number) => {
-    loadingAnimation(true, dispatch, "Deleting lesson. Please wait...");
+    toast.info('Deleting lesson. Please wait...');
     let isDeleteSuccess = true;
     const currentLessons = form.getValues(`sections.${sectionIndex}.lessons`);
 
@@ -373,9 +414,9 @@ export default function CourseContent({
         // If no then just delete lesson in client side.
         // else perform delete both client and server side.
         const section = form.getValues(`sections.${sectionIndex}`);
-        if (section && !section.id.includes("new-section")) {
+        if (section && !section.id.includes('new-section')) {
           const deletedLesson = currentLessons[lessonIndex];
-          if (deletedLesson && !deletedLesson.id.includes("new-lesson")) {
+          if (deletedLesson && !deletedLesson.id.includes('new-lesson')) {
             const data = {
               sectionId: section.id,
               lessonId: deletedLesson.id,
@@ -389,31 +430,33 @@ export default function CourseContent({
 
         if (isDeleteSuccess) {
           // Reorder index of lesson
-          const updatedLessons = currentLessons.filter((_, index) => index !== lessonIndex);
+          const updatedLessons = currentLessons.filter(
+            (_, index) => index !== lessonIndex
+          );
           updatedLessons.forEach((lesson, idx) => {
             lesson.orderIndex = idx;
           });
           form.setValue(`sections.${sectionIndex}.lessons`, updatedLessons);
           const currentFormData = form.getValues();
           form.reset(currentFormData);
-          loadingAnimation(false, dispatch);
-          toast.success("Delete lesson successfully!");
+
+          toast.success('Delete lesson successfully!');
         } else {
-          loadingAnimation(false, dispatch);
-          toast.error("Delete lesson fail!");
+          toast.error('Delete lesson fail!');
         }
       } catch (error) {
-        console.log(error);
-        loadingAnimation(false, dispatch);
-        toast.error("Delete lesson fail!");
+        // console.log(error);
+        toast.error('Delete lesson fail!');
       }
     } else {
-      loadingAnimation(false, dispatch);
-      toast.error("Each section must have at least one lesson!");
+      toast.error('Each section must have at least one lesson!');
     }
   };
 
-  const generateQuizWithAI = async (sectionIndex: number, lessonIndex: number) => {
+  const generateQuizWithAI = async (
+    sectionIndex: number,
+    lessonIndex: number
+  ) => {
     const documents = form.getValues(
       `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.documents`
     );
@@ -430,10 +473,11 @@ export default function CourseContent({
           const fileType = file.type;
 
           if (
-            fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            fileType ===
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
           ) {
             try {
-              const mammoth = (await import("mammoth")).default;
+              const mammoth = (await import('mammoth')).default;
               const arrayBuffer = await file.arrayBuffer();
               const { value } = await mammoth.extractRawText({ arrayBuffer });
               const trimmedText = value.trim();
@@ -441,10 +485,10 @@ export default function CourseContent({
                 extractedTexts.push(trimmedText);
               }
             } catch (error) {
-              console.error("Error extracting text from DOCX:", error);
+              console.error('Error extracting text from DOCX:', error);
               toast.error(`Failed to process DOCX: ${file.name}`);
             }
-          } else if (fileType === "text/plain") {
+          } else if (fileType === 'text/plain') {
             try {
               const text = await file.text();
               const trimmedText = text.trim();
@@ -452,23 +496,23 @@ export default function CourseContent({
                 extractedTexts.push(trimmedText);
               }
             } catch (error) {
-              console.error("Error extracting text from TXT:", error);
+              console.error('Error extracting text from TXT:', error);
               toast.error(`Failed to process TXT: ${file.name}`);
             }
-          } else if (fileType === "application/pdf") {
+          } else if (fileType === 'application/pdf') {
             try {
               const parsedText = await pdfToText(file);
               const trimmedText = parsedText.trim();
               if (trimmedText) extractedTexts.push(trimmedText);
             } catch (pdfError) {
-              console.error("Error extracting text from PDF:", pdfError);
+              console.error('Error extracting text from PDF:', pdfError);
               toast.error(`Failed to process PDF: ${file.name}`);
             }
           }
         }
 
         if (extractedTexts.length === 0) {
-          toast.error("No text could be extracted from the documents");
+          toast.error('No text could be extracted from the documents');
           return;
         }
 
@@ -482,19 +526,21 @@ export default function CourseContent({
 
         // Kiểm tra xem data có phải array không
         if (!Array.isArray(data)) {
-          toast.error("Generate failed");
-          throw new Error("Invalid response format: expected array of questions");
+          toast.error('Generate failed');
+          throw new Error(
+            'Invalid response format: expected array of questions'
+          );
         }
 
         const generatedQuizzes = data.map((q: any, idx: number) => {
           // Chuyển đổi options thành format { A: string, B: string, C: string, D: string }
           const originalOptions = q.options ?? {};
-          const optionLabels = ["A", "B", "C", "D"] as const;
+          const optionLabels = ['A', 'B', 'C', 'D'] as const;
           const optionsObj: { A: string; B: string; C: string; D: string } = {
-            A: "",
-            B: "",
-            C: "",
-            D: "",
+            A: '',
+            B: '',
+            C: '',
+            D: '',
           };
 
           let labelIndex = 0;
@@ -506,7 +552,7 @@ export default function CourseContent({
           });
 
           // Tìm correct answer key mới
-          let newCorrectAnswer = q.correctAnswer ?? "";
+          let newCorrectAnswer = q.correctAnswer ?? '';
           if (originalOptions[newCorrectAnswer]) {
             const originalKeys = Object.keys(originalOptions);
             const originalIndex = originalKeys.indexOf(newCorrectAnswer);
@@ -517,10 +563,10 @@ export default function CourseContent({
 
           return {
             id: q.id || uuidv4(),
-            questionText: q.questionText ?? q.question ?? "",
+            questionText: q.questionText ?? q.question ?? '',
             options: optionsObj,
             correctAnswer: newCorrectAnswer,
-            explanation: q.explanation ?? "",
+            explanation: q.explanation ?? '',
             orderIndex: idx,
           };
         });
@@ -530,17 +576,21 @@ export default function CourseContent({
           generatedQuizzes
         );
 
-        toast.success("Generate quiz successfully!");
+        toast.success('Generate quiz successfully!');
       } catch (err: any) {
-        console.error("Generate error:", err);
-        toast.error(err?.data?.message || err?.message || "Generate failed");
+        console.error('Generate error:', err);
+        toast.error(err?.data?.message || err?.message || 'Generate failed');
       }
     } else {
-      toast.error("Generate failed");
+      toast.error('Generate failed');
     }
   };
 
-  const handleExcelUpload = async (file: File, sectionIndex: number, lessonIndex: number) => {
+  const handleExcelUpload = async (
+    file: File,
+    sectionIndex: number,
+    lessonIndex: number
+  ) => {
     setIsParsingExcel(true);
 
     try {
@@ -560,21 +610,33 @@ export default function CourseContent({
         explanation: data.explanation,
       }));
 
-      form.setValue(`sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`, questions);
-      toast.success("Excel file parsed successfully!");
+      form.setValue(
+        `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
+        questions
+      );
+      toast.success('Excel file parsed successfully!');
     } catch (error) {
-      console.error("Error parsing Excel file:", error);
-      toast.error((error as Error).message || "Failed to parse Excel file");
+      console.error('Error parsing Excel file:', error);
+      toast.error((error as Error).message || 'Failed to parse Excel file');
     } finally {
       setIsParsingExcel(false);
     }
   };
 
   const handleModeToggle = () => {
-    if (currentMode === "edit") {
+    if (currentMode === 'edit') {
       onCancel?.();
     }
-    setCurrentMode(currentMode === "view" ? "edit" : "view");
+
+    if (currentMode === 'edit') {
+      if (isDirty) {
+        setIsCancelDialogOpen(true);
+      } else {
+        setCurrentMode('view');
+      }
+    } else if (currentMode === 'view') {
+      setCurrentMode('edit');
+    }
   };
 
   const hasVideo = (video: VideoType) => {
@@ -598,7 +660,11 @@ export default function CourseContent({
   const isEmptyLesson = (lessons: LessonType[]) => {
     let isEmptyLesson = false;
     for (const lesson of lessons) {
-      if (lesson.title.trim() === "" && !hasVideo(lesson.video) && !hasQuiz(lesson.quiz)) {
+      if (
+        lesson.title.trim() === '' &&
+        !hasVideo(lesson.video) &&
+        !hasQuiz(lesson.quiz)
+      ) {
         isEmptyLesson = true;
         break;
       } else {
@@ -614,8 +680,8 @@ export default function CourseContent({
     if (section) {
       const lessons = section.lessons;
       if (
-        section.title.trim() === "" &&
-        section.description.trim() === "" &&
+        section.title.trim() === '' &&
+        section.description.trim() === '' &&
         isEmptyLesson(lessons)
       ) {
         return true;
@@ -627,14 +693,19 @@ export default function CourseContent({
     }
   };
 
-  const renderLesson = (sectionIndex: number, lesson: LessonType, lessonIndex: number) => {
+  const renderLesson = (
+    sectionIndex: number,
+    lesson: LessonType,
+    lessonIndex: number
+  ) => {
     const isExpanded = expandedLessons.has(lesson.id);
 
     return (
       <Collapsible
         key={lesson.id}
         defaultOpen={
-          (lessonIndex === 0 && currentMode === "create") || lesson.id.includes("new-lesson")
+          (lessonIndex === 0 && currentMode === 'create') ||
+          lesson.id.includes('new-lesson')
         }
       >
         <Card key={lesson.id} className="ml-4 gap-2">
@@ -648,9 +719,12 @@ export default function CourseContent({
                 {/* Lesson title */}
                 <div className="flex items-center gap-2">
                   <ChevronRight
-                    className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-90")}
+                    className={cn(
+                      'h-4 w-4 transition-transform',
+                      isExpanded && 'rotate-90'
+                    )}
                   />
-                  {lesson.type === "VIDEO" ? (
+                  {lesson.type === 'VIDEO' ? (
                     <Video className="h-4 w-4" />
                   ) : (
                     <Brain className="h-4 w-4" />
@@ -662,40 +736,43 @@ export default function CourseContent({
                     </span>
                   )}
                   <Badge
-                    variant={lesson.type === "VIDEO" ? "default" : "secondary"}
+                    variant={lesson.type === 'VIDEO' ? 'default' : 'secondary'}
                     className="ml-2"
                   >
-                    {lesson.type === "VIDEO" ? "Video" : "Quiz"}
+                    {lesson.type === 'VIDEO' ? 'Video' : 'Quiz'}
                   </Badge>
                 </div>
 
                 {/* Remove lesson */}
-                {currentMode !== "view" && watchedSections[sectionIndex]?.lessons.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (isEmptyLesson(watchedSections[sectionIndex].lessons)) {
-                        removeLesson(sectionIndex, lessonIndex);
-                      } else {
-                        setSelectedLesson({ sectionIndex, lessonIndex });
-                        setIsDeleteLessonDialogOpen(true);
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                {currentMode !== 'view' &&
+                  watchedSections[sectionIndex]?.lessons.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (
+                          isEmptyLesson(watchedSections[sectionIndex].lessons)
+                        ) {
+                          removeLesson(sectionIndex, lessonIndex);
+                        } else {
+                          setSelectedLesson({ sectionIndex, lessonIndex });
+                          setIsDeleteLessonDialogOpen(true);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
 
           <CollapsibleContent>
             <CardContent className="space-y-4">
-              {currentMode === "view" ? (
+              {currentMode === 'view' ? (
                 <>
                   {/* Lesson video */}
                   {lesson.video && lesson.video.file && (
@@ -703,18 +780,20 @@ export default function CourseContent({
                   )}
 
                   {/* Quiz questions preview in view mode */}
-                  {lesson.quiz && lesson.quiz.questions && lesson.quiz.questions.length > 0 && (
-                    <QuizEditor
-                      canEdit={false}
-                      questions={lesson.quiz.questions}
-                      onQuestionsChange={(questions) => {
-                        form.setValue(
-                          `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
-                          questions
-                        );
-                      }}
-                    />
-                  )}
+                  {lesson.quiz &&
+                    lesson.quiz.questions &&
+                    lesson.quiz.questions.length > 0 && (
+                      <QuizEditor
+                        canEdit={false}
+                        questions={lesson.quiz.questions}
+                        onQuestionsChange={(questions) => {
+                          form.setValue(
+                            `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`,
+                            questions
+                          );
+                        }}
+                      />
+                    )}
                 </>
               ) : (
                 <>
@@ -727,7 +806,10 @@ export default function CourseContent({
                       <FormItem>
                         <FormLabel>Lesson Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter lesson title..." {...field} />
+                          <Input
+                            placeholder="Enter lesson title..."
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -735,8 +817,9 @@ export default function CourseContent({
                   />
 
                   {/* Lesson type input */}
-                  {(currentMode === "create" ||
-                    (currentMode === "edit" && lesson.id.includes("new-lesson"))) && (
+                  {(currentMode === 'create' ||
+                    (currentMode === 'edit' &&
+                      lesson.id.includes('new-lesson'))) && (
                     <FormField
                       control={form.control}
                       name={`sections.${sectionIndex}.lessons.${lessonIndex}.type`}
@@ -755,7 +838,9 @@ export default function CourseContent({
                                   value="VIDEO"
                                   id={`video-${sectionIndex}-${lessonIndex}`}
                                 />
-                                <Label htmlFor={`video-${sectionIndex}-${lessonIndex}`}>
+                                <Label
+                                  htmlFor={`video-${sectionIndex}-${lessonIndex}`}
+                                >
                                   <Video className="h-4 w-4 inline mr-2" />
                                   Video
                                 </Label>
@@ -767,7 +852,9 @@ export default function CourseContent({
                                   value="QUIZ"
                                   id={`quiz-${sectionIndex}-${lessonIndex}`}
                                 />
-                                <Label htmlFor={`quiz-${sectionIndex}-${lessonIndex}`}>
+                                <Label
+                                  htmlFor={`quiz-${sectionIndex}-${lessonIndex}`}
+                                >
                                   <Brain className="h-4 w-4 inline mr-2" />
                                   Quiz
                                 </Label>
@@ -781,8 +868,9 @@ export default function CourseContent({
                   )}
 
                   {/* Video upload */}
-                  {form.watch(`sections.${sectionIndex}.lessons.${lessonIndex}.type`) ===
-                    "VIDEO" && (
+                  {form.watch(
+                    `sections.${sectionIndex}.lessons.${lessonIndex}.type`
+                  ) === 'VIDEO' && (
                     <FormField
                       control={form.control}
                       name={`sections.${sectionIndex}.lessons.${lessonIndex}.video.file`}
@@ -805,11 +893,13 @@ export default function CourseContent({
                   )}
 
                   {/* Quiz section */}
-                  {form.watch(`sections.${sectionIndex}.lessons.${lessonIndex}.type`) ===
-                    "QUIZ" && (
+                  {form.watch(
+                    `sections.${sectionIndex}.lessons.${lessonIndex}.type`
+                  ) === 'QUIZ' && (
                     <div className="space-y-3">
-                      {(currentMode === "create" ||
-                        (currentMode === "edit" && lesson.id.includes("new-lesson"))) && (
+                      {(currentMode === 'create' ||
+                        (currentMode === 'edit' &&
+                          lesson.id.includes('new-lesson'))) && (
                         <div className="space-y-4">
                           {/* Quiz method */}
                           <FormField
@@ -858,7 +948,9 @@ export default function CourseContent({
                                         value="ai"
                                         id={`ai-${sectionIndex}-${lessonIndex}`}
                                       />
-                                      <Label htmlFor={`ai-${sectionIndex}-${lessonIndex}`}>
+                                      <Label
+                                        htmlFor={`ai-${sectionIndex}-${lessonIndex}`}
+                                      >
                                         <Brain className="h-4 w-4 inline mr-2" />
                                         Generate with AI
                                       </Label>
@@ -870,7 +962,9 @@ export default function CourseContent({
                                         value="upload"
                                         id={`upload-${sectionIndex}-${lessonIndex}`}
                                       />
-                                      <Label htmlFor={`upload-${sectionIndex}-${lessonIndex}`}>
+                                      <Label
+                                        htmlFor={`upload-${sectionIndex}-${lessonIndex}`}
+                                      >
                                         <Upload className="h-4 w-4 inline mr-2" />
                                         Upload Excel File
                                       </Label>
@@ -885,7 +979,7 @@ export default function CourseContent({
                           {/* Generated quiz with AI */}
                           {form.watch(
                             `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
-                          ) === "ai" && (
+                          ) === 'ai' && (
                             <div className="space-y-2">
                               {/* Multiple Documents Upload */}
                               <DocumentUpload
@@ -910,12 +1004,17 @@ export default function CourseContent({
                               ) && (
                                 <Button
                                   type="button"
-                                  onClick={() => generateQuizWithAI(sectionIndex, lessonIndex)}
+                                  onClick={() =>
+                                    generateQuizWithAI(
+                                      sectionIndex,
+                                      lessonIndex
+                                    )
+                                  }
                                   disabled={isLoading}
                                 >
                                   {isGeneratingQuizs
-                                    ? "Generating quiz..."
-                                    : "Generate Questions with AI"}
+                                    ? 'Generating quiz...'
+                                    : 'Generate Questions with AI'}
                                 </Button>
                               )}
                             </div>
@@ -924,7 +1023,7 @@ export default function CourseContent({
                           {/* Generated quiz by excel file upload */}
                           {form.watch(
                             `sections.${sectionIndex}.lessons.${lessonIndex}.quizType`
-                          ) === "upload" && (
+                          ) === 'upload' && (
                             <div className="space-y-4">
                               <ExcelFileFormatIns />
 
@@ -938,7 +1037,11 @@ export default function CourseContent({
                                     excelFile
                                   );
                                   if (excelFile && excelFile.file) {
-                                    handleExcelUpload(excelFile.file, sectionIndex, lessonIndex);
+                                    handleExcelUpload(
+                                      excelFile.file,
+                                      sectionIndex,
+                                      lessonIndex
+                                    );
                                   }
                                 }}
                               />
@@ -946,7 +1049,9 @@ export default function CourseContent({
                               {isParsingExcel && (
                                 <Alert>
                                   <AlertCircle className="h-4 w-4" />
-                                  <AlertDescription>Parsing Excel file...</AlertDescription>
+                                  <AlertDescription>
+                                    Parsing Excel file...
+                                  </AlertDescription>
                                 </Alert>
                               )}
                             </div>
@@ -955,9 +1060,12 @@ export default function CourseContent({
                       )}
 
                       {/* List of generated questions */}
-                      {form.watch(`sections.${sectionIndex}.lessons.${lessonIndex}.quiz`) &&
-                        form.watch(`sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`)
-                          ?.length > 0 && (
+                      {form.watch(
+                        `sections.${sectionIndex}.lessons.${lessonIndex}.quiz`
+                      ) &&
+                        form.watch(
+                          `sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`
+                        )?.length > 0 && (
                           <FormField
                             control={form.control}
                             name={`sections.${sectionIndex}.lessons.${lessonIndex}.quiz.questions`}
@@ -1005,7 +1113,10 @@ export default function CourseContent({
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ChevronRight
-                    className={cn("h-5 w-5 transition-transform", isExpanded && "rotate-90")}
+                    className={cn(
+                      'h-5 w-5 transition-transform',
+                      isExpanded && 'rotate-90'
+                    )}
                   />
                   <BookOpen className="h-5 w-5" />
                   <span>Section {section.orderIndex + 1}</span>
@@ -1017,7 +1128,7 @@ export default function CourseContent({
                 </div>
 
                 {/* Button remove section */}
-                {currentMode !== "view" && watchedSections.length > 1 && (
+                {currentMode !== 'view' && watchedSections.length > 1 && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -1042,13 +1153,15 @@ export default function CourseContent({
 
           <CollapsibleContent>
             <CardContent className="space-y-6">
-              {currentMode === "view" ? (
+              {currentMode === 'view' ? (
                 <>
                   {/* View mode content */}
                   {section.description && (
                     <div>
                       <h4 className="font-medium mb-2">Description</h4>
-                      <p className="text-sm text-muted-foreground">{section.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {section.description}
+                      </p>
                     </div>
                   )}
                 </>
@@ -1063,7 +1176,8 @@ export default function CourseContent({
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <FileText className="w-4 h-4" />
-                          Section Title <strong className="text-red-500">*</strong>
+                          Section Title{' '}
+                          <strong className="text-red-500">*</strong>
                         </FormLabel>
                         <FormControl>
                           <div className="space-y-2">
@@ -1071,26 +1185,29 @@ export default function CourseContent({
                               placeholder="Enter section title"
                               {...field}
                               className={cn(
-                                errors.sections?.[sectionIndex]?.title && "border-red-500",
+                                errors.sections?.[sectionIndex]?.title &&
+                                  'border-red-500',
                                 !errors.sections?.[sectionIndex]?.title &&
                                   field.value &&
-                                  "border-green-500"
+                                  'border-green-500'
                               )}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <span>{field.value.length}/255 characters</span>
-                              {!errors.sections?.[sectionIndex]?.title && field.value && (
-                                <span className="text-green-600 flex items-center gap-1">
-                                  <CheckCircle className="w-3 h-3" />
-                                  Valid title
-                                </span>
-                              )}
+                              {!errors.sections?.[sectionIndex]?.title &&
+                                field.value && (
+                                  <span className="text-green-600 flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Valid title
+                                  </span>
+                                )}
                             </div>
                           </div>
                         </FormControl>
                         <FormMessage />
                         <FormDescription>
-                          Create a clear, descriptive title that tells students what they'll learn
+                          Create a clear, descriptive title that tells students
+                          what they'll learn
                         </FormDescription>
                       </FormItem>
                     )}
@@ -1103,25 +1220,29 @@ export default function CourseContent({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Section Description <strong className="text-red-500">*</strong>
+                          Section Description{' '}
+                          <strong className="text-red-500">*</strong>
                         </FormLabel>
                         <FormControl>
                           <div className="space-y-2">
                             <Textarea
                               placeholder="Describe what students will learn, what skills they'll gain, and why they should take this course..."
                               className={cn(
-                                "min-h-32 resize-none",
-                                errors.sections?.[sectionIndex]?.description && "border-red-500",
+                                'min-h-32 resize-none',
+                                errors.sections?.[sectionIndex]?.description &&
+                                  'border-red-500',
                                 !errors.sections?.[sectionIndex]?.description &&
                                   field.value &&
-                                  "border-green-500"
+                                  'border-green-500'
                               )}
                               {...field}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <div className="space-x-4">
                                 <span>
-                                  {field.value ? getCharacterCount(field.value) : 0}
+                                  {field.value
+                                    ? getCharacterCount(field.value)
+                                    : 0}
                                   /255 characters
                                 </span>
                               </div>
@@ -1138,8 +1259,8 @@ export default function CourseContent({
                         </FormControl>
                         <FormMessage />
                         <FormDescription>
-                          Write a compelling description that explains the value and outcomes of
-                          your course
+                          Write a compelling description that explains the value
+                          and outcomes of your course
                         </FormDescription>
                       </FormItem>
                     )}
@@ -1149,7 +1270,9 @@ export default function CourseContent({
 
               {/* Lessons */}
               <div className="space-y-4">
-                <h4 className="font-medium">Lessons ({section.lessons.length})</h4>
+                <h4 className="font-medium">
+                  Lessons ({section.lessons.length})
+                </h4>
 
                 {/* Render lessons in edit mode */}
                 <div className="space-y-4">
@@ -1157,7 +1280,10 @@ export default function CourseContent({
                     items={watchedSections[sectionIndex]?.lessons || []}
                     onReorder={(reorderedLessons) => {
                       getTempSections();
-                      form.setValue(`sections.${sectionIndex}.lessons`, reorderedLessons);
+                      form.setValue(
+                        `sections.${sectionIndex}.lessons`,
+                        reorderedLessons
+                      );
                       setReorderLesson((prev) => [...prev, sectionIndex]);
                     }}
                     renderItem={(lesson, lessonIndex) =>
@@ -1167,7 +1293,7 @@ export default function CourseContent({
                   />
 
                   {/* Add new lesson button */}
-                  {currentMode !== "view" && (
+                  {currentMode !== 'view' && (
                     <Button
                       type="button"
                       variant="outline"
@@ -1193,13 +1319,16 @@ export default function CourseContent({
 
   const getTempSections = () => {
     // Create a deep copy of the sections
-    const allSections = form.getValues("sections");
+    const allSections = form.getValues('sections');
     const currentSections = JSON.parse(JSON.stringify(allSections));
 
     // Manually restore any File objects that were lost in the stringification
     currentSections.forEach((section: SectionType, secIdx: number) => {
       section.lessons.forEach((lesson, lesIdx) => {
-        if (lesson.type === "VIDEO" && allSections[secIdx].lessons[lesIdx].video?.file) {
+        if (
+          lesson.type === 'VIDEO' &&
+          allSections[secIdx].lessons[lesIdx].video?.file
+        ) {
           // Restore the original File object
           lesson.video = lesson.video || {};
           lesson.video.file = allSections[secIdx].lessons[lesIdx].video.file;
@@ -1215,7 +1344,7 @@ export default function CourseContent({
 
     try {
       let response = null;
-      if (lesson.type === "VIDEO" && lesson.video) {
+      if (lesson.type === 'VIDEO' && lesson.video) {
         const lessonData = {
           title: lesson.title,
           type: lesson.type.toUpperCase(),
@@ -1253,20 +1382,25 @@ export default function CourseContent({
       // Assign id to lesson
       if (response && response.statusCode === 201 && response.data) {
         // console.log(response);
-        if (currentMode === "edit") {
+        if (currentMode === 'edit') {
           const lessonId = response.data.id;
           let currentLesIndex;
 
           if (tempSections.length > 0) {
-            const currentSections = form.getValues("sections");
+            const currentSections = form.getValues('sections');
             const currentLessons = currentSections[section.orderIndex].lessons;
             if (currentLessons.length > 0) {
-              currentLesIndex = currentLessons.findIndex((les) => les.id === lesson.id);
+              currentLesIndex = currentLessons.findIndex(
+                (les) => les.id === lesson.id
+              );
             }
           } else {
             currentLesIndex = response.data.orderIndex;
           }
-          form.setValue(`sections.${section.orderIndex}.lessons.${currentLesIndex}.id`, lessonId);
+          form.setValue(
+            `sections.${section.orderIndex}.lessons.${currentLesIndex}.id`,
+            lessonId
+          );
           form.setValue(
             `sections.${section.orderIndex}.lessons.${currentLesIndex}.orderIndex`,
             currentLesIndex
@@ -1275,7 +1409,7 @@ export default function CourseContent({
         result = true;
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
 
     return result;
@@ -1286,7 +1420,7 @@ export default function CourseContent({
     let result = false;
 
     try {
-      if (lesson.type === "VIDEO") {
+      if (lesson.type === 'VIDEO') {
         const lessonData = {
           sectionId,
           lessonId: lesson.id,
@@ -1314,20 +1448,21 @@ export default function CourseContent({
         result = true;
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
     return result;
   };
 
   const findCurrentSectionIndex = (sectionId: string) => {
-    const currentSections = form.getValues("sections");
+    const currentSections = form.getValues('sections');
     return currentSections.findIndex((sec) => sec.id === sectionId);
   };
 
   const findCurrentSectionByTitleAndDesc = (section: SectionType) => {
-    const currentSections = form.getValues("sections");
+    const currentSections = form.getValues('sections');
     return currentSections.find(
-      (sec) => sec.title === section.title && sec.description === section.description
+      (sec) =>
+        sec.title === section.title && sec.description === section.description
     );
   };
 
@@ -1346,7 +1481,7 @@ export default function CourseContent({
       if (response && response.statusCode === 201 && response.data) {
         // console.log(response);
         // Assign id to section. Cause in edit mode, id of a new created section is ''
-        if (currentMode === "edit") {
+        if (currentMode === 'edit') {
           const sectionId = response.data.id;
           let secIndex;
           if (tempSections.length > 0) {
@@ -1369,7 +1504,7 @@ export default function CourseContent({
     // console.log(formData);
     let isUpdateSuccess = true;
     let sections = [];
-    const currentSections = form.getValues("sections");
+    const currentSections = form.getValues('sections');
 
     // Use temporarily sections that help perform reorder sections and lessons correctly.
     // Because dirtyFields are not change indices eventhough form's values are updated.
@@ -1379,15 +1514,16 @@ export default function CourseContent({
       sections = currentSections;
     }
     try {
-      loadingAnimation(true, dispatch, "Updating section(s) and lesson(s). Please wait...");
-
       if (dirtyFields.sections) {
         const changedSections = dirtyFields.sections;
         for (const [idx, sec] of sections.entries()) {
           // Update section's title and description if have
-          if (changedSections[idx]?.title || changedSections[idx]?.description) {
+          if (
+            changedSections[idx]?.title ||
+            changedSections[idx]?.description
+          ) {
             // Create new section and lesson into databse if it is not created before
-            if (sec.id.includes("new-section")) {
+            if (sec.id.includes('new-section')) {
               const data = await createNewSection(sec);
               if (data === null) {
                 isUpdateSuccess = false;
@@ -1418,15 +1554,17 @@ export default function CourseContent({
               if (changedLessons[lessonIdx]) {
                 let currentSec = sec;
                 if (tempSections.length > 0) {
-                  const existingSec = findCurrentSectionByTitleAndDesc(sec) as SectionType;
+                  const existingSec = findCurrentSectionByTitleAndDesc(
+                    sec
+                  ) as SectionType;
                   if (existingSec) {
                     currentSec = existingSec;
                   }
                 }
 
-                if (currentSec.id && !currentSec.id.includes("new-section")) {
+                if (currentSec.id && !currentSec.id.includes('new-section')) {
                   // Create new lesson
-                  if (les.id.includes("new-lesson")) {
+                  if (les.id.includes('new-lesson')) {
                     const result = await createNewLesson(currentSec, les);
                     if (result === false) {
                       isUpdateSuccess = false;
@@ -1434,7 +1572,10 @@ export default function CourseContent({
                     }
                   } else {
                     // Update existed lesson
-                    const result = await updateExistedLesson(currentSec.id, les);
+                    const result = await updateExistedLesson(
+                      currentSec.id,
+                      les
+                    );
                     if (result === false) {
                       isUpdateSuccess = false;
                       break;
@@ -1479,16 +1620,14 @@ export default function CourseContent({
         setTempSections([]);
         setReorderSection(false);
         setReorderLesson([]);
-        loadingAnimation(false, dispatch);
-        toast.success("Update Section(s) and lesson(s) successfully!");
+
+        toast.success('Update Section(s) and lesson(s) successfully!');
       } else {
-        loadingAnimation(false, dispatch);
-        toast.error("Update Section(s) and lesson(s) failed!");
+        toast.error('Update Section(s) and lesson(s) failed!');
       }
     } catch (error) {
       console.log(error);
-      loadingAnimation(false, dispatch);
-      toast.error("Update Section(s) and lesson(s) failed!");
+      toast.error('Update Section(s) and lesson(s) failed!');
     }
   };
 
@@ -1498,21 +1637,19 @@ export default function CourseContent({
       const validationResult = courseContentSchema.safeParse(data);
       if (validationResult.success) {
         setLessonsData(validationResult.data);
-        setStep("review");
+        setStep('review');
       } else {
-        toast.error("Please check the form for validation errors");
-        console.log("Validation Errors:", validationResult.error.issues);
+        toast.error('Please check the form for validation errors');
+        console.log('Validation Errors:', validationResult.error.issues);
       }
     } catch (error) {
       // If validation fails, proceed anyway for now
       setLessonsData(data as CourseContentType);
-      setStep("review");
+      setStep('review');
     }
   };
 
   const handleFinalSubmit = async () => {
-    loadingAnimation(true, dispatch, "Creating section(s) and lesson(s). Please wait...");
-
     let isCreateSuccess = false;
     if (lessonsData) {
       try {
@@ -1534,7 +1671,7 @@ export default function CourseContent({
         }
 
         // Update course status
-        if (courseStatus === "published") {
+        if (courseStatus === 'published') {
           const res = await updateCourseStatus({
             courseId,
             status: courseStatus.toUpperCase(),
@@ -1544,36 +1681,37 @@ export default function CourseContent({
           }
         }
       } catch (error) {
-        console.error("Create error:", error);
+        console.error('Create error:', error);
       }
     }
 
     if (isCreateSuccess) {
-      loadingAnimation(false, dispatch);
-      setStep("success");
+      setStep('success');
       setProgress?.(100); // Update progress to 100% on success
     } else {
-      loadingAnimation(false, dispatch);
-      toast.error("Create section(s) and lesson(s) failed!");
+      toast.error('Create section(s) and lesson(s) failed!');
     }
   };
 
   const handlePublishCourseToggle = (checked: boolean) => {
-    setCourseStatus(checked ? "published" : "draft");
+    setCourseStatus(checked ? 'published' : 'draft');
   };
 
-  if (step === "success") {
+  if (step === 'success') {
     return <CreateCourseSuccess />;
   }
 
-  if (step === "review") {
-    const sections = form.getValues("sections");
+  if (step === 'review') {
+    const sections = form.getValues('sections');
     return (
       <ReviewCourse
         courseStatus={courseStatus}
         sections={sections}
-        onBackToEdit={() => setStep("create")}
+        onBackToEdit={() => setStep('create')}
         handleFinalSubmit={handleFinalSubmit}
+        isCreating={
+          isCreatingSection || isCreatingLesson || isUpdatingCourseStatus
+        }
       />
     );
   }
@@ -1582,7 +1720,10 @@ export default function CourseContent({
     <div>
       {/* Content */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(handleSubmitForm)}
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               {/* Header */}
@@ -1590,24 +1731,24 @@ export default function CourseContent({
                 {/* Header Title */}
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {currentMode === "view"
-                      ? "View Course Content"
-                      : currentMode === "create"
-                      ? "Create Course Content"
-                      : "Edit Course Content"}
+                    {currentMode === 'view'
+                      ? 'View Course Content'
+                      : currentMode === 'create'
+                      ? 'Create Course Content'
+                      : 'Edit Course Content'}
                   </h2>
                   <p className="text-muted-foreground">
-                    {currentMode === "view"
-                      ? "View the content of your course"
-                      : currentMode === "create"
-                      ? "Create your course sections and lessons"
-                      : "Manage your course sections and lessons"}
+                    {currentMode === 'view'
+                      ? 'View the content of your course'
+                      : currentMode === 'create'
+                      ? 'Create your course sections and lessons'
+                      : 'Manage your course sections and lessons'}
                   </p>
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  {currentMode === "edit" && (
+                  {currentMode === 'edit' && (
                     <>
                       {/* Cancel edit button */}
                       <Button
@@ -1633,12 +1774,19 @@ export default function CourseContent({
                         disabled={!canSaveChanges}
                       >
                         <Save className="h-4 w-4 mr-2" />
-                        Save Changes
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <span>Saving</span>
+                          </>
+                        ) : (
+                          'Save Changes'
+                        )}
                       </Button>
                     </>
                   )}
 
-                  {currentMode === "view" && canEditContent && (
+                  {currentMode === 'view' && canEditContent && (
                     <Button onClick={handleModeToggle}>
                       <Edit3 className="h-4 w-4 mr-2" />
                       Edit Content
@@ -1650,16 +1798,18 @@ export default function CourseContent({
 
             <CardContent>
               <div className="space-y-6">
-                {currentMode === "view" ? (
+                {currentMode === 'view' ? (
                   <div className="space-y-6">
-                    {watchedSections.map((section, index) => renderSection(section, index))}
+                    {watchedSections.map((section, index) =>
+                      renderSection(section, index)
+                    )}
                   </div>
                 ) : (
                   <DragDropReorder
                     items={watchedSections}
                     onReorder={(reorderedSections) => {
                       getTempSections();
-                      form.setValue("sections", reorderedSections);
+                      form.setValue('sections', reorderedSections);
                       setReorderSection(true);
                     }}
                     renderItem={renderSection}
@@ -1668,7 +1818,7 @@ export default function CourseContent({
                 )}
 
                 {/* Add section button (use for create and edit mode) */}
-                {currentMode !== "view" && (
+                {currentMode !== 'view' && (
                   <div className="flex gap-4">
                     <Button
                       type="button"
@@ -1688,7 +1838,7 @@ export default function CourseContent({
             </CardContent>
           </Card>
 
-          {mode === "create" && (
+          {mode === 'create' && (
             <>
               {/* Publish course status */}
               <TogglePublishCourse
@@ -1745,12 +1895,35 @@ export default function CourseContent({
           description="This action cannot be undone. This will permanently delete the lesson and all its content."
           onClick={() => {
             if (selectedLesson) {
-              removeLesson(selectedLesson.sectionIndex, selectedLesson.lessonIndex);
+              removeLesson(
+                selectedLesson.sectionIndex,
+                selectedLesson.lessonIndex
+              );
               setIsDeleteLessonDialogOpen(false);
               setSelectedLesson(null);
             }
           }}
           actionTitle="Delete Lesson"
+        />
+      )}
+
+      {/* Warning Alert for cancel edit */}
+      {isCancelDialogOpen && (
+        <WarningAlert
+          open={isCancelDialogOpen}
+          onOpenChange={(open) => {
+            setIsCancelDialogOpen(open);
+          }}
+          className="bg-sidebar-primary text-white"
+          title="Are you sure you want to cancel editing this lesson?"
+          description="This action cannot be undone. Any unsaved changes will be lost."
+          onClick={() => {
+            form.reset({ sections: initialSections });
+            setTempSections([]);
+            setIsCancelDialogOpen(false);
+            setCurrentMode('view');
+          }}
+          actionTitle="Cancel Editing"
         />
       )}
     </div>

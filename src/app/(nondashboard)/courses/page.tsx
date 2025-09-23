@@ -12,7 +12,6 @@ import {
 } from "@/components/course/CourseSkeleton";
 import { EmptyState } from "@/components/course/EmptyState";
 import { useCourses } from "@/hooks/useCourses";
-import { Course, useGetCoursesQuery } from "@/services/coursesApi";
 
 interface FilterState {
   categories: string[];

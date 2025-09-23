@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { useUpdateRefundStatusMutation } from '@/services/instructor/refunds/refunds-ins-api';
 import type { RefundResponse } from '@/types/instructor/refunds';
 import Link from 'next/link';
+import { isRefundExpired } from '@/utils/instructor/refunds';
 
 interface RefundActionsProps {
   refund: RefundResponse;
@@ -85,9 +86,10 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
   };
 
   const isPending = refund.status === 'PENDING';
+  const isExpired = isRefundExpired(refund);
 
   return (
-    <>
+    <div onClick={(e) => e.stopPropagation()}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -130,7 +132,7 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
             </Link>
           </DropdownMenuItem>
 
-          {isPending && (
+          {isPending && !isExpired && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -168,7 +170,8 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
         }
       >
         <AlertDialogContent
-          onClick={(e) => e.stopPropagation()}
+        // onClick={(e) => e.stopPropagation()}
+        // onBlur={(e) => e.stopPropagation()}
         >
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Refund Status Update</AlertDialogTitle>
@@ -211,6 +214,6 @@ export const RefundActions = ({ refund }: RefundActionsProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };

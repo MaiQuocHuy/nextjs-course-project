@@ -46,11 +46,13 @@ import {
   FileText,
   Trash2,
   AlertCircle,
+  Loader2,
+  RefreshCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
+
 import {
   useCreateCourseMutation,
   useUpdateCourseMutation,
@@ -107,7 +109,6 @@ export function CreateCourseBasicInforPage({
     useUpdateCourseStatusMutation();
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
 
-  const dispatch: AppDispatch = useDispatch();
   const router = useRouter();
 
   const form = useForm<CourseBasicInfoType>({
@@ -199,7 +200,6 @@ export function CreateCourseBasicInforPage({
   };
 
   const handleCreateCourse = async (data: CourseBasicInfoType) => {
-    loadingAnimation(true, dispatch, 'Creating course. Please wait...');
     try {
       const result = await createCourse(data).unwrap();
       if (result.statusCode === 201) {
@@ -207,21 +207,17 @@ export function CreateCourseBasicInforPage({
           ...data,
           id: result.data.id,
         };
-        loadingAnimation(false, dispatch);
         if (onSubmit) {
           onSubmit(courseData);
         }
       }
     } catch (error: any) {
-      // console.error('Create course error:', error);
-      loadingAnimation(false, dispatch);
       toast.error(error.message);
     }
   };
 
   const handleUpdateCourse = async (data: CourseBasicInfoType) => {
     // console.log(data);
-    loadingAnimation(true, dispatch, 'Course is being updated. Please wait...');
     if (courseInfo && canSaveChanges) {
       const keys = Object.keys(dirtyFields) as (keyof CourseBasicInfoType)[];
       const updatedData: Partial<CourseBasicInfoType> = {
@@ -237,24 +233,21 @@ export function CreateCourseBasicInforPage({
       try {
         const res = await updateCourse(updatedData).unwrap();
         if (res.statusCode === 200) {
-          loadingAnimation(false, dispatch);
           form.reset(data);
           toast.success(res.message);
         }
       } catch (error: any) {
         // console.log(error);
-        loadingAnimation(false, dispatch);
         toast.error(error.message);
       }
     } else {
       // Handle case where courseInfo is not available
-      loadingAnimation(false, dispatch);
       toast.error('Course information is not available.');
     }
   };
 
   const handlePublishCourseToggle = async () => {
-    loadingAnimation(true, dispatch, 'Updating course status. Please wait...');
+    toast.info('Updating course status. Please wait...');
     let isUpdateStatusSuccess = false;
     if (courseInfo && courseInfo.id) {
       try {
@@ -269,13 +262,11 @@ export function CreateCourseBasicInforPage({
           isUpdateStatusSuccess = true;
         }
       } catch (error: any) {
-        loadingAnimation(false, dispatch);
         toast.error(error.message);
       }
     }
 
     if (isUpdateStatusSuccess) {
-      loadingAnimation(false, dispatch);
       toast.success('Course status updated successfully!');
       setCourseStatus((prev) => {
         if (prev === 'published') {
@@ -285,22 +276,19 @@ export function CreateCourseBasicInforPage({
         }
       });
     } else {
-      loadingAnimation(false, dispatch);
       toast.error('Course status update failed!');
     }
   };
 
   const handleDeleteCourse = async () => {
-    loadingAnimation(true, dispatch, 'Deleting course. Please wait...');
+    toast.info('Deleting course. Please wait...');
     try {
       const res = await deleteCourse(courseInfo?.id).unwrap();
       if (res.statusCode === 200) {
-        loadingAnimation(false, dispatch);
-        toast.error('Delete course successfully!');
+        toast.success('Delete course successfully!');
         router.push('/instructor/courses');
       }
     } catch (error) {
-      loadingAnimation(false, dispatch);
       toast.error('Delete course failed!');
     }
   };
@@ -317,8 +305,13 @@ export function CreateCourseBasicInforPage({
       {/* Course actions */}
       {mode === 'edit' && courseInfo && (
         <div className="space-y-3">
-          <Button variant="outline" onClick={handleRefetchData} disabled={isLoading}>
-            Refetch
+          <Button
+            variant="outline"
+            onClick={handleRefetchData}
+            disabled={isLoading}
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
 
           <Card>
@@ -440,7 +433,14 @@ export function CreateCourseBasicInforPage({
                       variant={'default'}
                       disabled={!canSaveChanges || isLoading}
                     >
-                      Save changes
+                      {isUpdating ? (
+                        <>
+                          <span>Updating...</span>
+                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        </>
+                      ) : (
+                        'Save changes'
+                      )}
                     </Button>
                   </div>
                 )}
@@ -517,9 +517,7 @@ export function CreateCourseBasicInforPage({
                               {getCharacterCount(field.value)}
                               /2000 characters
                             </span>
-                            <span>
-                              {getWordCount(field.value)} words (min: 20)
-                            </span>
+                            <span>(min: 20 characters)</span>
                           </div>
                           {!errors.description &&
                             field.value &&
@@ -714,7 +712,14 @@ export function CreateCourseBasicInforPage({
           <div className="flex justify-end">
             {mode === 'create' && (
               <Button type="submit" disabled={isValid === false || isLoading}>
-                Continue to Add Lessons
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Creating Course</span>
+                  </>
+                ) : (
+                  'Continue to Add Lessons'
+                )}
               </Button>
             )}
           </div>

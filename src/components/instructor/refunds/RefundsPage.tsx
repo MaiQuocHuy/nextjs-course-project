@@ -12,6 +12,7 @@ import { RefundsTable } from '@/components/instructor/refunds/RefundsTable';
 import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
 import { TableLoadingSkeleton, RefundsSkeleton } from './skeletons/index';
 import { TableLoadingError } from './shared/LoadingError';
+import { RefreshCcw } from 'lucide-react';
 
 type Filters = {
   searchQuery: string;
@@ -25,14 +26,9 @@ const initFilterValues: Filters = {
   dateRange: { from: null, to: null },
 };
 
-const params = {
-  page: 0,
-  size: 10,
-};
-
 const RefundsPage = () => {
-  const [currentPage, setCurrentPage] = useState(params.page);
-  const [itemsPerPage, setItemsPerPage] = useState(params.size);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState<Filters>(initFilterValues);
   const [isFiltering, setIsFiltering] = useState(false);
 
@@ -123,7 +119,7 @@ const RefundsPage = () => {
   if (error) {
     return <TableLoadingError onRetry={() => refetch()} />;
   }
-
+  
   return (
     <div className="container mx-auto p-4 lg:p-6 space-y-6">
       {/* Header */}
@@ -173,19 +169,22 @@ const RefundsPage = () => {
         <>
           {filteredRefunds.length > 0 ? (
             <div className="space-y-4">
-              {/* Refetch button */}
-              <div>
-                <Button
-                  variant="outline"
-                  onClick={() => refetch()}
-                  disabled={isLoading || isFiltering}
-                >
-                  Refetch
-                </Button>
-              </div>
+              {/* Refresh button */}
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isLoading || isFiltering}
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Refresh
+              </Button>
 
               {/* Refunds Table */}
-              <RefundsTable filteredRefunds={filteredRefunds} />
+              <RefundsTable
+                filteredRefunds={filteredRefunds}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+              />
 
               {/* Pagination */}
               {data && data.page && data.page.totalPages > 1 && (
