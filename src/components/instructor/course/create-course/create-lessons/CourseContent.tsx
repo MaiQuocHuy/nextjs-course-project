@@ -217,7 +217,7 @@ export default function CourseContent({
   } = form;
 
   const watchedSections = watch('sections');
-
+  
   // Get input errors
   useEffect(() => {
     const formData = form.getValues();
@@ -1638,14 +1638,14 @@ export default function CourseContent({
       if (validationResult.success) {
         setLessonsData(validationResult.data);
         setStep('review');
-      } else {
-        toast.error('Please check the form for validation errors');
-        console.log('Validation Errors:', validationResult.error.issues);
+      } else {        
+        toast.error(
+          validationResult.error.issues[0].message ||
+            'Please check the form for validation errors'
+        );
       }
     } catch (error) {
-      // If validation fails, proceed anyway for now
-      setLessonsData(data as CourseContentType);
-      setStep('review');
+      toast.error('Create course failed!');
     }
   };
 
