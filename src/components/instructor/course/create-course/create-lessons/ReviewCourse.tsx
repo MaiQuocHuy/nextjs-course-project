@@ -10,7 +10,7 @@ type Props = {
   sections: SectionType[];
   onBackToEdit: () => void;
   handleFinalSubmit: () => void;
-  isCreating?: boolean;
+  isCreating: boolean;
 };
 
 const ReviewCourse = ({
@@ -96,14 +96,14 @@ const ReviewCourse = ({
           </Alert>
 
           <div className="flex gap-4">
-            <Button variant="outline" onClick={onBackToEdit}>
+            <Button variant="outline" onClick={onBackToEdit} disabled={isCreating}>
               Back to Edit
             </Button>
-            <Button onClick={handleFinalSubmit}>
+            <Button onClick={handleFinalSubmit} disabled={isCreating}>
               {isCreating ? (
                 <>
-                  <span>Submitting...</span>
-                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <span>Submitting</span>
                 </>
               ) : (
                 'Confirm and Submit for Approval'

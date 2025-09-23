@@ -711,9 +711,13 @@ export function CreateCourseBasicInforPage({
           <div className="flex justify-end">
             {mode === 'create' && (
               <Button type="submit" disabled={isValid === false || isLoading}>
-                {isCreating ? `Creating Course...` : 'Continue to Add Lessons'}
-                {isCreating && (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Creating Course</span>
+                  </>
+                ) : (
+                  'Continue to Add Lessons'
                 )}
               </Button>
             )}

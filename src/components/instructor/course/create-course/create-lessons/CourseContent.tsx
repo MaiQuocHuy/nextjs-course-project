@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import pdfToText from 'react-pdftotext';
 import {
@@ -149,6 +147,7 @@ export default function CourseContent({
     useState(false);
   const [isDeleteLessonDialogOpen, setIsDeleteLessonDialogOpen] =
     useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const [tempSections, setTempSections] = useState<SectionType[]>([]);
 
@@ -628,7 +627,16 @@ export default function CourseContent({
     if (currentMode === 'edit') {
       onCancel?.();
     }
-    setCurrentMode(currentMode === 'view' ? 'edit' : 'view');
+
+    if (currentMode === 'edit') {
+      if (isDirty) {
+        setIsCancelDialogOpen(true);
+      } else {
+        setCurrentMode('view');
+      }
+    } else if (currentMode === 'view') {
+      setCurrentMode('edit');
+    }
   };
 
   const hasVideo = (video: VideoType) => {
@@ -1701,6 +1709,9 @@ export default function CourseContent({
         sections={sections}
         onBackToEdit={() => setStep('create')}
         handleFinalSubmit={handleFinalSubmit}
+        isCreating={
+          isCreatingSection || isCreatingLesson || isUpdatingCourseStatus
+        }
       />
     );
   }
@@ -1765,8 +1776,8 @@ export default function CourseContent({
                         <Save className="h-4 w-4 mr-2" />
                         {isSaving ? (
                           <>
-                            <span>Saving...</span>
-                            <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <span>Saving</span>
                           </>
                         ) : (
                           'Save Changes'
@@ -1893,6 +1904,26 @@ export default function CourseContent({
             }
           }}
           actionTitle="Delete Lesson"
+        />
+      )}
+
+      {/* Warning Alert for cancel edit */}
+      {isCancelDialogOpen && (
+        <WarningAlert
+          open={isCancelDialogOpen}
+          onOpenChange={(open) => {
+            setIsCancelDialogOpen(open);
+          }}
+          className="bg-sidebar-primary text-white"
+          title="Are you sure you want to cancel editing this lesson?"
+          description="This action cannot be undone. Any unsaved changes will be lost."
+          onClick={() => {
+            form.reset({ sections: initialSections });
+            setTempSections([]);
+            setIsCancelDialogOpen(false);
+            setCurrentMode('view');
+          }}
+          actionTitle="Cancel Editing"
         />
       )}
     </div>

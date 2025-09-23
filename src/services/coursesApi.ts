@@ -1,9 +1,9 @@
-import { ApiResponse, PaginatedData } from "@/types";
+import { ApiResponse, PaginatedData } from '@/types';
 // import { createApi } from "@reduxjs/toolkit/query/react";
 // import { baseQueryWithReauth } from "@/lib/baseQueryWithReauth";
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { getSession } from "next-auth/react";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { getSession } from 'next-auth/react';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_BACKEND_URL,
@@ -11,21 +11,19 @@ const baseQuery = fetchBaseQuery({
     try {
       // Get session to check if user is authenticated
       const session = await getSession();
-      
+
       // If user is logged in, add Authorization header
       if (session?.user?.accessToken) {
-        headers.set("Authorization", `Bearer ${session.user.accessToken}`);
-        console.log("Added Authorization token for authenticated user");
-      } else {
-        console.log("No authentication token - anonymous access");
+        headers.set('Authorization', `Bearer ${session.user.accessToken}`);
+        // console.log("Added Authorization token for authenticated user");
       }
-      
+
       // Set content type for JSON requests
-      headers.set("Content-Type", "application/json");
-      
+      headers.set('Content-Type', 'application/json');
+
       return headers;
     } catch (error) {
-      console.error("Error preparing headers:", error);
+      console.error('Error preparing headers:', error);
       return headers;
     }
   },
@@ -53,7 +51,7 @@ export interface Course {
   sectionCount: number;
   sections?: Section[];
   categories: Category[];
-  isEnrolled?: boolean; 
+  isEnrolled?: boolean;
   instructor: {
     id: string;
     name: string;
@@ -64,9 +62,8 @@ export interface Course {
   overViewInstructorSummary: {
     average: number;
     totalCoursesByInstructor: number;
-  }
+  };
 }
-
 
 export interface CoursesFilter {
   page?: number;
@@ -96,7 +93,7 @@ export interface Section {
 export interface Lesson {
   id: string;
   title: string;
-  type: "VIDEO" | "TEXT" | "DISCUSSION" | "PROJECT" | "QUIZ";
+  type: 'VIDEO' | 'TEXT' | 'DISCUSSION' | 'PROJECT' | 'QUIZ';
   duration?: number;
   isPreview?: boolean;
 }
@@ -139,81 +136,87 @@ export interface CourseReviewData {
 // End Review Section
 
 export const coursesApi = createApi({
-  reducerPath: "coursesApi",
+  reducerPath: 'coursesApi',
   baseQuery,
   tagTypes: ['Course', 'Category', 'CourseReview'],
   endpoints: (builder) => ({
-
     // Lấy danh sách courses với filter và pagination
-  getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
-  query: (filters = {}) => {
-    const params = new URLSearchParams();
-    
-    // Default values
-    params.append('page', (filters.page || 0).toString());
-    params.append('size', (filters.size || 15).toString());
-    
-    // Optional filters - chỉ thêm khi có giá trị thực sự
-    if (filters.search?.trim()) {
-      params.append('search', filters.search.trim());
-      console.log("Adding search filter:", filters.search.trim());
-    }
-    
-    if (filters.categoryId?.trim()) {
-      params.append('categoryId', filters.categoryId.trim());
-      console.log("Adding categoryId filter:", filters.categoryId.trim());
-    }
-    
-    // Quan trọng: Chỉ thêm price filters khi khác undefined
-    if (filters.minPrice !== undefined && filters.minPrice !== null) {
-      params.append('minPrice', filters.minPrice.toString());
-      console.log("Adding minPrice filter:", filters.minPrice);
-    }
-    
-    if (filters.maxPrice !== undefined && filters.maxPrice !== null) {
-      params.append('maxPrice', filters.maxPrice.toString());
-      console.log("Adding maxPrice filter:", filters.maxPrice);
-    }
-    
-    if (filters.level?.trim()) {
-      params.append('level', filters.level.trim());
-      console.log("Adding level filter:", filters.level.trim());
-    }
-    
-    // Thêm averageRating filter
-    if (filters.averageRating !== undefined && filters.averageRating !== null && filters.averageRating > 0) {
-      params.append('averageRating', filters.averageRating.toString());
-      console.log("Adding averageRating filter:", filters.averageRating);
-    }
-    
-    if (filters.sort?.trim()) {
-      params.append('sort', filters.sort.trim());
-      console.log("Adding sort filter:", filters.sort.trim());
-    }
+    getCourses: builder.query<PaginatedData<Course>, CoursesFilter>({
+      query: (filters = {}) => {
+        const params = new URLSearchParams();
 
-    const url = `/courses?${params.toString()}`;
-    console.log('Final API URL:', url);
-    
-    return {
-      url,
-      method: "GET",
-    };
-  },
-  transformResponse: (response: ApiResponse<PaginatedData<Course>>) => {
-    console.log("Courses API Response:", response);
-    if (response.statusCode !== 200) {
-      throw new Error(response.message || 'Failed to fetch courses');
-    }
-    return response.data;
-  },
-  providesTags: (result) =>
-    result
-      ? [
-          ...result.content.map(({ id }) => ({ type: 'Course' as const, id })),
-          { type: 'Course', id: 'LIST' },
-        ]
-      : [{ type: 'Course', id: 'LIST' }],
-  }),
+        // Default values
+        params.append('page', (filters.page || 0).toString());
+        params.append('size', (filters.size || 15).toString());
+
+        // Optional filters - chỉ thêm khi có giá trị thực sự
+        if (filters.search?.trim()) {
+          params.append('search', filters.search.trim());
+          console.log('Adding search filter:', filters.search.trim());
+        }
+
+        if (filters.categoryId?.trim()) {
+          params.append('categoryId', filters.categoryId.trim());
+          console.log('Adding categoryId filter:', filters.categoryId.trim());
+        }
+
+        // Quan trọng: Chỉ thêm price filters khi khác undefined
+        if (filters.minPrice !== undefined && filters.minPrice !== null) {
+          params.append('minPrice', filters.minPrice.toString());
+          console.log('Adding minPrice filter:', filters.minPrice);
+        }
+
+        if (filters.maxPrice !== undefined && filters.maxPrice !== null) {
+          params.append('maxPrice', filters.maxPrice.toString());
+          console.log('Adding maxPrice filter:', filters.maxPrice);
+        }
+
+        if (filters.level?.trim()) {
+          params.append('level', filters.level.trim());
+          console.log('Adding level filter:', filters.level.trim());
+        }
+
+        // Thêm averageRating filter
+        if (
+          filters.averageRating !== undefined &&
+          filters.averageRating !== null &&
+          filters.averageRating > 0
+        ) {
+          params.append('averageRating', filters.averageRating.toString());
+          console.log('Adding averageRating filter:', filters.averageRating);
+        }
+
+        if (filters.sort?.trim()) {
+          params.append('sort', filters.sort.trim());
+          console.log('Adding sort filter:', filters.sort.trim());
+        }
+
+        const url = `/courses?${params.toString()}`;
+        console.log('Final API URL:', url);
+
+        return {
+          url,
+          method: 'GET',
+        };
+      },
+      transformResponse: (response: ApiResponse<PaginatedData<Course>>) => {
+        console.log('Courses API Response:', response);
+        if (response.statusCode !== 200) {
+          throw new Error(response.message || 'Failed to fetch courses');
+        }
+        return response.data;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.content.map(({ id }) => ({
+                type: 'Course' as const,
+                id,
+              })),
+              { type: 'Course', id: 'LIST' },
+            ]
+          : [{ type: 'Course', id: 'LIST' }],
+    }),
 
     // Lấy danh sách categories
     getCategories: builder.query<Category[], void>({
@@ -231,15 +234,14 @@ export const coursesApi = createApi({
       providesTags: [{ type: 'Category', id: 'LIST' }],
     }),
 
-
     // Lấy thông tin course theo ID
     getCourseById: builder.query<Course, string>({
       query: (id) => ({
         url: `/courses/${id}`,
-        method: "GET",
+        method: 'GET',
       }),
       transformResponse: (response: ApiResponse<Course>) => {
-        console.log("Course by ID API Response:", response);
+        console.log('Course by ID API Response:', response);
         if (response.statusCode !== 200) {
           throw new Error(response.message || 'Failed to fetch course');
         }
@@ -252,10 +254,10 @@ export const coursesApi = createApi({
     getCourseBySlug: builder.query<Course, string>({
       query: (slug) => ({
         url: `/courses/slug/${slug}`,
-        method: "GET",
+        method: 'GET',
       }),
       transformResponse: (response: ApiResponse<Course>) => {
-        console.log("Course by Slug API Response:", response);
+        console.log('Course by Slug API Response:', response);
         if (response.statusCode !== 200) {
           throw new Error(response.message || 'Failed to fetch course by slug');
         }
@@ -268,22 +270,26 @@ export const coursesApi = createApi({
     getCourseReviewsBySlug: builder.query<CourseReviewData, string>({
       query: (slug) => ({
         url: `/courses/slug/${slug}/reviews`,
-        method: "GET",
+        method: 'GET',
       }),
       transformResponse: (response: ApiResponse<CourseReviewData>) => {
-        console.log("Reviews by Course Slug API Response:", response);
+        console.log('Reviews by Course Slug API Response:', response);
         if (response.statusCode !== 200) {
-          throw new Error(response.message || 'Failed to fetch reviews by course slug');
+          throw new Error(
+            response.message || 'Failed to fetch reviews by course slug'
+          );
         }
         return response.data;
       },
-      providesTags: (result, error, slug) => [{ type: 'CourseReview', id: slug }],
+      providesTags: (result, error, slug) => [
+        { type: 'CourseReview', id: slug },
+      ],
     }),
   }),
 });
 
-export const { 
-  useGetCoursesQuery, 
+export const {
+  useGetCoursesQuery,
   useGetCourseByIdQuery,
   useGetCourseBySlugQuery,
   useLazyGetCoursesQuery,

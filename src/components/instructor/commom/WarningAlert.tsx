@@ -17,6 +17,7 @@ type Props = {
   description?: string;
   onClick: () => Promise<void> | void;
   actionTitle: string;
+  className?: string;
 };
 
 const WarningAlert = ({
@@ -26,6 +27,7 @@ const WarningAlert = ({
   description,
   onClick,
   actionTitle,
+  className = 'bg-destructive text-destructive-foreground',
 }: Props) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -48,7 +50,7 @@ const WarningAlert = ({
               e.stopPropagation();
               onClick();
             }}
-            className="bg-destructive text-destructive-foreground"
+            className={className}
           >
             {actionTitle}
           </AlertDialogAction>
