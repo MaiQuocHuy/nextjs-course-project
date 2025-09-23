@@ -59,6 +59,8 @@ import { CoursesSkeleton } from './skeletons/index';
 import { CoursesGridSkeleton } from './skeletons/index';
 import { useGetMinAndMaxPrice } from '@/hooks/instructor/useGetMinAndMaxPrice';
 import { Pagination } from '@/components/common/Pagination';
+import { set } from 'zod';
+import { de } from 'zod/v4/locales';
 
 const coursesParams: CoursesFilter = {
   page: 0,
@@ -73,6 +75,7 @@ export const CoursesPage = () => {
   const [filters, setFilters] = useState(coursesParams);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isGridLoading, setIsGridLoading] = useState(false);
+  const [isClearFilters, setIsClearFilters] = useState(false);
   const priceRangeInit = useRef({
     isInit: false,
     minPrice: 0,
@@ -147,7 +150,11 @@ export const CoursesPage = () => {
         // Update local state for immediate UI updates only
         setPriceRange([minPrice, maxPrice]);
 
-        // priceRangeInit.current.isInit = true;
+        setFilters((prev) => ({
+          ...prev,
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+        }));
       }
     }
   }, [courses, minPrice, maxPrice]);
@@ -182,6 +189,9 @@ export const CoursesPage = () => {
       ...prev,
       search: debouncedSearchTerm,
     }));
+    if (debouncedSearchTerm === '') {
+      setIsGridLoading(false);
+    }
   }, [debouncedSearchTerm]);
 
   // Update filters with debounced price range
@@ -195,6 +205,12 @@ export const CoursesPage = () => {
           minPrice: debouncedPriceRange[0],
           maxPrice: debouncedPriceRange[1],
         }));
+        if (
+          debouncedPriceRange[0] === priceRangeInit.current.minPrice &&
+          debouncedPriceRange[1] === priceRangeInit.current.maxPrice
+        ) {
+          setIsGridLoading(false);
+        }
       } else {
         priceRangeInit.current.isInit = true;
       }
@@ -211,6 +227,7 @@ export const CoursesPage = () => {
     if (value === 'DRAFT') {
       filterField = 'isPublished';
       value = false;
+      setFilters((prev) => ({ ...prev, status: undefined }));
     } else {
       setFilters((prev) => ({ ...prev, isPublished: undefined }));
     }
@@ -239,7 +256,6 @@ export const CoursesPage = () => {
   };
 
   const handleClearFilters = () => {
-    setIsGridLoading(true);
     const minPrice = priceRangeInit.current.minPrice;
     const maxPrice = priceRangeInit.current.maxPrice;
 
@@ -247,7 +263,12 @@ export const CoursesPage = () => {
     setSearchTerm('');
     setPriceRange([minPrice, maxPrice]);
 
-    setFilters({ ...coursesParams, minPrice, maxPrice });
+    // Explicitly clear all filter properties to ensure query refetch
+    setFilters({
+      ...coursesParams,
+      minPrice,
+      maxPrice,
+    });
   };
 
   const handleDeleteCourse = async (id: string) => {

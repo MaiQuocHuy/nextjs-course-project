@@ -47,6 +47,7 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  RefreshCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
@@ -108,7 +109,6 @@ export function CreateCourseBasicInforPage({
     useUpdateCourseStatusMutation();
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
 
-  const dispatch: AppDispatch = useDispatch();
   const router = useRouter();
 
   const form = useForm<CourseBasicInfoType>({
@@ -310,7 +310,8 @@ export function CreateCourseBasicInforPage({
             onClick={handleRefetchData}
             disabled={isLoading}
           >
-            Refetch
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Refresh
           </Button>
 
           <Card>
