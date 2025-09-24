@@ -144,7 +144,7 @@ export default function RegisterPage() {
       );
       setShowModal(true);
 
-      router.replace("/login");
+      setTimeout(() => router.replace("/login"), 200);
     };
 
     const commonFailure = (error: any) => {
