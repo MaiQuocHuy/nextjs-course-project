@@ -104,15 +104,18 @@ export function EnrolledCoursesSummary() {
                     />
                   </div>
 
-                  <Button className="w-full">
-                    <Link href={`/dashboard/learning/${enrollment.courseId}`}>
-                      {enrollment.progress === 0
-                        ? "Start Course"
-                        : enrollment.progress === 1
-                        ? "Continue"
-                        : "Continue Learning"}
-                    </Link>
-                  </Button>
+                  {/* Action Button */}
+                  <div className="pt-2">
+                    <Button asChild className="w-full">
+                      <Link href={`/dashboard/learning/${enrollment.courseId}`}>
+                        {enrollment.progress === 0
+                          ? "Start Course"
+                          : enrollment.progress === 1
+                          ? "Continue"
+                          : "Continue Learning"}
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
