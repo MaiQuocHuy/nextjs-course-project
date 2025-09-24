@@ -122,7 +122,7 @@ function LoginPageContent() {
         setShowSuccessModal(true);
 
         const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
-        router.replace(returnUrl);
+        setTimeout(() => router.replace(returnUrl), 200);
       } else {
         setModalMessage(result.error || "Login failed. Please check your credentials.");
         setShowErrorModal(true);
