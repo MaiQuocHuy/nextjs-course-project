@@ -168,7 +168,7 @@ export const paymentApi = createApi({
         return response.data;
       },
       transformErrorResponse: (error: any) => {
-        console.error("Payment history API error:", error);
+        // console.error("Payment history API error:", error);
         // Handle error response
         return error.data;
       },
@@ -191,6 +191,7 @@ export const paymentApi = createApi({
         return response.data;
       },
       transformErrorResponse: (error: any) => {
+        // console.error("Create referral discount API error:", error);
         return error.data;
       },
       invalidatesTags: ["ReferralDiscount"],

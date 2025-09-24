@@ -56,6 +56,11 @@ export function ReviewItem({ review }: ReviewItemProps) {
     }
   };
 
+  // Check if there are any changes
+  const hasChanges =
+    parseInt(editRating) !== review.rating ||
+    editReviewText.trim() !== review.reviewText.trim();
+
   const renderStars = (rating: number) => {
     return [...Array(5)].map((_, index) => (
       <Star
@@ -132,7 +137,10 @@ export function ReviewItem({ review }: ReviewItemProps) {
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleUpdateReview} disabled={isUpdating}>
+                <Button
+                  onClick={handleUpdateReview}
+                  disabled={isUpdating || !hasChanges}
+                >
                   {isUpdating ? "Updating..." : "Update Review"}
                 </Button>
               </div>

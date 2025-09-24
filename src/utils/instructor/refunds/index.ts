@@ -1,3 +1,5 @@
+import { RefundResponse } from '@/types/instructor/refunds';
+
 export const getStatusVariant = (status: string) => {
   switch (status) {
     case 'COMPLETED':
@@ -38,4 +40,13 @@ export const formatDateTime = (dateString: string) => {
 
 export const formatPaymentId = (id: string) => {
   return id.slice(0, 8).toUpperCase();
+};
+
+export const isRefundExpired = (refund: RefundResponse) => {
+  if (!refund.requestedAt) return false;
+  const requestedDate = new Date(refund.requestedAt);
+  const now = new Date();
+  const diffInDays =
+    (now.getTime() - requestedDate.getTime()) / (1000 * 60 * 60 * 24);
+  return diffInDays > 3; // Refund expires after 3 days
 };

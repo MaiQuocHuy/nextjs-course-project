@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Users, Mail, } from 'lucide-react';
+import { Search, Users, Mail } from 'lucide-react';
 import { Students } from '@/types/instructor/students';
 import { useGetEnrolledStudentsQuery } from '@/services/instructor/students/students-ins-api';
 import { EnrolledStudentList } from './EnrolledStudentList';
@@ -29,7 +29,7 @@ export const StudentsPage = () => {
   } = useGetEnrolledStudentsQuery({
     page: currentPage,
     size: itemsPerPage,
-  });  
+  });
 
   useEffect(() => {
     if (enrolledStudents && enrolledStudents.content.length > 0) {
@@ -69,19 +69,11 @@ export const StudentsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Students</h1>
-          <p className="text-muted-foreground">
-            Manage and communicate with your students
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button>
-            <Mail className="mr-2 h-4 w-4" />
-            Send Email
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Students</h1>
+        <p className="text-muted-foreground">
+          Manage and communicate with your students
+        </p>
       </div>
 
       {/* Search and Stats */}

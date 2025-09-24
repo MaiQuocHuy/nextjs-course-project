@@ -1,12 +1,9 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGetPaymentStatusQuery } from "@/services/paymentApi";
-import {
-  useGetCourseByIdQuery,
-  useGetCourseBySlugQuery,
-} from "@/services/coursesApi";
+import { useGetCourseByIdQuery, useGetCourseBySlugQuery } from "@/services/coursesApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +29,7 @@ interface PaymentSuccessPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export default function PaymentSuccessPage({
-  params,
-}: PaymentSuccessPageProps) {
+function PaymentSuccessPageContent({ params }: PaymentSuccessPageProps) {
   const { slug: courseSlug } = use(params);
   // const { id: courseId } = use(params);
   const router = useRouter();
@@ -100,9 +95,7 @@ export default function PaymentSuccessPage({
             <div className="flex flex-col items-center space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
               <div className="text-center">
-                <h3 className="text-lg font-semibold">
-                  Verifying your payment...
-                </h3>
+                <h3 className="text-lg font-semibold">Verifying your payment...</h3>
                 <p className="text-muted-foreground">
                   Please wait while we confirm your enrollment
                 </p>
@@ -115,11 +108,7 @@ export default function PaymentSuccessPage({
   }
 
   // Payment failed or cancelled
-  if (
-    !paymentData ||
-    paymentData.status === "FAILED" ||
-    paymentData.status === "CANCELLED"
-  ) {
+  if (!paymentData || paymentData.status === "FAILED" || paymentData.status === "CANCELLED") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 flex items-center justify-center">
         <Card className="w-full max-w-2xl mx-4">
@@ -141,18 +130,11 @@ export default function PaymentSuccessPage({
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <Button
-                  onClick={handleRetryPaymentCheck}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={handleRetryPaymentCheck} variant="outline" className="flex-1">
                   <Clock className="w-4 h-4 mr-2" />
                   Check Again
                 </Button>
-                <Button
-                  onClick={() => router.push(`/courses/${courseSlug}`)}
-                  className="flex-1"
-                >
+                <Button onClick={() => router.push(`/courses/${courseSlug}`)} className="flex-1">
                   <ArrowRight className="w-4 h-4 mr-2" />
                   Try Again
                 </Button>
@@ -185,18 +167,11 @@ export default function PaymentSuccessPage({
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <Button
-                  onClick={handleRetryPaymentCheck}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={handleRetryPaymentCheck} variant="outline" className="flex-1">
                   <Clock className="w-4 h-4 mr-2" />
                   Check Status
                 </Button>
-                <Button
-                  onClick={() => router.push("/dashboard/my-courses")}
-                  className="flex-1"
-                >
+                <Button onClick={() => router.push("/dashboard/my-courses")} className="flex-1">
                   <BookOpen className="w-4 h-4 mr-2" />
                   My Courses
                 </Button>
@@ -422,8 +397,7 @@ export default function PaymentSuccessPage({
                         Confirmation Email Sent
                       </p>
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        We have sent a confirmation email with the course
-                        details to your inbox.
+                        We have sent a confirmation email with the course details to your inbox.
                         {/* {paymentData.customerEmail && (
                           <span className="font-medium block">
                             Sent to: {paymentData.customerEmail}
@@ -439,5 +413,43 @@ export default function PaymentSuccessPage({
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading component for Payment Success page
+function PaymentSuccessPageLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <div className="animate-pulse space-y-8">
+          <div className="text-center">
+            <div className="h-12 w-12 bg-gray-200 rounded-full mx-auto mb-4"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/3 mx-auto"></div>
+          </div>
+          <Card className="bg-white shadow-lg">
+            <CardContent className="p-8">
+              <div className="space-y-6">
+                <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function PaymentSuccessPage({ params }: PaymentSuccessPageProps) {
+  return (
+    <Suspense fallback={<PaymentSuccessPageLoading />}>
+      <PaymentSuccessPageContent params={params} />
+    </Suspense>
   );
 }

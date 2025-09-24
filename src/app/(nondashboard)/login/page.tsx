@@ -30,6 +30,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useAuthStatus } from "@/hooks/useAuth";
 import { handleGoogleSignIn } from "@/utils/common/login";
 import GoogleIcon from "@/components/common/GoogleIcon";
+import { Suspense } from "react";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -46,7 +47,7 @@ type LoginFormValues = {
   password: string;
 };
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -121,7 +122,7 @@ export default function LoginPage() {
         setShowSuccessModal(true);
 
         const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/";
-        router.replace(returnUrl);
+        setTimeout(() => router.replace(returnUrl), 200);
       } else {
         setModalMessage(result.error || "Login failed. Please check your credentials.");
         setShowErrorModal(true);
@@ -432,5 +433,35 @@ export default function LoginPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Loading component for Login page
+function LoginPageLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="max-w-md w-full space-y-8 p-8">
+        <div className="animate-pulse space-y-6">
+          <div className="text-center">
+            <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+          </div>
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageLoading />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

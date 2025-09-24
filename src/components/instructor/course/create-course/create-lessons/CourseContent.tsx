@@ -2,9 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import pdfToText from 'react-pdftotext';
 import {
@@ -21,6 +18,7 @@ import {
   X,
   Upload,
   CheckCircle,
+  Loader2,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -76,7 +74,6 @@ import {
   useUpdateVideoLessonMutation,
   useUpdateQuizLessonMutation,
 } from '@/services/instructor/courses/lessons-api';
-import { loadingAnimation } from '@/utils/instructor/loading-animation';
 import { toast } from 'sonner';
 import { useGenerateQuestionsMutation } from '@/services/instructor/courses/quizzes-api';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
@@ -118,6 +115,7 @@ export default function CourseContent({
   );
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [canSaveChanges, setCanSaveChanges] = useState(false);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -149,10 +147,9 @@ export default function CourseContent({
     useState(false);
   const [isDeleteLessonDialogOpen, setIsDeleteLessonDialogOpen] =
     useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const [tempSections, setTempSections] = useState<SectionType[]>([]);
-
-  const dispatch: AppDispatch = useDispatch();
 
   const [updateCourseStatus, { isLoading: isUpdatingCourseStatus }] =
     useUpdateCourseStatusMutation();
@@ -182,11 +179,16 @@ export default function CourseContent({
   const [generateQuestions, { isLoading: isGeneratingQuizs }] =
     useGenerateQuestionsMutation();
 
-  const form = useForm<CourseContentType>({
-    resolver: zodResolver(courseContentSchema),
+  const form = useForm({
     defaultValues: {
       sections: initialSections
-        ? initialSections
+        ? initialSections.map((section) => ({
+            ...section,
+            lessons: section.lessons.map((lesson) => ({
+              ...lesson,
+              type: (lesson.type || 'VIDEO') as 'VIDEO' | 'QUIZ',
+            })),
+          }))
         : [
             {
               id: `new-section-${crypto.randomUUID()}`,
@@ -199,7 +201,7 @@ export default function CourseContent({
                   id: `new-lesson-${crypto.randomUUID()}`,
                   title: '',
                   orderIndex: 0,
-                  type: 'VIDEO',
+                  type: 'VIDEO' as const,
                   isCollapsed: false,
                 },
               ],
@@ -215,33 +217,56 @@ export default function CourseContent({
   } = form;
 
   const watchedSections = watch('sections');
-
+  
   // Get input errors
   useEffect(() => {
     const formData = form.getValues();
-    const validationResult = courseContentSchema.safeParse(formData);
-    if (!validationResult.success) {
-      setIsValidInput(false);
-      // console.log('Validation Errors:', validationResult.error.issues);
-    } else {
-      setIsValidInput(true);
+    try {
+      const validationResult = courseContentSchema.safeParse(formData);
+      if (!validationResult.success) {
+        setIsValidInput(false);
+        // console.log('Validation Errors:', validationResult.error.issues);
+      } else {
+        setIsValidInput(true);
+      }
+    } catch (error) {
+      setIsValidInput(true); // If validation fails, allow form to continue
     }
   }, [form.formState]);
+
+  useEffect(() => {
+    if (
+      isCreatingSection ||
+      isUpdatingSections ||
+      isReorderingSections ||
+      isCreatingLesson ||
+      isCreatingLessonWithQuiz ||
+      isUpdatingQuizLessons ||
+      isUpdatingVideoLessons ||
+      isReorderingLessons
+    ) {
+      setIsSaving(true);
+    } else {
+      setIsSaving(false);
+    }
+  }, [
+    isCreatingSection,
+    isUpdatingSections,
+    isReorderingSections,
+    isCreatingLesson,
+    isCreatingLessonWithQuiz,
+    isUpdatingQuizLessons,
+    isUpdatingVideoLessons,
+    isReorderingLessons,
+  ]);
 
   // Controlling loading state
   useEffect(() => {
     if (
+      isSaving ||
       isUpdatingCourseStatus ||
-      isUpdatingSections ||
-      isCreatingSection ||
       isDeletingSection ||
-      isReorderingSections ||
-      isCreatingLesson ||
-      isCreatingLessonWithQuiz ||
-      isUpdatingVideoLessons ||
-      isUpdatingQuizLessons ||
       isDeletingLesson ||
-      isReorderingLessons ||
       isGeneratingQuizs
     ) {
       setIsLoading(true);
@@ -249,17 +274,10 @@ export default function CourseContent({
       setIsLoading(false);
     }
   }, [
+    isSaving,
     isUpdatingCourseStatus,
-    isUpdatingSections,
-    isCreatingSection,
     isDeletingSection,
-    isReorderingSections,
-    isCreatingLesson,
-    isCreatingLessonWithQuiz,
-    isUpdatingVideoLessons,
-    isUpdatingQuizLessons,
     isDeletingLesson,
-    isReorderingLessons,
     isGeneratingQuizs,
   ]);
 
@@ -326,7 +344,7 @@ export default function CourseContent({
   };
 
   const removeSection = async (sectionIndex: number) => {
-    loadingAnimation(true, dispatch, 'Deleting section. Please wait...');
+    toast.info('Deleting section. Please wait...');
 
     let isDeleteSuccess = true;
     const currentSections = form.getValues('sections');
@@ -358,15 +376,12 @@ export default function CourseContent({
           section.orderIndex = idx;
         });
         form.setValue('sections', updatedSections);
-        loadingAnimation(false, dispatch);
         toast.success('Delete section successfully!');
       } else {
-        loadingAnimation(false, dispatch);
         toast.error('Delete section failed!');
       }
     } catch (error) {
-      console.log(error);
-      loadingAnimation(false, dispatch);
+      // console.log(error);
       toast.error('Delete section failed!');
       return;
     }
@@ -389,7 +404,7 @@ export default function CourseContent({
   };
 
   const removeLesson = async (sectionIndex: number, lessonIndex: number) => {
-    loadingAnimation(true, dispatch, 'Deleting lesson. Please wait...');
+    toast.info('Deleting lesson. Please wait...');
     let isDeleteSuccess = true;
     const currentLessons = form.getValues(`sections.${sectionIndex}.lessons`);
 
@@ -424,19 +439,16 @@ export default function CourseContent({
           form.setValue(`sections.${sectionIndex}.lessons`, updatedLessons);
           const currentFormData = form.getValues();
           form.reset(currentFormData);
-          loadingAnimation(false, dispatch);
+
           toast.success('Delete lesson successfully!');
         } else {
-          loadingAnimation(false, dispatch);
           toast.error('Delete lesson fail!');
         }
       } catch (error) {
-        console.log(error);
-        loadingAnimation(false, dispatch);
+        // console.log(error);
         toast.error('Delete lesson fail!');
       }
     } else {
-      loadingAnimation(false, dispatch);
       toast.error('Each section must have at least one lesson!');
     }
   };
@@ -615,7 +627,16 @@ export default function CourseContent({
     if (currentMode === 'edit') {
       onCancel?.();
     }
-    setCurrentMode(currentMode === 'view' ? 'edit' : 'view');
+
+    if (currentMode === 'edit') {
+      if (isDirty) {
+        setIsCancelDialogOpen(true);
+      } else {
+        setCurrentMode('view');
+      }
+    } else if (currentMode === 'view') {
+      setCurrentMode('edit');
+    }
   };
 
   const hasVideo = (video: VideoType) => {
@@ -1493,12 +1514,6 @@ export default function CourseContent({
       sections = currentSections;
     }
     try {
-      loadingAnimation(
-        true,
-        dispatch,
-        'Updating section(s) and lesson(s). Please wait...'
-      );
-
       if (dirtyFields.sections) {
         const changedSections = dirtyFields.sections;
         for (const [idx, sec] of sections.entries()) {
@@ -1605,32 +1620,36 @@ export default function CourseContent({
         setTempSections([]);
         setReorderSection(false);
         setReorderLesson([]);
-        loadingAnimation(false, dispatch);
+
         toast.success('Update Section(s) and lesson(s) successfully!');
       } else {
-        loadingAnimation(false, dispatch);
         toast.error('Update Section(s) and lesson(s) failed!');
       }
     } catch (error) {
       console.log(error);
-      loadingAnimation(false, dispatch);
       toast.error('Update Section(s) and lesson(s) failed!');
     }
   };
 
-  const handleSubmitForm = (data: CourseContentType) => {
-    // console.log(data);
-    setLessonsData(data);
-    setStep('review');
+  const handleSubmitForm = (data: any) => {
+    try {
+      // Validate the data before proceeding
+      const validationResult = courseContentSchema.safeParse(data);
+      if (validationResult.success) {
+        setLessonsData(validationResult.data);
+        setStep('review');
+      } else {        
+        toast.error(
+          validationResult.error.issues[0].message ||
+            'Please check the form for validation errors'
+        );
+      }
+    } catch (error) {
+      toast.error('Create course failed!');
+    }
   };
 
   const handleFinalSubmit = async () => {
-    loadingAnimation(
-      true,
-      dispatch,
-      'Creating section(s) and lesson(s). Please wait...'
-    );
-
     let isCreateSuccess = false;
     if (lessonsData) {
       try {
@@ -1667,11 +1686,9 @@ export default function CourseContent({
     }
 
     if (isCreateSuccess) {
-      loadingAnimation(false, dispatch);
       setStep('success');
       setProgress?.(100); // Update progress to 100% on success
     } else {
-      loadingAnimation(false, dispatch);
       toast.error('Create section(s) and lesson(s) failed!');
     }
   };
@@ -1692,6 +1709,9 @@ export default function CourseContent({
         sections={sections}
         onBackToEdit={() => setStep('create')}
         handleFinalSubmit={handleFinalSubmit}
+        isCreating={
+          isCreatingSection || isCreatingLesson || isUpdatingCourseStatus
+        }
       />
     );
   }
@@ -1754,7 +1774,14 @@ export default function CourseContent({
                         disabled={!canSaveChanges}
                       >
                         <Save className="h-4 w-4 mr-2" />
-                        Save Changes
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <span>Saving</span>
+                          </>
+                        ) : (
+                          'Save Changes'
+                        )}
                       </Button>
                     </>
                   )}
@@ -1877,6 +1904,26 @@ export default function CourseContent({
             }
           }}
           actionTitle="Delete Lesson"
+        />
+      )}
+
+      {/* Warning Alert for cancel edit */}
+      {isCancelDialogOpen && (
+        <WarningAlert
+          open={isCancelDialogOpen}
+          onOpenChange={(open) => {
+            setIsCancelDialogOpen(open);
+          }}
+          className="bg-sidebar-primary text-white"
+          title="Are you sure you want to cancel editing this lesson?"
+          description="This action cannot be undone. Any unsaved changes will be lost."
+          onClick={() => {
+            form.reset({ sections: initialSections });
+            setTempSections([]);
+            setIsCancelDialogOpen(false);
+            setCurrentMode('view');
+          }}
+          actionTitle="Cancel Editing"
         />
       )}
     </div>

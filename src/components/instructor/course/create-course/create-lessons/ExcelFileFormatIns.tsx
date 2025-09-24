@@ -138,7 +138,11 @@ const ExcelFileFormatIns = () => {
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
-              onClick={handlePreview}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handlePreview();
+              }}
             >
               <Eye size={16} /> Preview Sample Template
             </Button>
@@ -148,7 +152,11 @@ const ExcelFileFormatIns = () => {
               variant="ghost"
               size="sm"
               className="flex items-center gap-2"
-              onClick={handleDownloadTemplate}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDownloadTemplate();
+              }}
             >
               <Download size={16} /> Download Excel Template
             </Button>

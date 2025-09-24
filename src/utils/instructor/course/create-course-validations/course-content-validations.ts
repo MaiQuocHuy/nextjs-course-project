@@ -108,7 +108,7 @@ export const lessonSchema = z
     },
     {
       message:
-        'Video lessons must have a video file, and quiz lessons must have at least one question',
+        'Video lessons must have a video file and Quiz lessons must have at least one question',
     }
   );
 

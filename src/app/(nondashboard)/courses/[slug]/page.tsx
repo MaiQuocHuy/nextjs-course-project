@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useGetCourseBySlugQuery } from "@/services/coursesApi";
 import { CourseDetailSkeleton } from "@/components/course-detail/CourseDetailSkeleton";
 import { CourseHeader } from "@/components/course-detail/CourseHeader";
@@ -25,6 +26,7 @@ export default function CourseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showAlreadyEnrolledDialog, setShowAlreadyEnrolledDialog] =
     useState(false);
@@ -37,6 +39,27 @@ export default function CourseDetailPage({
     error,
     refetch,
   } = useGetCourseBySlugQuery(slug);
+
+  // Auto scroll to course preview when coming from Watch Demo button
+  useEffect(() => {
+    const scrollTo = searchParams.get("scrollTo");
+    if (scrollTo === "course-preview" && !isLoading && course) {
+      // Wait a bit for the component to fully render
+      const timer = setTimeout(() => {
+        const coursePreviewElement = document.querySelector(
+          "[data-course-preview]"
+        );
+        if (coursePreviewElement) {
+          coursePreviewElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, isLoading, course]);
 
   const handleEnroll = async () => {
     // Kiểm tra nếu user đã enroll rồi
@@ -54,7 +77,7 @@ export default function CourseDetailPage({
       // Sau khi enroll thành công, refetch để cập nhật isEnrolled
       refetch();
     } catch (error) {
-      console.error("Enrollment failed:", error);
+      // console.error("Enrollment failed:", error);
     } finally {
       setIsEnrolling(false);
     }

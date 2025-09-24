@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,8 +11,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  ChevronDown,
-  ChevronRight,
   PlayCircle,
   FileText,
   MessageSquare,
@@ -27,7 +24,7 @@ import {
   Target,
   Lock,
 } from "lucide-react";
-import { Course, Section, Lesson } from "@/services/coursesApi";
+import { Course, Section } from "@/services/coursesApi";
 import { useGetCourseReviewsBySlugQuery } from "@/services/coursesApi";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +41,6 @@ export function CourseContent({
   isEnrolled,
   className = "",
 }: CourseContentProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   // Fetch reviews data
   const {
@@ -139,18 +135,19 @@ export function CourseContent({
     }
   };
 
-  const getPreviewLessons = () => {
-    if (course.sampleVideoUrl) {
-      return [
-        {
-          title: "Sample Preview",
-          url: course.sampleVideoUrl,
-        },
-      ];
-    }
-  };
+  // const getPreviewLessons = () => {
+  //   if (course.sampleVideoUrl) {
+  //     return [
+  //       {
+  //         title: "Sample Preview",
+  //         url: course.sampleVideoUrl,
+  //       },
+  //     ];
+  //   }
+  // };
 
   // Mock data if no sections provided
+  
   const displaySections =
     sections.length > 0
       ? sections
@@ -302,7 +299,7 @@ export function CourseContent({
 
           {/* Preview Video Section */}
           {course.sampleVideoUrl && (
-            <Card>
+            <Card data-course-preview>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Course Preview</span>
