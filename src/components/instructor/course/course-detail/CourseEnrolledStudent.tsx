@@ -12,18 +12,18 @@ import { ErrorComponent } from '../../commom/ErrorComponent';
 import { StudentSkeleton } from '../../students/skeletons';
 import { Pagination } from '@/components/common/Pagination';
 import Link from 'next/link';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from '@/components/ui/select';
 
 const CourseEnrolledStudent = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [sort, setSort] = useState('createdAt,DESC');
+  // const [sort, setSort] = useState('createdAt,DESC');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState<
     CourseEnrolledStudentType[]
@@ -41,7 +41,7 @@ const CourseEnrolledStudent = () => {
       courseId: id,
       page: currentPage,
       size: itemsPerPage,
-      sort: sort,
+      // sort: sort,
     },
     { skip: !id }
   );
@@ -73,9 +73,9 @@ const CourseEnrolledStudent = () => {
   }, [searchTerm, enrolledStudents]);
 
   // Handle sort change
-  const handleSortChange = (value: string) => {
-    setSort(value);
-  };
+  // const handleSortChange = (value: string) => {
+  //   setSort(value);
+  // };
 
   // Show loading state while fetching data
   if (isLoading) {
@@ -84,12 +84,15 @@ const CourseEnrolledStudent = () => {
 
   // Show error state if there's an error
   if (error) {
-    return <ErrorComponent onRetry={() => refetch()} />;
+    return <ErrorComponent 
+    title='Error Loading Students'
+    message='Failed to load enrolled students. Please try again.'
+    onRetry={() => refetch()} />;
   }
 
   if (enrolledStudents && enrolledStudents.content.length === 0) {
     return (
-      <div className='p-12 text-center'>
+      <div className="p-12 text-center">
         <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-lg font-semibold mb-2">No students enrolled</h3>
         <p className="text-muted-foreground">
@@ -102,20 +105,14 @@ const CourseEnrolledStudent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Enrolled Students</h1>
-          <p className="text-muted-foreground">
-            Manage students enrolled in this course
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button>
-            <Mail className="mr-2 h-4 w-4" />
-            Message All
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Enrolled Students</h1>
+        <p className="text-muted-foreground">
+          Manage students enrolled in this course
+        </p>
       </div>
+      {/* <div className="flex items-center justify-between">
+      </div> */}
 
       {/* Search, Sort and Stats */}
       <Card className="shadow-card">
@@ -131,7 +128,7 @@ const CourseEnrolledStudent = () => {
               />
             </div>
 
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <Select value={sort} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Sort by" />
@@ -149,7 +146,7 @@ const CourseEnrolledStudent = () => {
                   <SelectItem value="progress,asc">Lowest Progress</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
           </div>
         </CardContent>
       </Card>
@@ -211,16 +208,7 @@ const CourseEnrolledStudent = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-300">
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <MessageSquare className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Mail className="h-3 w-3" />
-                        </Button>
-                      </div>
-
+                    <div className="flex justify-end pt-2 border-t border-gray-300">
                       <Button
                         variant="outline"
                         size="sm"

@@ -186,6 +186,8 @@ export const InsDashboard = () => {
           <RefundsTable
             filteredRefunds={refundsContent}
             refetch={refetchRefunds}
+            currentPage={0}
+            itemsPerPage={10}
           />
         )}
       </SkeletonContainer>

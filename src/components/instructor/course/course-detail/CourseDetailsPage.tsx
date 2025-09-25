@@ -7,6 +7,7 @@ import CourseOverview from './CourseOverview';
 import CourseContentPage from './CourseContentPage';
 import { CourseDetailsSections } from '@/types/instructor/courses/course-details';
 import CourseEnrolledStudent from './CourseEnrolledStudent';
+import CourseReviews from './CourseReviews';
 
 interface CourseDetailsPageProps {
   isEdittingCourse?: boolean;
@@ -37,16 +38,7 @@ export default function CourseDetailsPage({
 
         {activeSection === 'students' && <CourseEnrolledStudent />}
 
-
-        {/* {activeSection === 'reviews' && params && (
-        <CourseReviews
-          averageRating={4.5}
-          totalReviews={125}
-          onViewAllReviews={() =>
-            router.push(`/instructor/courses/${params.id}/reviews`)
-          }
-        />
-      )} */}
+        {activeSection === 'reviews' && <CourseReviews />}
       </main>
     </div>
   );

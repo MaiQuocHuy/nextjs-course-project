@@ -16,18 +16,25 @@ import { RefundResponse } from '@/types/instructor/refunds';
 type RefundsTableProps = {
   filteredRefunds: RefundResponse[];
   refetch?: () => void;
+  currentPage: number;
+  itemsPerPage: number;
 };
 
-export const RefundsTable = ({ filteredRefunds, refetch }: RefundsTableProps) => {
+export const RefundsTable = ({
+  filteredRefunds,
+  refetch,
+  currentPage,
+  itemsPerPage,
+}: RefundsTableProps) => {
   const pathname = usePathname();
   const router = useRouter();
-  
+
   const handleRefresh = () => {
     // Refresh the current page
     if (refetch) {
       refetch();
     }
-  };
+  };  
 
   return (
     <Card className="shadow-sm border-0 bg-card py-0">
@@ -73,6 +80,9 @@ export const RefundsTable = ({ filteredRefunds, refetch }: RefundsTableProps) =>
                     key={refund.id}
                     refund={refund}
                     index={index}
+                    currentPage={currentPage}
+                    itemsPerPage={itemsPerPage}
+                    // Staggered animation delay
                     style={{
                       animationDelay: `${index * 50}ms`,
                       cursor: 'pointer',
@@ -81,7 +91,7 @@ export const RefundsTable = ({ filteredRefunds, refetch }: RefundsTableProps) =>
                 ))}
             </TableBody>
           </Table>
-          
+
           {pathname === '/instructor' && (
             <div className="flex justify-end gap-2 py-4 px-4">
               <Button
@@ -93,7 +103,7 @@ export const RefundsTable = ({ filteredRefunds, refetch }: RefundsTableProps) =>
                 <RefreshCcwIcon className="h-4 w-4 mr-1" />
                 Refresh
               </Button>
-              
+
               {filteredRefunds.length > 3 && (
                 <Button
                   variant="outline"

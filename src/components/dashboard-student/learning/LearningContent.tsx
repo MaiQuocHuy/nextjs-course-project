@@ -881,7 +881,7 @@ const QuizContent = ({
   );
 
   const isPassed = quizState.submissionResult
-    ? quizState.submissionResult.score >= 60
+    ? quizState.submissionResult.score >= 80
     : false;
 
   return (
@@ -974,6 +974,12 @@ const QuizContent = ({
                           optionLetter === question.correctAnswer;
                         const showResult = quizState.showResults;
                         const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
+                        const isSelectedCorrect = isSelected && isCorrect; // User selected the correct answer
+                        const isSelectedIncorrect = isSelected && !isCorrect; // User selected the wrong answer
+                        const shouldHighlightCorrect =
+                          showResult &&
+                          (isSelectedCorrect ||
+                            (showCorrectAnswer && isCorrect));
 
                         return (
                           <button
@@ -987,17 +993,10 @@ const QuizContent = ({
                               isSelected &&
                                 !showResult &&
                                 "border-blue-500 bg-blue-50",
-                              showCorrectAnswer &&
-                                isCorrect &&
+                              shouldHighlightCorrect &&
                                 "border-green-500 bg-green-50",
                               showResult &&
-                                isSelected &&
-                                !isPassed &&
-                                "border-red-500 bg-red-50",
-                              showResult &&
-                                isSelected &&
-                                isPassed &&
-                                !isCorrect &&
+                                isSelectedIncorrect &&
                                 "border-red-500 bg-red-50",
                               !showResult && !isSelected && "border-gray-200"
                             )}
@@ -1010,17 +1009,10 @@ const QuizContent = ({
                                   isSelected &&
                                     !showResult &&
                                     "border-blue-500 bg-blue-500 text-white",
-                                  showCorrectAnswer &&
-                                    isCorrect &&
+                                  shouldHighlightCorrect &&
                                     "border-green-500 bg-green-500 text-white",
                                   showResult &&
-                                    isSelected &&
-                                    !isPassed &&
-                                    "border-red-500 bg-red-500 text-white",
-                                  showResult &&
-                                    isSelected &&
-                                    isPassed &&
-                                    !isCorrect &&
+                                    isSelectedIncorrect &&
                                     "border-red-500 bg-red-500 text-white",
                                   !showResult &&
                                     !isSelected &&
@@ -1029,9 +1021,18 @@ const QuizContent = ({
                               >
                                 {optionLetter}
                               </div>
-                              <span className="leading-relaxed">
-                                {optionText}
-                              </span>
+                              <div className="flex-1">
+                                <span className="leading-relaxed">
+                                  {optionText}
+                                </span>
+                                {showCorrectAnswer &&
+                                  isCorrect &&
+                                  !isSelected && (
+                                    <div className="mt-1 text-xs text-green-600 font-medium">
+                                      ✓ Correct Answer
+                                    </div>
+                                  )}
+                              </div>
                             </div>
                           </button>
                         );
@@ -1049,6 +1050,12 @@ const QuizContent = ({
                           optionLetter === question.correctAnswer;
                         const showResult = quizState.showResults;
                         const showCorrectAnswer = showResult && isPassed; // Only show correct answer if passed
+                        const isSelectedCorrect = isSelected && isCorrect; // User selected the correct answer
+                        const isSelectedIncorrect = isSelected && !isCorrect; // User selected the wrong answer
+                        const shouldHighlightCorrect =
+                          showResult &&
+                          (isSelectedCorrect ||
+                            (showCorrectAnswer && isCorrect));
 
                         return (
                           <button
@@ -1062,17 +1069,10 @@ const QuizContent = ({
                               isSelected &&
                                 !showResult &&
                                 "border-blue-500 bg-blue-50",
-                              showCorrectAnswer &&
-                                isCorrect &&
+                              shouldHighlightCorrect &&
                                 "border-green-500 bg-green-50",
                               showResult &&
-                                isSelected &&
-                                !isPassed &&
-                                "border-red-500 bg-red-50",
-                              showResult &&
-                                isSelected &&
-                                isPassed &&
-                                !isCorrect &&
+                                isSelectedIncorrect &&
                                 "border-red-500 bg-red-50",
                               !showResult && !isSelected && "border-gray-200"
                             )}
@@ -1085,17 +1085,10 @@ const QuizContent = ({
                                   isSelected &&
                                     !showResult &&
                                     "border-blue-500 bg-blue-500 text-white",
-                                  showCorrectAnswer &&
-                                    isCorrect &&
+                                  shouldHighlightCorrect &&
                                     "border-green-500 bg-green-500 text-white",
                                   showResult &&
-                                    isSelected &&
-                                    !isPassed &&
-                                    "border-red-500 bg-red-500 text-white",
-                                  showResult &&
-                                    isSelected &&
-                                    isPassed &&
-                                    !isCorrect &&
+                                    isSelectedIncorrect &&
                                     "border-red-500 bg-red-500 text-white",
                                   !showResult &&
                                     !isSelected &&
@@ -1104,9 +1097,18 @@ const QuizContent = ({
                               >
                                 {optionLetter}
                               </div>
-                              <span className="leading-relaxed">
-                                {optionText}
-                              </span>
+                              <div className="flex-1">
+                                <span className="leading-relaxed">
+                                  {optionText}
+                                </span>
+                                {showCorrectAnswer &&
+                                  isCorrect &&
+                                  !isSelected && (
+                                    <div className="mt-1 text-xs text-green-600 font-medium">
+                                      ✓ Correct Answer
+                                    </div>
+                                  )}
+                              </div>
                             </div>
                           </button>
                         );
@@ -1117,16 +1119,28 @@ const QuizContent = ({
                   })()}
                 </div>
 
-                {quizState.showResults && isPassed && (
-                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h5 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">
-                      Explanation:
-                    </h5>
-                    <p className="text-blue-800 text-sm sm:text-base leading-relaxed">
-                      {question.explanation}
-                    </p>
-                  </div>
-                )}
+                {quizState.showResults &&
+                  question.explanation &&
+                  (() => {
+                    const userAnswer = quizState.answers[question.id];
+                    const isUserCorrect = userAnswer === question.correctAnswer;
+
+                    // Show explanation if:
+                    // 1. Quiz passed (show for all questions)
+                    // 2. Quiz not passed but user answered correctly
+                    const shouldShowExplanation = isPassed || isUserCorrect;
+
+                    return shouldShowExplanation ? (
+                      <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h5 className="font-medium text-blue-900 mb-1 sm:mb-2 text-sm sm:text-base">
+                          Explanation:
+                        </h5>
+                        <p className="text-blue-800 text-sm sm:text-base leading-relaxed">
+                          {question.explanation}
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
               </CardContent>
             </Card>
           )
