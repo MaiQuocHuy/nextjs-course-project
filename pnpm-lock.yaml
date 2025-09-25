@@ -160,13 +160,16 @@ importers:
         version: 6.1.0
       sockjs-client:
         specifier: ^1.6.1
-        version: 1.6.1
+        version: 1.6.1(supports-color@10.2.2)
       sonner:
         specifier: ^2.0.6
         version: 2.0.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       stompjs:
         specifier: ^2.3.3
-        version: 2.3.3
+        version: 2.3.3(supports-color@10.2.2)
+      supports-color:
+        specifier: ^10.2.2
+        version: 10.2.2
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -2177,6 +2180,10 @@ packages:
       babel-plugin-macros:
         optional: true
 
+  supports-color@10.2.2:
+    resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
+    engines: {node: '>=18'}
+
   tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
 
@@ -3457,14 +3464,18 @@ snapshots:
 
   date-fns@4.1.0: {}
 
-  debug@2.6.9:
+  debug@2.6.9(supports-color@10.2.2):
     dependencies:
       ms: 2.0.0
+    optionalDependencies:
+      supports-color: 10.2.2
     optional: true
 
-  debug@3.2.7:
+  debug@3.2.7(supports-color@10.2.2):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 10.2.2
 
   decimal.js-light@2.5.1: {}
 
@@ -4188,9 +4199,9 @@ snapshots:
       is-arrayish: 0.3.2
     optional: true
 
-  sockjs-client@1.6.1:
+  sockjs-client@1.6.1(supports-color@10.2.2):
     dependencies:
-      debug: 3.2.7
+      debug: 3.2.7(supports-color@10.2.2)
       eventsource: 2.0.2
       faye-websocket: 0.11.4
       inherits: 2.0.4
@@ -4211,9 +4222,9 @@ snapshots:
     dependencies:
       frac: 1.1.2
 
-  stompjs@2.3.3:
+  stompjs@2.3.3(supports-color@10.2.2):
     optionalDependencies:
-      websocket: 1.0.35
+      websocket: 1.0.35(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -4228,6 +4239,8 @@ snapshots:
     dependencies:
       client-only: 0.0.1
       react: 19.1.0
+
+  supports-color@10.2.2: {}
 
   tailwind-merge@3.3.1: {}
 
@@ -4363,10 +4376,10 @@ snapshots:
 
   websocket-extensions@0.1.4: {}
 
-  websocket@1.0.35:
+  websocket@1.0.35(supports-color@10.2.2):
     dependencies:
       bufferutil: 4.0.9
-      debug: 2.6.9
+      debug: 2.6.9(supports-color@10.2.2)
       es5-ext: 0.10.64
       typedarray-to-buffer: 3.1.5
       utf-8-validate: 5.0.10
