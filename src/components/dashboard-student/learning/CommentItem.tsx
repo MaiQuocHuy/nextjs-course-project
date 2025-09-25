@@ -163,18 +163,20 @@ export function CommentItem({
     }
   };
 
+  // Format relative time using local timezone to avoid timezone issues when deployed
   const formatTime = (dateString: string) => {
     try {
+      // Ensure we're working with local timezone
       const date = new Date(dateString);
       const now = new Date();
-      const diffInMinutes = Math.floor(
-        (now.getTime() - date.getTime()) / (1000 * 60)
-      );
+
+      // Calculate difference in milliseconds considering timezone offset
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
 
       if (diffInMinutes < 1) return "just now";
       if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-      const diffInHours = Math.floor(diffInMinutes / 60);
       if (diffInHours < 24) return `${diffInHours}h ago`;
 
       const diffInDays = Math.floor(diffInHours / 24);

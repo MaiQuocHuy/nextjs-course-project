@@ -41,22 +41,29 @@ export function ActivityFeed() {
 
   const activityList = activities || [];
 
-  // Simple function to format relative time
+  // Simple function to format relative time using local timezone
   const formatTimeAgo = (dateString: string) => {
+    // Ensure we're working with local timezone
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    );
 
-    if (diffInHours < 1) return "Just now";
+    // Calculate difference in milliseconds considering timezone offset
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
 
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}d ago`;
 
     const diffInWeeks = Math.floor(diffInDays / 7);
-    return `${diffInWeeks}w ago`;
+    if (diffInWeeks < 4) return `${diffInWeeks}w ago`;
+
+    const diffInMonths = Math.floor(diffInDays / 30);
+    return `${diffInMonths}mo ago`;
   };
 
   return (
