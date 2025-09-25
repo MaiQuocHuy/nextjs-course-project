@@ -430,7 +430,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(new Date(notification.createdAt), {
+                                    {formatDistanceToNow(new Date(notification.createdAt + "Z"), {
                                       addSuffix: true,
                                     })}
                                   </p>
