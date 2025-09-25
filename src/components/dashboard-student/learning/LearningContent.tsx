@@ -1227,7 +1227,7 @@ export function LearningContent({
         onRefetchCourse();
       }
     } catch (error) {
-      console.error("Failed to mark lesson as complete:", error);
+      toast.error("Failed to mark lesson as complete:");
     }
   };
 
@@ -1261,7 +1261,7 @@ export function LearningContent({
         onRefetchCourse();
       }
     } catch (error) {
-      console.error("Failed to auto-complete lesson:", error);
+      toast.error("Failed to auto-complete lesson:");
     }
   };
 

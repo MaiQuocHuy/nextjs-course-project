@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Check } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/types/chat";
 import { FileMessage } from "./FileMessage";
@@ -45,6 +44,38 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   deletingMessages,
   updatingMessages,
 }) => {
+  // Format relative time using local timezone to avoid timezone issues when deployed
+  const formatTimeAgo = (dateString: string) => {
+    try {
+      // Ensure we're working with local timezone
+      const date = new Date(dateString);
+      const now = new Date();
+      
+      // Calculate difference in milliseconds considering timezone offset
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+
+      if (diffInMinutes < 1) return "just now";
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d ago`;
+
+      const diffInWeeks = Math.floor(diffInDays / 7);
+      if (diffInWeeks < 4) return `${diffInWeeks}w ago`;
+
+      const diffInMonths = Math.floor(diffInDays / 30);
+      if (diffInMonths < 12) return `${diffInMonths}mo ago`;
+
+      const diffInYears = Math.floor(diffInDays / 365);
+      return `${diffInYears}y ago`;
+    } catch {
+      return "Unknown time";
+    }
+  };
+
   const isPending = (message as ChatMessage).status === "PENDING";
   const isError = (message as ChatMessage).status === "ERROR";
   const isDeleting = deletingMessages.has(message.id);
@@ -213,9 +244,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               isMobile ? "text-xs" : "text-xs"
             )}
           >
-            {formatDistanceToNow(new Date(message.createdAt), {
-              addSuffix: true,
-            })}
+            {formatTimeAgo(message.createdAt)}
           </span>
           <MessageActions
             message={message}
