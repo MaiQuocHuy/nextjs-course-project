@@ -153,7 +153,7 @@ export async function sendEmailNotification(data: ContactFormData): Promise<bool
     });
 
     if (error) {
-      console.error('❌ Failed to send admin notification:', error);
+      // console.error('❌ Failed to send admin notification:', error);
       return false;
     }
 
@@ -161,7 +161,7 @@ export async function sendEmailNotification(data: ContactFormData): Promise<bool
     return true;
 
   } catch (error) {
-    console.error('❌ Email sending error:', error);
+    // console.error('❌ Email sending error:', error);
     return false;
   }
 }
@@ -182,7 +182,7 @@ export async function sendAutoReply(data: ContactFormData): Promise<boolean> {
     });
 
     if (error) {
-      console.error('❌ Failed to send auto-reply:', error);
+      // console.error('❌ Failed to send auto-reply:', error);
       return false;
     }
 
@@ -190,7 +190,7 @@ export async function sendAutoReply(data: ContactFormData): Promise<boolean> {
     return true;
 
   } catch (error) {
-    console.error('❌ Auto-reply sending error:', error);
+    // console.error('❌ Auto-reply sending error:', error);
     return false;
   }
 }

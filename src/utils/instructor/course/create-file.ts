@@ -45,7 +45,7 @@ export const createFileFromUrl = async (url: string, fileName: string) => {
 
     return file;
   } catch (error) {
-    console.error('Error creating file from URL:', error);
+    // console.error('Error creating file from URL:', error);
     throw error;
   }
 };

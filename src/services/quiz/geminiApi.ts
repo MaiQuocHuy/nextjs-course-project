@@ -64,7 +64,7 @@ export const geminiApi = createApi({
 
           return { data: questions };
         } catch (error) {
-          console.error('Error in generateQuestions queryFn:', error);
+          // console.error('Error in generateQuestions queryFn:', error);
           return { error: { status: 'FETCH_ERROR', error: String(error) } };
         }
       },
@@ -107,13 +107,13 @@ export const geminiApi = createApi({
           console.log('Save questions result:', result);
 
           if (result.error) {
-            console.error('Save questions error:', result.error);
+            // console.error('Save questions error:', result.error);
             return { error: result.error };
           }
 
           return { data: result.data };
         } catch (error) {
-          console.error('Error in saveQuestions queryFn:', error);
+          // console.error('Error in saveQuestions queryFn:', error);
           return { error: { status: 'FETCH_ERROR', error: String(error) } };
         }
       },
