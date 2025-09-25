@@ -53,7 +53,7 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
     const data = await response.json();
     return data.success === true;
   } catch (error) {
-    console.error("reCAPTCHA verification error:", error);
+    // console.error("reCAPTCHA verification error:", error);
     return false;
   }
 }
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error("Contact form error:", error);
+    // console.error("Contact form error:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

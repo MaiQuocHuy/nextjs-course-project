@@ -139,7 +139,7 @@ export function CourseCard({
                 </Link>
 
                 {/* Description */}
-                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1 mb-3">
                   {course.description}
                 </p>
 
@@ -304,7 +304,7 @@ export function CourseCard({
           </div>
 
           {/* Description */}
-          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1 leading-relaxed">
             {course.description}
           </p>
 

@@ -121,7 +121,7 @@ export function ContactForm() {
         setIsSubmitted(false);
       }, 3000);
     } catch (error) {
-      console.error("Contact form error:", error);
+      // console.error("Contact form error:", error);
 
       // Reset reCAPTCHA on error
       if (recaptchaRef.current) {
