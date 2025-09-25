@@ -66,6 +66,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow public API routes that don't require authentication
+  if (pathname.startsWith('/api/contact')) {
+    return NextResponse.next();
+  }
+
   // Allow static files and Next.js internals
   if (
     pathname.startsWith('/_next/') ||
