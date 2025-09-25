@@ -41,7 +41,7 @@ export const publicCertificatesApi = createApi({
         return response.data;
       },
       transformErrorResponse: (response: { status: number; data: any }) => {
-        console.error('Public certificate API error:', response);
+        // console.error('Public certificate API error:', response);
         return {
           status: response.status,
           message: response.data?.message || 'Certificate not found',

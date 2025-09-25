@@ -14,7 +14,7 @@ export async function handleGoogleSignIn(router: any, setModalMessage: (msg: str
       });
 
       if (result?.error) {
-        console.error('Google sign-in error:', result.error);
+        // console.error('Google sign-in error:', result.error);
         setModalMessage('Đăng nhập Google thất bại. Vui lòng thử lại.');
         setShowErrorModal(true);
         return;
@@ -50,7 +50,7 @@ export async function handleGoogleSignIn(router: any, setModalMessage: (msg: str
         }
       }
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      // console.error('Google sign-in error:', error);
       setModalMessage('Có lỗi xảy ra khi đăng nhập với Google.');
       setShowErrorModal(true);
     } finally {

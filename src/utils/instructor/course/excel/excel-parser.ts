@@ -59,7 +59,7 @@ export function parseExcelFile(file: File): Promise<ExcelQuizData[]> {
 
         resolve(allQuizData);
       } catch (error) {
-        console.error('Excel parsing error:', error);
+        // console.error('Excel parsing error:', error);
         reject(
           new Error(`Invalid Excel file format: ${(error as Error).message}`)
         );
