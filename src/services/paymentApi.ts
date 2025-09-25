@@ -149,7 +149,9 @@ export const paymentApi = createApi({
           discountApplied: priceData.discountApplied || false,
           appliedDiscountCode: priceData.appliedDiscountCode,
           currency: priceData.currency || "VND",
-          message: priceData.discountApplied ? "Discount applied successfully" : "Invalid discount code or discount has expired"
+          message: priceData.discountApplied
+            ? "Discount applied successfully"
+            : "Invalid discount code or discount has expired",
         };
       },
     }),

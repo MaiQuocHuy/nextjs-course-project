@@ -76,6 +76,17 @@ function CertificateSearchContent() {
     setCaptchaToken(token);
   };
 
+  // Handle CAPTCHA errors
+  const handleCaptchaError = () => {
+    setSearchError("reCAPTCHA verification failed. Please try again.");
+  };
+
+  // Handle CAPTCHA expiration
+  const handleCaptchaExpired = () => {
+    setCaptchaToken(null);
+    setSearchError("reCAPTCHA expired. Please verify again.");
+  };
+
   const handleSearch = async () => {
     // Clear previous results
     setCertificate(null);
@@ -260,6 +271,8 @@ function CertificateSearchContent() {
                   ref={recaptchaRef}
                   sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                   onChange={handleCaptchaChange}
+                  onErrored={handleCaptchaError}
+                  onExpired={handleCaptchaExpired}
                   theme="light"
                   size="normal"
                 />
