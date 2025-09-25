@@ -153,7 +153,7 @@ export async function middleware(req: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    console.error('🔴 Middleware error:', error);
+    // console.error('🔴 Middleware error:', error);
 
     // If there's an error getting the token, redirect to login for protected routes
     if (!isPublicPath) {

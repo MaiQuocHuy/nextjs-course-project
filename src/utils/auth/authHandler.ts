@@ -49,7 +49,7 @@ export async function handleGoogleSignIn(account: any, profile: any): Promise<Us
     });
 
     if (!res.ok) {
-      console.error("Google OAuth backend integration failed:", res.status);
+      // console.error("Google OAuth backend integration failed:", res.status);
       return null;
     }
 
@@ -62,7 +62,7 @@ export async function handleGoogleSignIn(account: any, profile: any): Promise<Us
       }, 'google');
     }
   } catch (error) {
-    console.error("Google OAuth backend integration error:", error);
+    // console.error("Google OAuth backend integration error:", error);
   }
 
   return null;
@@ -95,7 +95,7 @@ export async function handleCredentialsLogin(email: string, password: string): P
       }, 'credentials');
     }
   } catch (error) {
-    console.error("Credentials authentication failed:", error);
+    // console.error("Credentials authentication failed:", error);
     throw error; // Re-throw để NextAuth có thể handle error
   }
 

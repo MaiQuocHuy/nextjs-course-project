@@ -25,7 +25,7 @@ const baseQuery = fetchBaseQuery({
       
       return headers;
     } catch (error) {
-      console.error("Error preparing headers:", error);
+      // console.error("Error preparing headers:", error);
       return headers;
     }
   },
