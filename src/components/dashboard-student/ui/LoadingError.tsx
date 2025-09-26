@@ -10,6 +10,7 @@ import {
   MessageCircle,
   Tag,
   Coins,
+  ChevronLeft,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -461,15 +462,27 @@ export function LearningPageError({ onRetry }: { onRetry?: () => void }) {
             {onRetry && (
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button variant="outline" onClick={onRetry} size="lg">
-                  <RefreshCw className="h-5 w-5 mr-2" />
+                  <RefreshCw className="h-5 w-5" />
                   Reload Course
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => window.location.reload()}
                   size="lg"
                 >
+                  <RefreshCw className="h-5 w-5" />
                   Refresh Page
+                </Button>
+                {/* back to my courses */}
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    (window.location.href = "/dashboard/my-courses")
+                  }
+                  size="lg"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  Back to My Courses
                 </Button>
               </div>
             )}
