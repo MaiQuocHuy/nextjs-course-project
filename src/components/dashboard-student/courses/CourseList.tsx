@@ -55,13 +55,19 @@ export function CourseList({ cols }: CourseListProps) {
     if (filterStatus !== CourseFilterStatus.ALL) {
       filtered = filtered.filter((course) => {
         const status = course.completionStatus?.toUpperCase();
+        const progress = course.progress || 0;
+
         switch (filterStatus) {
           case CourseFilterStatus.COMPLETED:
             return status === "COMPLETED";
           case CourseFilterStatus.IN_PROGRESS:
             return status === "IN_PROGRESS";
           case CourseFilterStatus.NOT_STARTED:
-            return status === "NOT_STARTED" || !status;
+            // A course is considered not started if:
+            // - It has no completion status, OR
+            // - It has progress of 0, OR
+            // - Its status is explicitly "NOT_STARTED"
+            return !status || progress === 0 || status === "NOT_STARTED";
           default:
             return true;
         }
@@ -79,8 +85,10 @@ export function CourseList({ cols }: CourseListProps) {
           return (b.progress || 0) - (a.progress || 0);
         case CourseSortBy.RECENT:
         default:
-          // For recent, we can sort by courseId as a proxy since we don't have enrolledAt
-          return b.courseId.localeCompare(a.courseId);
+          // Sort by enrolledAt date (most recent first)
+          return (
+            new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime()
+          );
       }
     });
 
