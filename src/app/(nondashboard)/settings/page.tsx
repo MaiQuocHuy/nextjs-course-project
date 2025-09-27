@@ -68,14 +68,15 @@ const personalInfoSchema = z.object({
 const passwordSchema = z
   .object({
     oldPassword: z.string().min(1, "Current password is required"),
-    newPassword: z.string(),
-    // .min(8, "Password must be at least 8 characters")
-    // .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    // .regex(/[0-9]/, "Password must contain at least one number")
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "New passwords don't match",
     path: ["confirmPassword"],
   });
 
@@ -208,6 +209,8 @@ function SettingsPageContent() {
   // Password State
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
+  const [showPasswordError, setShowPasswordError] = useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
 
   // ReSubmit Application State
   const [showReSubmitDialog, setShowReSubmitDialog] = useState(false);
@@ -269,7 +272,6 @@ function SettingsPageContent() {
 
         setSuccess("Profile updated successfully");
       } catch (error: any) {
-        console.error("Profile update failed", error);
         let message = "Failed to update profile. Please try again.";
         if (error?.status === 400) message = "Invalid data provided.";
         else if (error?.status === 401 || error?.status === 403) message = "Not authorized.";
@@ -293,13 +295,13 @@ function SettingsPageContent() {
         setIsPasswordDialogOpen(false);
         setShowPasswordSuccess(true);
       } catch (error: any) {
-        console.error("Password update failed", error);
         if (error?.data?.message?.includes("incorrect") || error?.status === 401) {
           passwordForm.setError("oldPassword", { message: "Current password is incorrect" });
         } else {
-          passwordForm.setError("root", {
-            message: "Failed to update password. Please try again.",
-          });
+          // Show error modal for general backend errors
+          let errorMessage = error?.data?.message;
+          setPasswordErrorMessage(errorMessage);
+          setShowPasswordError(true);
         }
       }
     },
@@ -345,7 +347,6 @@ function SettingsPageContent() {
 
       setSuccess("Avatar updated successfully");
     } catch (error) {
-      console.error("Avatar update failed", error);
       setSuccess("Failed to update avatar. Please try again.");
     }
   }, [avatarPreview, avatarFile, updateThumbnail, personalInfo.name, refreshSession, setSuccess]);
@@ -361,6 +362,14 @@ function SettingsPageContent() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     router.replace(`?tab=${tab}`, { scroll: false });
+  };
+
+  const handlePasswordDialogClose = (open: boolean) => {
+    setIsPasswordDialogOpen(open);
+    if (!open) {
+      // Reset form when dialog is closed
+      passwordForm.reset();
+    }
   };
 
   return (
@@ -519,15 +528,20 @@ function SettingsPageContent() {
                           <h3 className="font-semibold text-gray-900">Password</h3>
                           <p className="text-sm text-gray-600">Change your account password</p>
                         </div>
-                        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                        <Dialog
+                          open={isPasswordDialogOpen}
+                          onOpenChange={handlePasswordDialogClose}
+                        >
                           <DialogTrigger asChild>
                             <Button variant="outline">Change Password</Button>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-md">
                             <DialogHeader>
                               <DialogTitle>Change Password</DialogTitle>
+
                               <DialogDescription>
-                                Enter your current password and choose a new one.
+                                Your password should be at least 8 characters long, include at least
+                                one uppercase letter and one number.
                               </DialogDescription>
                             </DialogHeader>
                             <Form {...passwordForm}>
@@ -578,7 +592,7 @@ function SettingsPageContent() {
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => setIsPasswordDialogOpen(false)}
+                                    onClick={() => handlePasswordDialogClose(false)}
                                     disabled={isResettingPassword}
                                   >
                                     Cancel
@@ -904,6 +918,22 @@ function SettingsPageContent() {
             </DialogHeader>
             <div className="flex justify-center mt-4">
               <Button onClick={() => setShowPasswordSuccess(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Error Dialog for Password Update */}
+        <Dialog open={showPasswordError} onOpenChange={setShowPasswordError}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <DialogTitle className="text-center">Password Update Failed</DialogTitle>
+              <DialogDescription className="text-center">{passwordErrorMessage}</DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center mt-4">
+              <Button onClick={() => setShowPasswordError(false)}>Close</Button>
             </div>
           </DialogContent>
         </Dialog>
