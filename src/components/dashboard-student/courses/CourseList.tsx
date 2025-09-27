@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
 import { CourseFilter } from "./CourseFilter";
@@ -13,12 +13,8 @@ import { useAppSelector, useAppDispatch } from "@/store/hook";
 import {
   resetFilters,
   CourseFilterStatus,
-  CourseSortBy,
 } from "@/store/slices/student/courseFilterSlice";
-import {
-  CustomPagination,
-  usePagination,
-} from "@/components/ui/custom-pagination";
+import { CustomPagination } from "@/components/ui/custom-pagination";
 
 const COURSES_PER_PAGE = 6;
 
@@ -27,82 +23,52 @@ type CourseListProps = {
 };
 
 export function CourseList({ cols }: CourseListProps) {
-  const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
   const dispatch = useAppDispatch();
-  const {
-    searchQuery,
-    filter: filterStatus,
-    sort: sortBy,
-  } = useAppSelector((state) => state.courseFilter);
+  const { searchQuery, progressFilter, status, sortBy, sortDirection } =
+    useAppSelector((state) => state.courseFilter);
+
+  // Handle pagination via API
+  const [currentPage, setCurrentPage] = useState(0);
+
+  // Prepare API parameters with pagination
+  const apiParams = useMemo(() => {
+    const params: any = {
+      sortBy,
+      sortDirection,
+      size: COURSES_PER_PAGE,
+      page: currentPage,
+    };
+
+    if (searchQuery.trim()) {
+      params.search = searchQuery.trim();
+    }
+
+    if (progressFilter !== CourseFilterStatus.ALL) {
+      params.progressFilter = progressFilter;
+    }
+
+    if (status) {
+      params.status = status;
+    }
+
+    return params;
+  }, [searchQuery, progressFilter, status, sortBy, sortDirection, currentPage]);
+
+  const { data, error, isLoading, refetch } =
+    useGetEnrolledCoursesQuery(apiParams);
 
   const courses = data?.content || [];
+  const totalPages = data?.page?.totalPages || 1;
+  const totalItems = data?.page?.totalElements || 0;
 
-  // Filter and sort courses
-  const filteredAndSortedCourses = useMemo(() => {
-    let filtered = [...courses];
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (course) =>
-          course.title.toLowerCase().includes(query) ||
-          course.instructor.name.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply status filter
-    if (filterStatus !== CourseFilterStatus.ALL) {
-      filtered = filtered.filter((course) => {
-        const status = course.completionStatus?.toUpperCase();
-        const progress = course.progress || 0;
-
-        switch (filterStatus) {
-          case CourseFilterStatus.COMPLETED:
-            return status === "COMPLETED";
-          case CourseFilterStatus.IN_PROGRESS:
-            return status === "IN_PROGRESS";
-          case CourseFilterStatus.NOT_STARTED:
-            // A course is considered not started if:
-            // - It has no completion status, OR
-            // - It has progress of 0, OR
-            // - Its status is explicitly "NOT_STARTED"
-            return !status || progress === 0 || status === "NOT_STARTED";
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case CourseSortBy.TITLE:
-          return a.title.localeCompare(b.title);
-        case CourseSortBy.INSTRUCTOR:
-          return a.instructor.name.localeCompare(b.instructor.name);
-        case CourseSortBy.PROGRESS:
-          return (b.progress || 0) - (a.progress || 0);
-        case CourseSortBy.RECENT:
-        default:
-          // Sort by enrolledAt date (most recent first)
-          return (
-            new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime()
-          );
-      }
-    });
-
-    return filtered;
-  }, [courses, searchQuery, filterStatus, sortBy]);
-
-  // Use pagination hook
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems: paginatedCourses,
-    handlePageChange,
-    totalItems,
-  } = usePagination(filteredAndSortedCourses, COURSES_PER_PAGE);
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchQuery, progressFilter, status, sortBy, sortDirection]);
 
   if (isLoading) {
     return (
@@ -122,13 +88,15 @@ export function CourseList({ cols }: CourseListProps) {
     );
   }
 
-  if (courses.length === 0) {
+  if (totalItems === 0) {
     return (
       <div className="space-y-6">
         <CourseFilter />
         <EmptyState
           hasFilter={
-            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+            searchQuery.trim() !== "" ||
+            progressFilter !== CourseFilterStatus.ALL ||
+            status !== null
           }
           onClearFilter={() => dispatch(resetFilters())}
         />
@@ -140,10 +108,12 @@ export function CourseList({ cols }: CourseListProps) {
     <div className="space-y-6">
       <CourseFilter />
 
-      {filteredAndSortedCourses.length === 0 ? (
+      {courses.length === 0 ? (
         <EmptyState
           hasFilter={
-            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+            searchQuery.trim() !== "" ||
+            progressFilter !== CourseFilterStatus.ALL ||
+            status !== null
           }
           onClearFilter={() => dispatch(resetFilters())}
         />
@@ -152,17 +122,19 @@ export function CourseList({ cols }: CourseListProps) {
           <div
             className={`grid gap-6 md:grid-cols-2 lg:grid-cols-${cols || 4}`}
           >
-            {paginatedCourses.map((course) => (
+            {courses.map((course) => (
               <CourseCard key={course.courseId} course={course} />
             ))}
           </div>
 
           {/* Pagination */}
-          <CustomPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          {totalPages > 1 && (
+            <CustomPagination
+              currentPage={currentPage + 1} // Convert to 1-based for UI
+              totalPages={totalPages}
+              onPageChange={(page) => handlePageChange(page - 1)} // Convert to 0-based for API
+            />
+          )}
         </>
       )}
     </div>

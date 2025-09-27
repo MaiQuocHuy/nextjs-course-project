@@ -14,15 +14,18 @@ import { Search, Filter, SortAsc, Loader2 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store/hook";
 import {
   setSearchQuery,
-  setFilter,
-  setSort,
+  setProgressFilter,
+  setSortBy,
+  setSortDirection,
   resetFilters,
   CourseFilterStatus,
   CourseSortBy,
+  SortDirection,
 } from "@/store/slices/student/courseFilterSlice";
 import {
   getFilterStatusLabel,
   getSortByLabel,
+  getSortDirectionLabel,
 } from "@/types/student/courseFilter";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -30,8 +33,9 @@ export function CourseFilter() {
   const dispatch = useAppDispatch();
   const {
     searchQuery: reduxSearchQuery,
-    filter,
-    sort,
+    progressFilter,
+    sortBy,
+    sortDirection,
   } = useAppSelector((state) => state.courseFilter);
 
   // Local state for immediate UI updates
@@ -59,12 +63,16 @@ export function CourseFilter() {
     setLocalSearchQuery(value);
   };
 
-  const handleFilterChange = (value: string) => {
-    dispatch(setFilter(value as CourseFilterStatus));
+  const handleProgressFilterChange = (value: string) => {
+    dispatch(setProgressFilter(value as CourseFilterStatus));
   };
 
-  const handleSortChange = (value: string) => {
-    dispatch(setSort(value as CourseSortBy));
+  const handleSortByChange = (value: string) => {
+    dispatch(setSortBy(value as CourseSortBy));
+  };
+
+  const handleSortDirectionChange = (value: string) => {
+    dispatch(setSortDirection(value as SortDirection));
   };
 
   const handleReset = () => {
@@ -90,10 +98,13 @@ export function CourseFilter() {
           />
         </div>
 
-        {/* Filter Dropdown */}
+        {/* Progress Filter Dropdown */}
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select onValueChange={handleFilterChange} value={filter}>
+          <Select
+            onValueChange={handleProgressFilterChange}
+            value={progressFilter}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
@@ -114,10 +125,10 @@ export function CourseFilter() {
           </Select>
         </div>
 
-        {/* Sort Dropdown */}
+        {/* Sort By Dropdown */}
         <div className="flex items-center gap-2">
           <SortAsc className="h-4 w-4 text-muted-foreground" />
-          <Select onValueChange={handleSortChange} value={sort}>
+          <Select onValueChange={handleSortByChange} value={sortBy}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -133,6 +144,26 @@ export function CourseFilter() {
               </SelectItem>
               <SelectItem value={CourseSortBy.INSTRUCTOR}>
                 {getSortByLabel(CourseSortBy.INSTRUCTOR)}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Sort Direction Dropdown */}
+        <div className="flex items-center gap-2">
+          <Select
+            onValueChange={handleSortDirectionChange}
+            value={sortDirection}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Order" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={SortDirection.DESC}>
+                {getSortDirectionLabel(SortDirection.DESC)}
+              </SelectItem>
+              <SelectItem value={SortDirection.ASC}>
+                {getSortDirectionLabel(SortDirection.ASC)}
               </SelectItem>
             </SelectContent>
           </Select>
