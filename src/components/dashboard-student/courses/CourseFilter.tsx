@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +35,11 @@ import {
 } from "@/types/student/courseFilter";
 import { useDebounce } from "@/hooks/useDebounce";
 
-export function CourseFilter() {
+export interface CourseFilterRef {
+  resetFilters: () => void;
+}
+
+export const CourseFilter = forwardRef<CourseFilterRef>((props, ref) => {
   const dispatch = useAppDispatch();
   const {
     searchQuery: reduxSearchQuery,
@@ -41,6 +51,9 @@ export function CourseFilter() {
   // Local state for immediate UI updates
   const [localSearchQuery, setLocalSearchQuery] = useState(reduxSearchQuery);
 
+  // Ref to track if we're currently resetting
+  const isResettingRef = useRef(false);
+
   // Debounce the search query with 400ms delay
   const [debouncedSearchQuery] = useDebounce(localSearchQuery, 400);
 
@@ -51,6 +64,12 @@ export function CourseFilter() {
 
   // Dispatch to Redux when debounced value changes
   useEffect(() => {
+    // Don't dispatch if we're currently resetting
+    if (isResettingRef.current) {
+      isResettingRef.current = false;
+      return;
+    }
+
     if (debouncedSearchQuery !== reduxSearchQuery) {
       dispatch(setSearchQuery(debouncedSearchQuery));
     }
@@ -76,9 +95,18 @@ export function CourseFilter() {
   };
 
   const handleReset = () => {
+    // Set flag to prevent debounced effect from overriding reset
+    isResettingRef.current = true;
+    // Reset local search state immediately
+    setLocalSearchQuery("");
+    // Reset Redux state
     dispatch(resetFilters());
-    setLocalSearchQuery(""); // Reset local state immediately
   };
+
+  // Expose reset function to parent components
+  useImperativeHandle(ref, () => ({
+    resetFilters: handleReset,
+  }));
 
   return (
     <div className="bg-card border rounded-lg p-4">
@@ -176,4 +204,6 @@ export function CourseFilter() {
       </div>
     </div>
   );
-}
+});
+
+CourseFilter.displayName = "CourseFilter";

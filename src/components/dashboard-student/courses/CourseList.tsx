@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
-import { CourseFilter } from "./CourseFilter";
+import { CourseFilter, type CourseFilterRef } from "./CourseFilter";
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 import { CoursesLoadingSkeleton, EnrolledCoursesError } from "../ui";
@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useAppSelector, useAppDispatch } from "@/store/hook";
 import {
   resetFilters,
+  setSearchQuery,
   CourseFilterStatus,
 } from "@/store/slices/student/courseFilterSlice";
 import { CustomPagination } from "@/components/ui/custom-pagination";
@@ -27,8 +28,25 @@ export function CourseList({ cols }: CourseListProps) {
   const { searchQuery, progressFilter, status, sortBy, sortDirection } =
     useAppSelector((state) => state.courseFilter);
 
+
+
   // Handle pagination via API
   const [currentPage, setCurrentPage] = useState(0);
+  
+  // Ref to communicate with CourseFilter component
+  const courseFilterRef = useRef<CourseFilterRef>(null);
+
+  // Proper reset handler that handles the search state correctly
+  const handleResetFilters = () => {
+    // Try to reset via CourseFilter component first (handles debounced search properly)
+    if (courseFilterRef.current) {
+      courseFilterRef.current.resetFilters();
+    } else {
+      // Fallback to direct Redux reset
+      dispatch(resetFilters());
+      dispatch(setSearchQuery(""));
+    }
+  };
 
   // Prepare API parameters with pagination
   const apiParams = useMemo(() => {
@@ -73,7 +91,7 @@ export function CourseList({ cols }: CourseListProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <CourseFilter />
+        <CourseFilter ref={courseFilterRef} />
         <CoursesLoadingSkeleton />
       </div>
     );
@@ -82,7 +100,7 @@ export function CourseList({ cols }: CourseListProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        <CourseFilter />
+        <CourseFilter ref={courseFilterRef} />
         <EnrolledCoursesError onRetry={refetch} />
       </div>
     );
@@ -91,14 +109,14 @@ export function CourseList({ cols }: CourseListProps) {
   if (totalItems === 0) {
     return (
       <div className="space-y-6">
-        <CourseFilter />
+        <CourseFilter ref={courseFilterRef} />
         <EmptyState
           hasFilter={
             searchQuery.trim() !== "" ||
             progressFilter !== CourseFilterStatus.ALL ||
             status !== null
           }
-          onClearFilter={() => dispatch(resetFilters())}
+          onClearFilter={handleResetFilters}
         />
       </div>
     );
@@ -106,7 +124,7 @@ export function CourseList({ cols }: CourseListProps) {
 
   return (
     <div className="space-y-6">
-      <CourseFilter />
+      <CourseFilter ref={courseFilterRef} />
 
       {courses.length === 0 ? (
         <EmptyState
@@ -115,7 +133,7 @@ export function CourseList({ cols }: CourseListProps) {
             progressFilter !== CourseFilterStatus.ALL ||
             status !== null
           }
-          onClearFilter={() => dispatch(resetFilters())}
+          onClearFilter={handleResetFilters}
         />
       ) : (
         <>
