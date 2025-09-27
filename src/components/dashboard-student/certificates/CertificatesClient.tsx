@@ -18,8 +18,7 @@ export default function CertificatesClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedCertificate, setSelectedCertificate] =
-    useState<Certificate | null>(null);
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -40,10 +39,7 @@ export default function CertificatesClient() {
     isLoading,
     error,
     refetch,
-  } = useGetMyCertificatesQuery(
-    { page, size },
-    { refetchOnMountOrArgChange: true }
-  );
+  } = useGetMyCertificatesQuery({ page, size }, { refetchOnMountOrArgChange: true });
 
   const allCertificates = certificatesData?.data.content || [];
   const pageData = certificatesData?.data.page;
@@ -63,9 +59,7 @@ export default function CertificatesClient() {
     setIsModalOpen(true);
   };
 
-  const [downloadingCertificateCode, setDownloadingCertificateCode] = useState<
-    string | null
-  >(null);
+  const [downloadingCertificateCode, setDownloadingCertificateCode] = useState<string | null>(null);
   const { data: downloadCertificateData, isLoading: isDownloadLoading } =
     useGetCertificateByCodeQuery(downloadingCertificateCode || "", {
       skip: !downloadingCertificateCode,
@@ -74,7 +68,13 @@ export default function CertificatesClient() {
   useEffect(() => {
     if (downloadCertificateData?.fileUrl && downloadingCertificateCode) {
       const fileUrl = downloadCertificateData.fileUrl;
-      window.open(fileUrl, "_blank");
+
+      // Add fl_attachment for download
+      const downloadUrl = fileUrl.includes("/fl_attachment")
+        ? fileUrl
+        : fileUrl.replace("/upload/", "/upload/fl_attachment/");
+
+      window.open(downloadUrl, "_blank");
       setDownloadingCertificateCode(null);
     }
   }, [downloadCertificateData, downloadingCertificateCode]);
