@@ -49,6 +49,9 @@ const Chat: React.FC<ChatProps> = ({
   const [updatingMessages, setUpdatingMessages] = useState<Set<string>>(
     new Set()
   );
+  const [deletedMessages, setDeletedMessages] = useState<Set<string>>(
+    new Set()
+  );
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -106,6 +109,7 @@ const Chat: React.FC<ChatProps> = ({
     isConnected,
     connectionState,
     error: wsError,
+    removeMessage: removeWSMessage,
   } = useChatWebSocket({
     accessToken: session.user.accessToken,
     courseId,
@@ -141,11 +145,16 @@ const Chat: React.FC<ChatProps> = ({
       (pending) => !combinedMessages.some((msg) => msg.id === pending.id)
     );
 
-    return [...combinedMessages, ...pendingWithoutDuplicates].sort(
+    // Filter out locally deleted messages
+    const allCombined = [...combinedMessages, ...pendingWithoutDuplicates].filter(
+      (msg) => !deletedMessages.has(msg.id)
+    );
+
+    return allCombined.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [loadedMessages, wsMessages, pendingMessages]);
+  }, [loadedMessages, wsMessages, pendingMessages, deletedMessages]);
 
   // Effects
   useEffect(() => {
@@ -168,6 +177,10 @@ const Chat: React.FC<ChatProps> = ({
   useEffect(() => {
     resetMessages();
     setIsInitializing(true);
+    
+    // Clear deleted messages when switching courses
+    setDeletedMessages(new Set());
+    
     const timer = setTimeout(() => setIsInitializing(false), 300);
     return () => clearTimeout(timer);
   }, [courseId, resetMessages]);
@@ -292,22 +305,32 @@ const Chat: React.FC<ChatProps> = ({
     setDeletingMessages((prev) => new Set(prev).add(messageId));
 
     try {
-      removeMessage(messageId);
+      // First make the API call, only remove from UI if it succeeds
       await deleteMessage({ courseId, messageId }).unwrap();
+      
+      // API call succeeded, now remove from both UI sources
+      removeMessage(messageId); // Remove from infinite scroll messages
+      removeWSMessage(messageId); // Remove from WebSocket messages
+      
+      // Add to deleted messages set to prevent reappearing
+      setDeletedMessages((prev) => new Set(prev).add(messageId));
+      
+      // Clean up deleting state
+      setDeletingMessages((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(messageId);
+        return newSet;
+      });
     } catch (error) {
       toast.error("Failed to delete message. Please try again.");
+      
+      // API call failed, keep message in UI and clean up deleting state
       setDeletingMessages((prev) => {
         const newSet = new Set(prev);
         newSet.delete(messageId);
         return newSet;
       });
     }
-
-    setDeletingMessages((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(messageId);
-      return newSet;
-    });
   };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {

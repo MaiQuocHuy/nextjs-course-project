@@ -1,19 +1,18 @@
-import { Badge } from '@/components/ui/badge';
-import { TableCell, TableRow } from '@/components/ui/table';
-import { RefundActions } from './RefundActions';
+import { Badge } from "@/components/ui/badge";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { RefundActions } from "./RefundActions";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import type { RefundResponse } from '@/types/instructor/refunds';
+} from "@/components/ui/tooltip";
+import type { RefundResponse } from "@/types/instructor/refunds";
 import {
   formatCurrency,
   formatDate,
   formatPaymentId,
   getStatusVariant,
-  isRefundExpired,
-} from '@/utils/instructor/refunds';
+} from "@/utils/instructor/refunds";
 
 interface RefundRowProps {
   index: number;
@@ -24,7 +23,7 @@ interface RefundRowProps {
 }
 
 const ViewRefundDetail = (id: string) => {
-  window.open(`/instructor/refunds/${id}`, '_blank');
+  window.open(`/instructor/refunds/${id}`, "_blank");
 };
 
 export const RefundRow = ({
@@ -34,7 +33,6 @@ export const RefundRow = ({
   currentPage,
   itemsPerPage,
 }: RefundRowProps) => {
-  const isExpired = isRefundExpired(refund);
   return (
     <TableRow
       className="hover:bg-gray-200 cursor-pointer"
@@ -70,13 +68,7 @@ export const RefundRow = ({
 
       {/* Status */}
       <TableCell>
-        <Badge
-          variant={getStatusVariant(
-            isExpired && refund.status === 'PENDING' ? 'EXPIRED' : refund.status
-          )}
-        >
-          {isExpired && refund.status === 'PENDING' ? 'EXPIRED' : refund.status}
-        </Badge>
+        <Badge variant={getStatusVariant(refund.status)}>{refund.status}</Badge>
       </TableCell>
 
       {/* Requested Dates */}

@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,28 +20,39 @@ import { Search, Filter, SortAsc, Loader2 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store/hook";
 import {
   setSearchQuery,
-  setFilter,
-  setSort,
+  setProgressFilter,
+  setSortBy,
+  setSortDirection,
   resetFilters,
   CourseFilterStatus,
   CourseSortBy,
+  SortDirection,
 } from "@/store/slices/student/courseFilterSlice";
 import {
   getFilterStatusLabel,
   getSortByLabel,
+  getSortDirectionLabel,
 } from "@/types/student/courseFilter";
 import { useDebounce } from "@/hooks/useDebounce";
 
-export function CourseFilter() {
+export interface CourseFilterRef {
+  resetFilters: () => void;
+}
+
+export const CourseFilter = forwardRef<CourseFilterRef>((props, ref) => {
   const dispatch = useAppDispatch();
   const {
     searchQuery: reduxSearchQuery,
-    filter,
-    sort,
+    progressFilter,
+    sortBy,
+    sortDirection,
   } = useAppSelector((state) => state.courseFilter);
 
   // Local state for immediate UI updates
   const [localSearchQuery, setLocalSearchQuery] = useState(reduxSearchQuery);
+
+  // Ref to track if we're currently resetting
+  const isResettingRef = useRef(false);
 
   // Debounce the search query with 400ms delay
   const [debouncedSearchQuery] = useDebounce(localSearchQuery, 400);
@@ -47,6 +64,12 @@ export function CourseFilter() {
 
   // Dispatch to Redux when debounced value changes
   useEffect(() => {
+    // Don't dispatch if we're currently resetting
+    if (isResettingRef.current) {
+      isResettingRef.current = false;
+      return;
+    }
+
     if (debouncedSearchQuery !== reduxSearchQuery) {
       dispatch(setSearchQuery(debouncedSearchQuery));
     }
@@ -59,18 +82,31 @@ export function CourseFilter() {
     setLocalSearchQuery(value);
   };
 
-  const handleFilterChange = (value: string) => {
-    dispatch(setFilter(value as CourseFilterStatus));
+  const handleProgressFilterChange = (value: string) => {
+    dispatch(setProgressFilter(value as CourseFilterStatus));
   };
 
-  const handleSortChange = (value: string) => {
-    dispatch(setSort(value as CourseSortBy));
+  const handleSortByChange = (value: string) => {
+    dispatch(setSortBy(value as CourseSortBy));
+  };
+
+  const handleSortDirectionChange = (value: string) => {
+    dispatch(setSortDirection(value as SortDirection));
   };
 
   const handleReset = () => {
+    // Set flag to prevent debounced effect from overriding reset
+    isResettingRef.current = true;
+    // Reset local search state immediately
+    setLocalSearchQuery("");
+    // Reset Redux state
     dispatch(resetFilters());
-    setLocalSearchQuery(""); // Reset local state immediately
   };
+
+  // Expose reset function to parent components
+  useImperativeHandle(ref, () => ({
+    resetFilters: handleReset,
+  }));
 
   return (
     <div className="bg-card border rounded-lg p-4">
@@ -90,10 +126,13 @@ export function CourseFilter() {
           />
         </div>
 
-        {/* Filter Dropdown */}
+        {/* Progress Filter Dropdown */}
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select onValueChange={handleFilterChange} value={filter}>
+          <Select
+            onValueChange={handleProgressFilterChange}
+            value={progressFilter}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
@@ -114,10 +153,10 @@ export function CourseFilter() {
           </Select>
         </div>
 
-        {/* Sort Dropdown */}
+        {/* Sort By Dropdown */}
         <div className="flex items-center gap-2">
           <SortAsc className="h-4 w-4 text-muted-foreground" />
-          <Select onValueChange={handleSortChange} value={sort}>
+          <Select onValueChange={handleSortByChange} value={sortBy}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -138,6 +177,26 @@ export function CourseFilter() {
           </Select>
         </div>
 
+        {/* Sort Direction Dropdown */}
+        <div className="flex items-center gap-2">
+          <Select
+            onValueChange={handleSortDirectionChange}
+            value={sortDirection}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Order" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={SortDirection.DESC}>
+                {getSortDirectionLabel(SortDirection.DESC)}
+              </SelectItem>
+              <SelectItem value={SortDirection.ASC}>
+                {getSortDirectionLabel(SortDirection.ASC)}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Reset Button */}
         <Button variant="outline" onClick={handleReset} className="shrink-0">
           Reset
@@ -145,4 +204,6 @@ export function CourseFilter() {
       </div>
     </div>
   );
-}
+});
+
+CourseFilter.displayName = "CourseFilter";

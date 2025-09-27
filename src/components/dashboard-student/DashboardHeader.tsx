@@ -83,13 +83,13 @@ export function DashboardHeader() {
                   Welcome, {user?.name || "Student"}!
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Completed {dashboardStats?.lessonsCompleted || 0} of{" "}
+                  Completed {dashboardStats?.lessonsCompleted || 0}/
                   {dashboardStats?.totalLessons || 0} lessons
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
               <div className="hidden sm:flex items-center gap-4 text-sm mr-4">
                 <div className="text-center">
                   <div className="font-medium">

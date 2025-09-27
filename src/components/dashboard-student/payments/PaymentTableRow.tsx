@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { useGetPaymentDetailQuery } from "@/services/student/studentApi";
+import {
+  useGetPaymentDetailQuery,
+  useGetCourseProgressQuery,
+} from "@/services/student/studentApi";
 import { RefundDialog } from "./RefundDialog";
 import type { Payment } from "@/types/student";
 import Image from "next/image";
@@ -50,18 +53,41 @@ export function PaymentTableRow({ payment }: PaymentTableRowProps) {
     skip: !isExpanded, // Don't fetch unless expanded
   });
 
+  // Fetch course progress to check completion percentage
+  const {
+    data: courseProgress,
+    isLoading: isProgressLoading,
+    error: progressError,
+  } = useGetCourseProgressQuery(payment.course.id, {
+    skip: payment.status !== "COMPLETED", // Only fetch if payment is completed
+  });
+
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
   };
 
-  // Calculate if refund is still allowed (within 3 days)
+  // Calculate if refund is still allowed (within 3 days and course completion < 30%)
   const isRefundAllowed = () => {
+    // Check if payment is completed
+    if (payment.status !== "COMPLETED") {
+      return false;
+    }
+
+    // Check if within 3 days of purchase
     const paymentDate = new Date(payment.createdAt);
     const currentDate = new Date();
     const diffInDays = Math.floor(
       (currentDate.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    return diffInDays <= 3 && payment.status === "COMPLETED";
+    const isWithin3Days = diffInDays <= 3;
+
+    // Check if course completion is less than or equal to 30% (0.3 as decimal)
+    const courseCompletionPercentage = courseProgress?.summary?.percentage || 0;
+    // Convert percentage to decimal for comparison (percentage / 100)
+    const completionAsDecimal = courseCompletionPercentage / 100;
+    const isCompletionUnder30Percent = completionAsDecimal <= 0.3;
+
+    return isWithin3Days && isCompletionUnder30Percent;
   };
 
   const canRefund = isRefundAllowed();
@@ -286,22 +312,66 @@ export function PaymentTableRow({ payment }: PaymentTableRowProps) {
                   </div>
 
                   {/* Action Buttons */}
-                  {canRefund && (
+                  {payment.status === "COMPLETED" && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex justify-end">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setIsRefundDialogOpen(true)}
-                          className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                          disabled={!canRefund || isProgressLoading}
+                          className={cn(
+                            canRefund && !isProgressLoading
+                              ? "text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                              : "text-gray-400 border-gray-200 cursor-not-allowed opacity-50"
+                          )}
                         >
                           <Undo2 className="h-4 w-4 mr-2" />
-                          Request Refund
+                          {isProgressLoading ? "Checking..." : "Request Refund"}
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2 text-right">
-                        Refunds must be requested within 3 days of purchase
-                      </p>
+                      <div className="text-xs text-gray-500 mt-2 text-right space-y-1">
+                        <p>
+                          Refunds must be requested within 3 days of purchase
+                        </p>
+                        <p>and course completion must be 30% or less</p>
+                        {!canRefund && courseProgress && (
+                          <p className="text-red-500 font-medium">
+                            {(() => {
+                              const paymentDate = new Date(payment.createdAt);
+                              const currentDate = new Date();
+                              const diffInDays = Math.floor(
+                                (currentDate.getTime() -
+                                  paymentDate.getTime()) /
+                                  (1000 * 60 * 60 * 24)
+                              );
+                              const isWithin3Days = diffInDays <= 3;
+                              const courseCompletionPercentage =
+                                courseProgress.summary?.percentage || 0;
+                              const completionAsDecimal =
+                                courseCompletionPercentage / 100;
+                              const isCompletionUnder30Percent =
+                                completionAsDecimal <= 0.3;
+
+                              if (
+                                !isWithin3Days &&
+                                !isCompletionUnder30Percent
+                              ) {
+                                return `Refund not available: ${diffInDays} days since purchase, ${courseCompletionPercentage.toFixed(
+                                  1
+                                )}% completed`;
+                              } else if (!isWithin3Days) {
+                                return `Refund not available: ${diffInDays} days since purchase (max 3 days)`;
+                              } else if (!isCompletionUnder30Percent) {
+                                return `Refund not available: ${courseCompletionPercentage.toFixed(
+                                  1
+                                )}% completed (max 30%)`;
+                              }
+                              return "Refund not available";
+                            })()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
