@@ -69,7 +69,7 @@ export interface CoursesFilter {
   page?: number;
   size?: number;
   search?: string;
-  categoryId?: string;
+  categoryIds?: string[];
   minPrice?: number;
   maxPrice?: number;
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
@@ -111,6 +111,11 @@ export interface CourseReview {
   reviewText: string;
   reviewedAt: string;
   user: UserSummary;
+}
+
+export interface SubmitReviewRequest {
+  rating: number;
+  review_text: string;
 }
 
 export interface PageInfo {
@@ -155,9 +160,13 @@ export const coursesApi = createApi({
           console.log('Adding search filter:', filters.search.trim());
         }
 
-        if (filters.categoryId?.trim()) {
-          params.append('categoryId', filters.categoryId.trim());
-          console.log('Adding categoryId filter:', filters.categoryId.trim());
+        if (filters.categoryIds && filters.categoryIds.length > 0) {
+          filters.categoryIds.forEach(categoryId => {
+            if (categoryId.trim()) {
+              params.append('categoryIds', categoryId.trim());
+            }
+          });
+          console.log('Adding categoryIds filter:', filters.categoryIds);
         }
 
         // Quan trọng: Chỉ thêm price filters khi khác undefined
@@ -285,6 +294,26 @@ export const coursesApi = createApi({
         { type: 'CourseReview', id: slug },
       ],
     }),
+
+    // Submit a review for a course
+    submitCourseReview: builder.mutation<CourseReview, { courseId: string; review: SubmitReviewRequest }>({
+      query: ({ courseId, review }) => ({
+        url: `/courses/${courseId}/reviews`,
+        method: 'POST',
+        body: review,
+      }),
+      transformResponse: (response: ApiResponse<CourseReview>) => {
+        console.log('Submit Review API Response:', response);
+        if (response.statusCode !== 201 && response.statusCode !== 200) {
+          throw new Error(response.message || 'Failed to submit review');
+        }
+        return response.data;
+      },
+      invalidatesTags: (result, error, { courseId }) => [
+        { type: 'CourseReview', id: courseId },
+        { type: 'Course', id: courseId },
+      ],
+    }),
   }),
 });
 
@@ -295,4 +324,5 @@ export const {
   useLazyGetCoursesQuery,
   useGetCategoriesQuery,
   useGetCourseReviewsBySlugQuery,
+  useSubmitCourseReviewMutation,
 } = coursesApi;

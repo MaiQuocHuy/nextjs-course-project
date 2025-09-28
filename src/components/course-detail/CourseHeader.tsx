@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Star,
   Users,
-  Clock,
   BookOpen,
   Award,
   Play,
@@ -53,11 +52,6 @@ export function CourseHeader({
       return `${(count / 1000).toFixed(1)}k`;
     }
     return count.toString();
-  };
-
-  const getDurationInHours = () => {
-    // Estimate 1 hour per section on average
-    return course.sectionCount || 5;
   };
 
   const getLevelBadgeColor = (level: string) => {
@@ -133,10 +127,6 @@ export function CourseHeader({
                 This course includes:
               </p>
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                  <span>{getDurationInHours()} hours on-demand video</span>
-                </div>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-blue-600" />
                   <span>{course.sectionCount} sections</span>
@@ -281,11 +271,6 @@ export function CourseHeader({
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
                   <span>{course.sections?.length} sections</span>
-                </div>
-                {/* TODO: Implement duration calculation */}
-                <div className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  <span>{getDurationInHours()}h total</span>
                 </div>
               </div>
             </div>

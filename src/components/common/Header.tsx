@@ -138,8 +138,8 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Desktop Navigation & Search */}
-        <div className="hidden lg:flex items-center space-x-8">
+        {/* Desktop & Tablet Navigation & Search */}
+        <div className="hidden md:flex items-center space-x-8">
           <nav className="flex items-center space-x-1">
             {navigation.map((item) => (
               <NavLink key={item.name} href={item.href}>
@@ -148,7 +148,7 @@ export function Header() {
             ))}
           </nav>
 
-          <SearchBar className="w-80 transition-all duration-300 focus-within:scale-105 focus-within:shadow-lg relative z-[100]" />
+          <SearchBar className="hidden lg:block w-80 transition-all duration-300 focus-within:scale-105 focus-within:shadow-lg relative z-[100]" />
         </div>
 
         {/* Right side - Desktop & Tablet */}
@@ -258,7 +258,7 @@ export function Header() {
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex sm:hidden items-center space-x-2">
+        <div className="flex md:hidden items-center space-x-2">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button
