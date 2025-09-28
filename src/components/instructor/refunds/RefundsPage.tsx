@@ -1,34 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from 'react';
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   SearchBar,
   FilterBar,
   Pagination,
   EmptyState,
-} from "@/components/instructor/refunds/shared";
-import { RefundsTable } from "@/components/instructor/refunds/RefundsTable";
-import { useGetAllRefundsQuery } from "@/services/instructor/refunds/refunds-ins-api";
-import { TableLoadingSkeleton, RefundsSkeleton } from "./skeletons/index";
-import { TableLoadingError } from "./shared/LoadingError";
-import { RefreshCcw } from "lucide-react";
-import { toast } from 'sonner';
+} from '@/components/instructor/refunds/shared';
+import { RefundsTable } from '@/components/instructor/refunds/RefundsTable';
+import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
+import { RefundsSkeleton } from './skeletons/index';
+import { TableLoadingError } from './shared/LoadingError';
+import { RefreshCcw } from 'lucide-react';
 
-type RefundStatus = 'ALL' | 'PENDING' | 'COMPLETED' | 'FAILED';
-type RefundDateRange = { from: string | null; to: string | null };
 type Filters = {
   search: string;
-  statusFilter: RefundStatus;
-  dateRange: RefundDateRange;
-  search: string;
-  status: "PENDING" | "COMPLETED" | "FAILED" | null;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | null;
   fromDate: string | null;
   toDate: string | null;
 };
 
 const initFilterValues: Filters = {
-  search: "",
+  search: '',
   status: null,
   fromDate: null,
   toDate: null,
@@ -66,7 +60,7 @@ const RefundsPage = () => {
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.search !== "" ||
+      filters.search !== '' ||
       filters.status !== null ||
       filters.fromDate !== null ||
       filters.toDate !== null
@@ -82,20 +76,8 @@ const RefundsPage = () => {
   }, []);
 
   const resetFilters = useCallback(() => {
-    setIsFiltering(true);
     setFilters(initFilterValues);
   }, []);
-
-  useEffect(() => {
-    setIsFiltering(true);
-    setCurrentPage(0); // Reset to first page on filter change
-  }, [filters]);
-
-  useEffect(() => {
-    if (refundsData) {
-      setIsFiltering(false);
-    }
-  }, [refundsData]);
 
   if (isLoading) {
     return <RefundsSkeleton />;
@@ -130,15 +112,15 @@ const RefundsPage = () => {
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
-                statusFilter={filters.status || "ALL"}
+                statusFilter={filters.status || 'ALL'}
                 dateRange={{ from: filters.fromDate, to: filters.toDate }}
                 onStatusFilterChange={(status) => {
                   setFilters((prev) => ({
                     ...prev,
                     status:
-                      status === "ALL"
+                      status === 'ALL'
                         ? null
-                        : (status as "PENDING" | "COMPLETED" | "FAILED"),
+                        : (status as 'PENDING' | 'COMPLETED' | 'FAILED'),
                   }));
                   setCurrentPage(0); // Reset to first page when filtering
                 }}
@@ -196,7 +178,7 @@ const RefundsPage = () => {
         </div>
       ) : (
         <EmptyState
-          type={hasActiveFilters ? "no-results" : "no-data"}
+          type={hasActiveFilters ? 'no-results' : 'no-data'}
           clearFilters={resetFilters}
         />
       )}
