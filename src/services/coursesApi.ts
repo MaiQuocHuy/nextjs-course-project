@@ -113,6 +113,11 @@ export interface CourseReview {
   user: UserSummary;
 }
 
+export interface SubmitReviewRequest {
+  rating: number;
+  review_text: string;
+}
+
 export interface PageInfo {
   number: number;
   size: number;
@@ -289,6 +294,26 @@ export const coursesApi = createApi({
         { type: 'CourseReview', id: slug },
       ],
     }),
+
+    // Submit a review for a course
+    submitCourseReview: builder.mutation<CourseReview, { courseId: string; review: SubmitReviewRequest }>({
+      query: ({ courseId, review }) => ({
+        url: `/courses/${courseId}/reviews`,
+        method: 'POST',
+        body: review,
+      }),
+      transformResponse: (response: ApiResponse<CourseReview>) => {
+        console.log('Submit Review API Response:', response);
+        if (response.statusCode !== 201 && response.statusCode !== 200) {
+          throw new Error(response.message || 'Failed to submit review');
+        }
+        return response.data;
+      },
+      invalidatesTags: (result, error, { courseId }) => [
+        { type: 'CourseReview', id: courseId },
+        { type: 'Course', id: courseId },
+      ],
+    }),
   }),
 });
 
@@ -299,4 +324,5 @@ export const {
   useLazyGetCoursesQuery,
   useGetCategoriesQuery,
   useGetCourseReviewsBySlugQuery,
+  useSubmitCourseReviewMutation,
 } = coursesApi;

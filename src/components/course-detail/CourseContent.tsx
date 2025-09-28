@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewForm } from "./ReviewForm";
 import {
   Accordion,
   AccordionContent,
@@ -41,12 +42,12 @@ export function CourseContent({
   isEnrolled,
   className = "",
 }: CourseContentProps) {
-
   // Fetch reviews data
   const {
     data: reviewsData,
     isLoading: reviewsLoading,
     error: reviewsError,
+    refetch: refetchReviews,
   } = useGetCourseReviewsBySlugQuery(course.slug);
 
   // Calculate average rating from reviews
@@ -147,7 +148,7 @@ export function CourseContent({
   // };
 
   // Mock data if no sections provided
-  
+
   const displaySections =
     sections.length > 0
       ? sections
@@ -546,6 +547,15 @@ export function CourseContent({
         </TabsContent>
 
         <TabsContent value="reviews" className="space-y-6">
+          {/* Review Form */}
+          <ReviewForm
+            courseId={course.id}
+            onReviewSubmitted={() => {
+              // Refetch reviews when a new review is submitted
+              refetchReviews();
+            }}
+          />
+
           {/* Rating Summary */}
           <Card>
             <CardHeader>
