@@ -217,7 +217,7 @@ export default function CourseContent({
   } = form;
 
   const watchedSections = watch('sections');
-  
+
   // Get input errors
   useEffect(() => {
     const formData = form.getValues();
@@ -776,7 +776,7 @@ export default function CourseContent({
                 <>
                   {/* Lesson video */}
                   {lesson.video && lesson.video.file && (
-                    <VideoUpload videoFile={lesson.video.file} />
+                    <VideoUpload videoFile={lesson.video.file} mode="view" />
                   )}
 
                   {/* Quiz questions preview in view mode */}
@@ -884,6 +884,7 @@ export default function CourseContent({
                               onVideoChange={(file) => {
                                 field.onChange(file);
                               }}
+                              mode="edit"
                             />
                           </FormControl>
                           <FormMessage />
@@ -1638,7 +1639,7 @@ export default function CourseContent({
       if (validationResult.success) {
         setLessonsData(validationResult.data);
         setStep('review');
-      } else {        
+      } else {
         toast.error(
           validationResult.error.issues[0].message ||
             'Please check the form for validation errors'

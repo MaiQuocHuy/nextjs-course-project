@@ -59,8 +59,6 @@ import {
   useDeleteCourseMutation,
   useUpdateCourseStatusMutation,
 } from '@/services/instructor/courses/courses-api';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';

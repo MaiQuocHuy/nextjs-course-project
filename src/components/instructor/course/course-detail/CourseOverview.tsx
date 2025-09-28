@@ -94,16 +94,18 @@ const CourseOverview = ({ isEdittingCourse }: CourseHeaderProps) => {
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-4">
                   {/* Categories */}
-                  {courseInfo.categories.map((cat) => (
-                    <Badge key={cat.id} variant="secondary">
-                      <BookOpen className="h-4 w-4" />
-                      {cat.name.charAt(0).toUpperCase() +
-                        cat.name.slice(1)}{' '}
-                    </Badge>
-                  ))}
+                  <div className="flex flex-wrap gap-2">
+                    {courseInfo.categories.map((cat) => (
+                      <Badge key={cat.id} variant="secondary">
+                        <BookOpen className="h-4 w-4" />
+                        {cat.name.charAt(0).toUpperCase() +
+                          cat.name.slice(1)}{' '}
+                      </Badge>
+                    ))}
+                  </div>
 
+                <div className="flex flex-wrap gap-4">
                   {/* Course Level */}
                   <Badge variant="outline">{courseInfo.level}</Badge>
 

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Users, Mail } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { Students } from '@/types/instructor/students';
 import { useGetEnrolledStudentsQuery } from '@/services/instructor/students/students-ins-api';
 import { EnrolledStudentList } from './EnrolledStudentList';

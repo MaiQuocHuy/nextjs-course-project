@@ -13,8 +13,10 @@ import {
   Trash2,
   Eye,
 } from 'lucide-react';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
+import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
@@ -48,10 +50,7 @@ import {
 } from '@/services/instructor/courses/courses-api';
 import { Course, CoursesFilter } from '@/types/instructor/courses/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
-import { useRouter } from 'next/navigation';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
-import { toast } from 'sonner';
+
 import WarningAlert from '../commom/WarningAlert';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 import { ErrorComponent } from '../commom/ErrorComponent';
@@ -59,8 +58,6 @@ import { CoursesSkeleton } from './skeletons/index';
 import { CoursesGridSkeleton } from './skeletons/index';
 import { useGetMinAndMaxPrice } from '@/hooks/instructor/useGetMinAndMaxPrice';
 import { Pagination } from '@/components/common/Pagination';
-import { set } from 'zod';
-import { de } from 'zod/v4/locales';
 
 const coursesParams: CoursesFilter = {
   page: 0,
@@ -75,7 +72,6 @@ export const CoursesPage = () => {
   const [filters, setFilters] = useState(coursesParams);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isGridLoading, setIsGridLoading] = useState(false);
-  const [isClearFilters, setIsClearFilters] = useState(false);
   const priceRangeInit = useRef({
     isInit: false,
     minPrice: 0,
@@ -603,12 +599,12 @@ export const CoursesPage = () => {
       ) : courses && courses.content.length > 0 ? (
         <div className="space-y-2">
           {/* Total courses */}
-          <div>
+          {/* <div>
             <span className="text-base">Total Courses:</span>{' '}
             <span className="text-lg font-semibold">
               {courses.content.length}
             </span>
-          </div>
+          </div> */}
 
           <div className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
