@@ -1,3 +1,5 @@
+import { CommonFilters } from "../common";
+
 // Get all refunds
 export interface RefundsFilter {
   page?: number;

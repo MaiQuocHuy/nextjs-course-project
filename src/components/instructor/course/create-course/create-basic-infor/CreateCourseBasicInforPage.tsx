@@ -59,8 +59,6 @@ import {
   useDeleteCourseMutation,
   useUpdateCourseStatusMutation,
 } from '@/services/instructor/courses/courses-api';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
@@ -435,8 +433,8 @@ export function CreateCourseBasicInforPage({
                     >
                       {isUpdating ? (
                         <>
-                          <span>Updating...</span>
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          <span>Updating</span>
                         </>
                       ) : (
                         'Save changes'
@@ -695,6 +693,7 @@ export function CreateCourseBasicInforPage({
                         label="Course Thumbnail"
                         imageFileName={imageFile && imageFile.name}
                         required
+                        isLoading={isLoading}
                       />
                     </FormControl>
                     {errors.file && (
@@ -714,7 +713,7 @@ export function CreateCourseBasicInforPage({
               <Button type="submit" disabled={isValid === false || isLoading}>
                 {isCreating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                     <span>Creating Course</span>
                   </>
                 ) : (
