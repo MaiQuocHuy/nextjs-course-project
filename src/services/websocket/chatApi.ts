@@ -71,8 +71,9 @@ export const chatApi = createApi({
         url: `/chat/${courseId}/messages/${messageId}`,
         method: "DELETE",
       }),
-      // Invalidate cache to refetch messages after delete
-      invalidatesTags: ["ChatMessage"],
+      // Don't invalidate cache since we're handling UI updates manually
+      // and WebSocket will notify of real-time changes
+      // invalidatesTags: ["ChatMessage"],
     }),
   }),
 });
