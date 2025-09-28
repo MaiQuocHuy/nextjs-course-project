@@ -50,11 +50,42 @@ export const studentApi = createApi({
     "AffiliatePayout",
   ],
   endpoints: (builder) => ({
-    getEnrolledCourses: builder.query<PaginatedCourses, void>({
-      query: () => ({
-        url: "/student/courses",
-        method: "GET",
-      }),
+    getEnrolledCourses: builder.query<
+      PaginatedCourses,
+      {
+        search?: string;
+        progressFilter?: string;
+        status?: string;
+        sortBy?: string;
+        sortDirection?: string;
+        page?: number;
+        size?: number;
+      }
+    >({
+      query: ({
+        search,
+        progressFilter,
+        status,
+        sortBy = "recent",
+        sortDirection = "desc",
+        page = 0,
+        size = 20,
+      } = {}) => {
+        const params = new URLSearchParams();
+        
+        if (search?.trim()) params.append("search", search.trim());
+        if (progressFilter) params.append("progressFilter", progressFilter);
+        if (status) params.append("status", status);
+        params.append("sortBy", sortBy);
+        params.append("sortDirection", sortDirection);
+        params.append("page", page.toString());
+        params.append("size", size.toString());
+
+        return {
+          url: `/student/courses?${params.toString()}`,
+          method: "GET",
+        };
+      },
       providesTags: ["Course"],
       transformResponse: (response: { data: PaginatedCourses }) => {
         return response.data;

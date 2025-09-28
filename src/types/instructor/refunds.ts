@@ -1,11 +1,13 @@
 import { CommonFilters } from "../common";
 
 // Get all refunds
-export interface RefundsFilter extends CommonFilters{
+export interface RefundsFilter {
+  page?: number;
+  size?: number;
   search?: string;
-  status?: 'PENDING' | 'COMPLETED' | 'FAILED';
-  fromDate?: string; // ISO date string
-  toDate?: string;   // ISO date string
+  status?: "PENDING" | "COMPLETED" | "FAILED";
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface PaymentUser {
@@ -37,7 +39,7 @@ export interface RefundResponse {
   reason: string;
   rejectedReason: string | null;
   amount: number;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  status: "PENDING" | "COMPLETED" | "FAILED";
   requestedAt: string;
   processedAt: string | null;
 }
@@ -58,7 +60,7 @@ export interface PaymentCourseDetail extends PaymentCourse {
     email: string;
     thumbnailUrl: string;
   };
-  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
   price: number;
 }
 
@@ -67,7 +69,7 @@ export interface PaymentDetailResponse {
   user: PaymentUser;
   amount: number;
   currency: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  status: "PENDING" | "COMPLETED" | "FAILED";
   paymentMethod: string;
   createdAt: string;
   paidAt: string | null;
@@ -94,7 +96,7 @@ export interface RefundDetailResponse {
 // Update Refund Status
 export interface UpdateRefundStatusRequest {
   id: string;
-  status: 'COMPLETED' | 'FAILED';
+  status: "COMPLETED" | "FAILED";
   rejectedReason?: string;
 }
 

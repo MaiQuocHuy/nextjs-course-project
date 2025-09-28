@@ -14,6 +14,11 @@ export enum CourseSortBy {
   PROGRESS = "progress",
 }
 
+export enum SortDirection {
+  ASC = "asc",
+  DESC = "desc",
+}
+
 // Helper functions for display labels
 export const getFilterStatusLabel = (status: CourseFilterStatus): string => {
   switch (status) {
@@ -35,11 +40,22 @@ export const getSortByLabel = (sortBy: CourseSortBy): string => {
     case CourseSortBy.RECENT:
       return "Recent";
     case CourseSortBy.TITLE:
-      return "Title A-Z";
+      return "Title";
     case CourseSortBy.INSTRUCTOR:
       return "Instructor";
     case CourseSortBy.PROGRESS:
       return "Progress";
+    default:
+      return "Unknown";
+  }
+};
+
+export const getSortDirectionLabel = (direction: SortDirection): string => {
+  switch (direction) {
+    case SortDirection.ASC:
+      return "Ascending";
+    case SortDirection.DESC:
+      return "Descending";
     default:
       return "Unknown";
   }

@@ -10,6 +10,22 @@ import { LearningLoadingSkeleton } from "../ui/Loading";
 import { LearningPageError } from "../ui";
 import { ChatBubble } from "@/components/chat";
 import { toast } from "sonner";
+import {
+  getLessonSelectionStrategy,
+  findAccessibleLessonById,
+  findNextAccessibleLesson,
+} from "@/utils/student/lessonSelection";
+
+/**
+ * Learning Page Client Component
+ *
+ * Key improvements for lesson selection:
+ * 1. Always selects first UNLOCKED/COMPLETED lesson on course load
+ * 2. Validates saved lesson from localStorage is still accessible
+ * 3. Prevents selection of LOCKED lessons
+ * 4. Clears localStorage when switching between courses
+ * 5. Auto-updates lesson statuses when lessons are completed
+ */
 
 interface LearningPageClientProps {
   courseId: string;
@@ -32,6 +48,11 @@ export default function LearningPageClient({
     refetch,
   } = useCourseWithSections(courseId);
 
+  // Clear selected lesson when course changes
+  useEffect(() => {
+    setSelectedLessonId("");
+  }, [courseId]);
+
   // Load saved lesson from localStorage and set default lesson
   useEffect(() => {
     if (
@@ -39,39 +60,27 @@ export default function LearningPageClient({
       courseData.sections.length > 0 &&
       !selectedLessonId
     ) {
-      // First try to load saved lesson
+      // Get saved lesson from localStorage
       const savedLessonId = localStorage.getItem(lessonStorageKey);
-      if (savedLessonId) {
-        // Verify that the saved lesson still exists in the course
-        const lessonExists = courseData.sections.some((section) =>
-          section.lessons.some((lesson) => lesson.id === savedLessonId)
-        );
-        if (lessonExists) {
-          setSelectedLessonId(savedLessonId);
-          return;
-        }
+
+      // Use lesson selection strategy to determine which lesson to select
+      const { selectedLesson, strategy, reason } = getLessonSelectionStrategy(
+        courseData.sections,
+        savedLessonId
+      );
+
+      if (!selectedLesson) {
+        return;
+      }
+      // Clean up localStorage if we're not using the saved lesson
+      if (strategy !== "saved" && savedLessonId) {
+        localStorage.removeItem(lessonStorageKey);
       }
 
-      // If no saved lesson or saved lesson doesn't exist, find first accessible lesson
-      let firstAccessibleLesson = null;
-
-      // Find the first accessible lesson across all sections
-      for (const section of courseData.sections) {
-        for (const lesson of section.lessons) {
-          if (lesson.status === "COMPLETED" || lesson.status === "UNLOCKED") {
-            firstAccessibleLesson = lesson;
-            break;
-          }
-        }
-        if (firstAccessibleLesson) break;
-      }
-
-      if (firstAccessibleLesson) {
-        setSelectedLessonId(firstAccessibleLesson.id);
-        localStorage.setItem(lessonStorageKey, firstAccessibleLesson.id);
-      }
+      setSelectedLessonId(selectedLesson.id);
+      localStorage.setItem(lessonStorageKey, selectedLesson.id);
     }
-  }, [courseData?.sections, selectedLessonId, lessonStorageKey]);
+  }, [courseData?.sections, selectedLessonId, lessonStorageKey, courseId]);
 
   // Find current lesson and section
   const { currentLesson, currentSection } = useMemo(() => {
@@ -90,6 +99,19 @@ export default function LearningPageClient({
   }, [courseData?.sections, selectedLessonId]);
 
   const handleSelectLesson = (lessonId: string) => {
+    // Verify the lesson is accessible before selecting
+    if (courseData?.sections) {
+      const lessonToSelect = findAccessibleLessonById(
+        courseData.sections,
+        lessonId
+      );
+
+      if (!lessonToSelect) {
+        toast.error("This lesson is not yet available");
+        return;
+      }
+    }
+
     setSelectedLessonId(lessonId);
     // Save selected lesson to localStorage
     localStorage.setItem(lessonStorageKey, lessonId);
@@ -100,6 +122,8 @@ export default function LearningPageClient({
     // Callback from LearningContent - just log for now
     // The actual API call is handled in LearningContent component
     toast.success("Lesson marked as complete");
+    // Refetch course data to update lesson statuses
+    refetch();
   };
 
   if (isLoading) {

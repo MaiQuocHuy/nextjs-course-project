@@ -200,6 +200,11 @@ export const useChatWebSocket = (
     });
   }, []);
 
+  // Remove message function (for deletions)
+  const removeMessage = useCallback((messageId: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+  }, []);
+
   // Auto-connect / auto-disconnect when config.autoConnect changes
   useEffect(() => {
     const shouldAutoConnect = config.autoConnect !== false;
@@ -299,5 +304,6 @@ export const useChatWebSocket = (
     reconnect,
     clearMessages,
     addMessage,
+    removeMessage,
   };
 };
