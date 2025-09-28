@@ -28,6 +28,7 @@ const acceptedImageExtensions = [
 interface ImageUploadProps {
   imageFile?: File;
   onImageChange: (file: File | undefined) => void;
+  isLoading: boolean;
   maxSize?: number; // in bytes
   required?: boolean;
   imageFileName?: string;
@@ -37,6 +38,7 @@ interface ImageUploadProps {
 const ImageUpload = ({
   imageFile,
   onImageChange,
+  isLoading,
   maxSize = 10 * 1024 * 1024, // Default 10MB
   required = false,
   imageFileName = 'Upload image',
@@ -98,54 +100,55 @@ const ImageUpload = ({
       ) : (
         <>
           {imagePreviewUrl && (
-              <div className="grid gap-3">
-                <div
-                  className={cn(
-                    'relative group bg-card border rounded-lg p-4 transition-all duration-300',
-                    'hover:shadow-card hover:border-primary/30',
-                    'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20'
-                  )}
-                >
-                  <div className="space-y-4 px-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 flex-1 min-w-0">
-                        <ImageIcon className="w-4 h-4 text-blue-500" />
-                        <p className="font-medium truncate text-sm">
-                          {imageFileName}
-                        </p>
-                        <span className="text-sm text-muted-foreground">
-                          {formatFileSize(imageFile.size)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            if (imagePreviewUrl)
-                              URL.revokeObjectURL(imagePreviewUrl);
-                            onImageChange(undefined);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
+            <div className="grid gap-3">
+              <div
+                className={cn(
+                  'relative group bg-card border rounded-lg p-4 transition-all duration-300',
+                  'hover:shadow-card hover:border-primary/30',
+                  'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20'
+                )}
+              >
+                <div className="space-y-4 px-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      <ImageIcon className="w-4 h-4 text-blue-500" />
+                      <p className="font-medium truncate text-sm">
+                        {imageFileName}
+                      </p>
+                      <span className="text-sm text-muted-foreground">
+                        {formatFileSize(imageFile.size)}
+                      </span>
                     </div>
 
-                    <div className="relative w-full rounded-md overflow-hidden">
-                      <img
-                        src={imagePreviewUrl}
-                        alt="Uploaded image"
-                        className="w-full h-auto max-h-90"
-                      />
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (imagePreviewUrl)
+                            URL.revokeObjectURL(imagePreviewUrl);
+                          onImageChange(undefined);
+                        }}
+                        disabled={isLoading}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
+                  </div>
+
+                  <div className="relative w-full rounded-md overflow-hidden">
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Uploaded image"
+                      className="w-full h-auto max-h-90"
+                    />
                   </div>
                 </div>
               </div>
+            </div>
           )}
         </>
       )}

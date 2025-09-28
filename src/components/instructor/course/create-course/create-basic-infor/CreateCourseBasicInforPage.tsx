@@ -433,8 +433,8 @@ export function CreateCourseBasicInforPage({
                     >
                       {isUpdating ? (
                         <>
-                          <span>Updating...</span>
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          <span>Updating</span>
                         </>
                       ) : (
                         'Save changes'
@@ -693,6 +693,7 @@ export function CreateCourseBasicInforPage({
                         label="Course Thumbnail"
                         imageFileName={imageFile && imageFile.name}
                         required
+                        isLoading={isLoading}
                       />
                     </FormControl>
                     {errors.file && (
