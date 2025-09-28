@@ -133,4 +133,5 @@ export interface UseChatWebSocketReturn {
   reconnect: () => Promise<void>;
   clearMessages: () => void;
   addMessage: (message: ChatMessage) => void;
+  removeMessage: (messageId: string) => void;
 }

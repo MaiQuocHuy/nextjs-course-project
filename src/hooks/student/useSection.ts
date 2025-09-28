@@ -25,7 +25,7 @@ export function useCourseWithSections(courseId: string): {
     data: coursesData,
     isLoading: coursesLoading,
     error: coursesError,
-  } = useGetEnrolledCoursesQuery();
+  } = useGetEnrolledCoursesQuery({});
 
   // Get course progress
   const {
