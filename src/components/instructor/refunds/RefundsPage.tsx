@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,15 +13,18 @@ import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins
 import { TableLoadingSkeleton, RefundsSkeleton } from './skeletons/index';
 import { TableLoadingError } from './shared/LoadingError';
 import { RefreshCcw } from 'lucide-react';
+import { toast } from 'sonner';
 
+type RefundStatus = 'ALL' | 'PENDING' | 'COMPLETED' | 'FAILED';
+type RefundDateRange = { from: string | null; to: string | null };
 type Filters = {
-  searchQuery: string;
-  statusFilter: 'ALL' | 'PENDING' | 'COMPLETED' | 'FAILED';
-  dateRange: { from: string | null; to: string | null };
+  search: string;
+  statusFilter: RefundStatus;
+  dateRange: RefundDateRange;
 };
 
 const initFilterValues: Filters = {
-  searchQuery: '',
+  search: '',
   statusFilter: 'ALL',
   dateRange: { from: null, to: null },
 };
@@ -32,85 +35,75 @@ const RefundsPage = () => {
   const [filters, setFilters] = useState<Filters>(initFilterValues);
   const [isFiltering, setIsFiltering] = useState(false);
 
-  const { data, isLoading, error, refetch } = useGetAllRefundsQuery({
-    page: currentPage,
-    size: itemsPerPage,
-  });
+  const apiParams = useMemo(() => {
+    const searchQuery = filters.search.trim();
+    const statusFilter = filters.statusFilter;
+    const dataRange = filters.dateRange;
+
+    return {
+      page: currentPage,
+      size: itemsPerPage,
+      search: searchQuery !== '' ? searchQuery : undefined,
+      status: statusFilter !== 'ALL' ? statusFilter : undefined,
+      fromDate: dataRange.from || undefined,
+      toDate: dataRange.to || undefined,
+    };
+  }, [currentPage, itemsPerPage, filters]);
+
+  const {
+    data: refundsData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetAllRefundsQuery(apiParams);
 
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.searchQuery !== '' ||
+      filters.search !== '' ||
       filters.statusFilter !== 'ALL' ||
       filters.dateRange.from !== null ||
       filters.dateRange.to !== null
     );
   }, [
-    filters.searchQuery,
+    filters.search,
     filters.statusFilter,
     filters.dateRange.from,
     filters.dateRange.to,
   ]);
 
-  const filteredRefunds = useMemo(() => {
-    if (!data?.content || data.content.length === 0) {
-      return [];
-    }
-
-    setIsFiltering(true);
-
-    const result = data.content.filter((refund) => {
-      // Search: match id, payment id, or reason
-      if (filters.searchQuery !== '') {
-        const searchLower = String(filters.searchQuery).toLowerCase();
-        const matchesSearch =
-          refund.id.toLowerCase().includes(searchLower) ||
-          (refund.payment?.user?.name &&
-            refund.payment.user.name.toLowerCase().includes(searchLower)) ||
-          (refund.payment?.id &&
-            refund.payment.id.toLowerCase().includes(searchLower));
-        if (!matchesSearch) return false;
-      }
-
-      // Status filter
-      if (
-        filters.statusFilter !== 'ALL' &&
-        refund.status !== filters.statusFilter
-      ) {
-        return false;
-      }
-
-      // Date range filter (use requestedAt)
-      if (filters.dateRange.from || filters.dateRange.to) {
-        const refundDate = new Date(refund.requestedAt);
-        if (
-          filters.dateRange.from &&
-          refundDate < new Date(filters.dateRange.from)
-        ) {
-          return false;
-        }
-        if (
-          filters.dateRange.to &&
-          refundDate > new Date(filters.dateRange.to + ' 23:59:59')
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    setIsFiltering(false);
-    return result;
-  }, [data, filters]);
-
   const handleSearchChange = useCallback((query: string) => {
-    setFilters((prev) => ({ ...prev, searchQuery: query }));
+    setFilters((prev) => ({ ...prev, search: query }));
+  }, []);
+
+  const handleStatusFilter = useCallback((status: RefundStatus) => {
+    setFilters((prev) => ({ ...prev, statusFilter: status }));
+  }, []);
+
+  const handleSelectDateRange = useCallback((range: RefundDateRange) => {
+    // Check if the from date is after the to date
+    if (range.from && range.to && range.from > range.to) {
+      toast.error('Invalid date range: From date cannot be after To date');
+      return;
+    }
+    setFilters((prev) => ({ ...prev, dateRange: range }));
   }, []);
 
   const resetFilters = useCallback(() => {
+    setIsFiltering(true);
     setFilters(initFilterValues);
   }, []);
+
+  useEffect(() => {
+    setIsFiltering(true);
+    setCurrentPage(0); // Reset to first page on filter change
+  }, [filters]);
+
+  useEffect(() => {
+    if (refundsData) {
+      setIsFiltering(false);
+    }
+  }, [refundsData]);
 
   if (isLoading) {
     return <RefundsSkeleton />;
@@ -119,7 +112,7 @@ const RefundsPage = () => {
   if (error) {
     return <TableLoadingError onRetry={() => refetch()} />;
   }
-  
+
   return (
     <div className="container mx-auto p-4 lg:p-6 space-y-6">
       {/* Header */}
@@ -140,22 +133,16 @@ const RefundsPage = () => {
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <SearchBar
               placeholder="Search by refund id or student's name"
-              searchQuery={filters.searchQuery}
+              searchQuery={filters.search}
               onSearchChange={handleSearchChange}
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
                 statusFilter={filters.statusFilter}
                 dateRange={filters.dateRange}
-                onStatusFilterChange={(status) => {
-                  setFilters((prev) => ({ ...prev, statusFilter: status }));
-                }}
-                onDateRangeChange={(range) => {
-                  setFilters((prev) => ({ ...prev, dateRange: range }));
-                }}
-                onClearFilters={() => {
-                  setFilters(initFilterValues);
-                }}
+                onStatusFilterChange={(status) => handleStatusFilter(status)}
+                onDateRangeChange={(range) => handleSelectDateRange(range)}
+                onClearFilters={resetFilters}
               />
             </div>
           </div>
@@ -167,7 +154,7 @@ const RefundsPage = () => {
         <TableLoadingSkeleton />
       ) : (
         <>
-          {filteredRefunds.length > 0 ? (
+          {refundsData && refundsData.content.length > 0 ? (
             <div className="space-y-4">
               {/* Refresh button */}
               <Button
@@ -181,21 +168,23 @@ const RefundsPage = () => {
 
               {/* Refunds Table */}
               <RefundsTable
-                filteredRefunds={filteredRefunds}
+                filteredRefunds={refundsData.content}
                 currentPage={currentPage}
                 itemsPerPage={itemsPerPage}
               />
 
               {/* Pagination */}
-              {data && data.page && data.page.totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  pageInfo={data.page || null}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
-              )}
+              {refundsData &&
+                refundsData.page &&
+                refundsData.page.totalPages > 1 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    itemsPerPage={itemsPerPage}
+                    pageInfo={refundsData.page || null}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                  />
+                )}
             </div>
           ) : (
             <EmptyState

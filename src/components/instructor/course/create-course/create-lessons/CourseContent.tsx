@@ -116,6 +116,7 @@ export default function CourseContent({
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingContent, setIsCreatingContent] = useState(false);
   const [canSaveChanges, setCanSaveChanges] = useState(false);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -234,6 +235,7 @@ export default function CourseContent({
     }
   }, [form.formState]);
 
+  // Check if there are any ongoing saving operations
   useEffect(() => {
     if (
       isCreatingSection ||
@@ -279,6 +281,25 @@ export default function CourseContent({
     isDeletingSection,
     isDeletingLesson,
     isGeneratingQuizs,
+  ]);
+
+  // Check if there are any ongoing creating operations
+  useEffect(() => {
+    if (
+      isCreatingSection ||
+      isCreatingLesson ||
+      isCreatingLessonWithQuiz ||
+      isUpdatingCourseStatus
+    ) {
+      setIsCreatingContent(true);
+    } else {
+      setIsCreatingContent(false);
+    }
+  }, [
+    isCreatingSection,
+    isCreatingLesson,
+    isCreatingLessonWithQuiz,
+    isUpdatingCourseStatus,
   ]);
 
   // Check if there are any changes to enable save button
@@ -1004,18 +1025,25 @@ export default function CourseContent({
                                 )?.length
                               ) && (
                                 <Button
-                                  type="button"
-                                  onClick={() =>
+                                  // type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     generateQuizWithAI(
                                       sectionIndex,
                                       lessonIndex
-                                    )
-                                  }
+                                    );
+                                  }}
                                   disabled={isLoading}
                                 >
-                                  {isGeneratingQuizs
-                                    ? 'Generating quiz...'
-                                    : 'Generate Questions with AI'}
+                                  {isGeneratingQuizs ? (
+                                    <span className="flex items-center">
+                                      <Loader2 className="animate-spin h-4 w-4 mr-2" />{' '}
+                                      Generating quiz
+                                    </span>
+                                  ) : (
+                                    'Generate Questions with AI'
+                                  )}
                                 </Button>
                               )}
                             </div>
@@ -1345,12 +1373,14 @@ export default function CourseContent({
 
     try {
       let response = null;
+
       if (lesson.type === 'VIDEO' && lesson.video) {
         const lessonData = {
           title: lesson.title,
           type: lesson.type.toUpperCase(),
           videoFile: lesson.video.file,
         };
+
         response = await createLesson({
           sectionId: section.id,
           lessonData,
@@ -1359,9 +1389,6 @@ export default function CourseContent({
         const updatedLesson = {
           ...lesson,
           quiz: {
-            ...lesson.quiz,
-            // Remove documents from quiz
-            documents: undefined,
             // Remove id and orderIndex from questions
             questions: lesson.quiz?.questions?.map((question) => {
               const { id, orderIndex, ...rest } = question;
@@ -1369,11 +1396,13 @@ export default function CourseContent({
             }),
           },
         };
+
         const lessonData = {
           title: updatedLesson.title,
           type: updatedLesson.type,
           quiz: updatedLesson.quiz,
         };
+
         response = await createLessonWithQuiz({
           sectionId: section.id,
           data: lessonData,
@@ -1710,9 +1739,7 @@ export default function CourseContent({
         sections={sections}
         onBackToEdit={() => setStep('create')}
         handleFinalSubmit={handleFinalSubmit}
-        isCreating={
-          isCreatingSection || isCreatingLesson || isUpdatingCourseStatus
-        }
+        isCreating={isCreatingContent}
       />
     );
   }

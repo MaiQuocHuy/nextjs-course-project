@@ -16,12 +16,32 @@ export const refundsInstSlice = createApi({
   endpoints: (builder) => ({
     // Get all refunds for instructor with pagination
     getAllRefunds: builder.query<PaginatedData<RefundResponse>, RefundsFilter>({
-      query: (params = {}) => ({
-        url: `/instructor/refund?page=${params.page || 0}&size=${
+      query: (params = {}) => {        
+        let url = `/instructor/refund?page=${params.page || 0}&size=${
           params.size || 10
-        }`,
-        method: 'GET',
-      }),
+        }`;
+
+        if (params.search) {
+          url += `&search=${params.search}`;
+        }
+
+        if (params.status) {
+          url += `&status=${params.status}`;
+        }
+
+        if (params.fromDate) {
+          url += `&fromDate=${params.fromDate}`;
+        }
+
+        if (params.toDate) {
+          url += `&toDate=${params.toDate}`;
+        }
+
+        return {
+          url,
+          method: 'GET',
+        };
+      },
       transformResponse: (
         response: ApiResponse<PaginatedData<RefundResponse>>
       ) => {
@@ -40,11 +60,14 @@ export const refundsInstSlice = createApi({
     }),
 
     // Get refund by id
-    getRefundById: builder.query<ApiResponse<RefundDetailResponse>, string>({
+    getRefundById: builder.query<RefundDetailResponse, string>({
       query: (refundId) => `/instructor/refund/${refundId}`,
       providesTags: (_result, _error, refundId) => [
         { type: 'Refunds', id: refundId },
       ],
+      transformResponse: (response: ApiResponse<RefundDetailResponse>) => {
+        return response.data;
+      }
     }),
 
     // Update refund status

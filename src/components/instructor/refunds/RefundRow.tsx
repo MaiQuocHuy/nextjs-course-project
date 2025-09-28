@@ -75,7 +75,9 @@ export const RefundRow = ({
             isExpired && refund.status === 'PENDING' ? 'EXPIRED' : refund.status
           )}
         >
-          {isExpired && refund.status === 'PENDING' ? 'EXPIRED' : refund.status}
+          {isExpired && refund.status === 'PENDING'
+            ? 'PENDING (EXPIRED)'
+            : refund.status}
         </Badge>
       </TableCell>
 

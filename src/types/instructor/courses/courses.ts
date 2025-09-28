@@ -1,4 +1,4 @@
-import { Page } from '@/types/common';
+import { CommonFilters, Page } from '@/types/common';
 
 export interface VideoContent {
   id: string;
@@ -84,10 +84,7 @@ export interface Courses {
   page: Page;
 }
 
-export interface CoursesFilter {
-  page?: number;
-  size?: number;
-  sort?: string;
+export interface CoursesFilter extends CommonFilters {
   search?: string;
   status?: 'PENDING' | 'APPROVED' | 'DENIED' | 'RESUBMITTED';
   categoryIds?: string[];

@@ -1,4 +1,4 @@
-import { PaginatedData } from '../common';
+import { CommonFilters, PaginatedData } from '../common';
 import { Category } from './courses/courses';
 
 export interface EnrolledCourse {
@@ -42,4 +42,12 @@ export interface CourseEnrolledStudent {
   thumbnailUrl: string;
   progress: number;
   enrolledAt: string;
+}
+
+export interface StudentsFilters extends CommonFilters{
+  search?: string;
+}
+
+export interface StudentDetailsFilters extends CommonFilters {
+  studentId: string;
 }

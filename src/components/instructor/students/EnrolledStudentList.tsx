@@ -11,11 +11,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { MessageSquare, Mail, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { EnrolledCourse, Students } from '@/types/instructor/students';
 
 interface EnrolledStudentListProps {
-  enrolledStudents: Students[];
+  enrolledStudents?: Students[];
   searchTerm: string;
 }
 

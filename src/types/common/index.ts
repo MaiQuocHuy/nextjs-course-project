@@ -19,13 +19,8 @@ export interface PaginatedData<T> {
   page: Page;
 }
 
-export interface CoursesFilter {
+export interface CommonFilters {
   page?: number;
   size?: number;
-  search?: string;
-  categoryId?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   sort?: string;
 }

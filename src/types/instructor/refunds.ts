@@ -1,8 +1,11 @@
+import { CommonFilters } from "../common";
+
 // Get all refunds
-export interface RefundsFilter {
-  page?: number;
-  size?: number;
-  sort?: string;
+export interface RefundsFilter extends CommonFilters{
+  search?: string;
+  status?: 'PENDING' | 'COMPLETED' | 'FAILED';
+  fromDate?: string; // ISO date string
+  toDate?: string;   // ISO date string
 }
 
 export interface PaymentUser {

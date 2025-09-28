@@ -1,67 +1,84 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Users } from 'lucide-react';
-import { Students } from '@/types/instructor/students';
-import { useGetEnrolledStudentsQuery } from '@/services/instructor/students/students-ins-api';
+import { Loader2, Search, Users } from 'lucide-react';
+
+import {
+  useGetEnrolledStudentsQuery,
+  useGetNumOfEnrolledStudentsQuery,
+} from '@/services/instructor/students/students-ins-api';
 import { EnrolledStudentList } from './EnrolledStudentList';
 import { ErrorComponent } from '../commom/ErrorComponent';
-import { StudentSkeleton } from './skeletons/index';
+import {
+  StudentPageSkeleton,
+  StudentsListSkeleton,
+} from './StudentPageSkeletons';
 import { Pagination } from '../../common/Pagination';
+import { useDebounce } from '@/hooks/useDebounce';
 
-const params = {
+const defaultParams = {
   page: 0,
   size: 10,
 };
 
 export const StudentsPage = () => {
-  const [currentPage, setCurrentPage] = useState(params.page);
-  const [itemsPerPage, setItemsPerPage] = useState(params.size);
-  const [filteredStudents, setFilteredStudents] = useState<Students[]>([]);
+  const [currentPage, setCurrentPage] = useState(defaultParams.page);
+  const [itemsPerPage, setItemsPerPage] = useState(defaultParams.size);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const [searchDebounce] = useDebounce(searchTerm, 300);
+
+  // Memoize API params to avoid unnecessary re-fetches
+  const apiParams = useMemo(() => {
+    return {
+      page: currentPage,
+      size: itemsPerPage,
+      search: searchDebounce.trim() === '' ? undefined : searchDebounce.trim(),
+    };
+  }, [currentPage, itemsPerPage, searchDebounce]);
 
   // Fetch enrolled students
   const {
     data: enrolledStudents,
     isLoading: isLoadingEnrolledStudents,
     error: enrolledStudentsError,
-  } = useGetEnrolledStudentsQuery({
-    page: currentPage,
-    size: itemsPerPage,
-  });
+  } = useGetEnrolledStudentsQuery(apiParams);
+
+  // Get total number of enrolled students
+  const {
+    data: numOfEnrolledStudents,
+    isLoading: isLoadingNumOfEnrolledStudents,
+    error: numOfEnrolledStudentsError,
+  } = useGetNumOfEnrolledStudentsQuery();
 
   useEffect(() => {
-    if (enrolledStudents && enrolledStudents.content.length > 0) {
-      setFilteredStudents(enrolledStudents.content);
+    if (searchDebounce.trim() !== '') {
+      setIsFiltering(true);
+      setIsSearching(true);
+      setCurrentPage(0); // Reset to first page on search
+    }
+  }, [searchDebounce]);
+
+  useEffect(() => {
+    setIsFiltering(true);
+  }, [currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (enrolledStudents) {
+      setIsFiltering(false);
+      setIsSearching(false);
     }
   }, [enrolledStudents]);
 
-  // Handle search
-  useEffect(() => {
-    if (enrolledStudents && enrolledStudents.content.length > 0) {
-      const students = enrolledStudents.content;
-      if (searchTerm !== '') {
-        const processedSearchTerm = searchTerm.trim().toLowerCase();
-        setFilteredStudents(
-          students.filter(
-            (student) =>
-              student.name.toLowerCase().includes(processedSearchTerm) ||
-              student.email.toLowerCase().includes(processedSearchTerm)
-          )
-        );
-      } else {
-        setFilteredStudents(students);
-      }
-    }
-  }, [searchTerm, enrolledStudents]);
-
   // Show loading state while fetching data
-  if (isLoadingEnrolledStudents) {
-    return <StudentSkeleton />;
+  if (isLoadingEnrolledStudents || isLoadingNumOfEnrolledStudents) {
+    return <StudentPageSkeleton />;
   }
 
   // Show error state if there's an error
-  if (enrolledStudentsError) {
+  if (enrolledStudentsError || numOfEnrolledStudentsError) {
     return <ErrorComponent />;
   }
 
@@ -79,8 +96,14 @@ export const StudentsPage = () => {
       <div className="grid gap-6 md:grid-cols-4">
         <Card className="shadow-card md:col-span-3">
           <CardContent className="p-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <div className="relative ">
+              <i className="absolute left-3 top-3">
+                {isSearching ? (
+                  <Loader2 className="animate-spin h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                )}
+              </i>
               <Input
                 placeholder="Search students by name, email"
                 value={searchTerm}
@@ -91,44 +114,44 @@ export const StudentsPage = () => {
           </CardContent>
         </Card>
 
-        {enrolledStudents && enrolledStudents.content.length > 0 && (
-          <Card className="shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-4xl font-bold">
-                    {enrolledStudents.content.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Total Students
-                  </p>
-                </div>
+        <Card className="shadow-card">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-4xl font-bold">
+                  {numOfEnrolledStudents || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Total Students</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Students List */}
-      <div className="space-y-4">
-        <EnrolledStudentList
-          enrolledStudents={filteredStudents}
-          searchTerm={searchTerm}
-        />
+      {isFiltering ? (
+        <StudentsListSkeleton />
+      ) : (
+        <div className="space-y-4">
+          <EnrolledStudentList
+            enrolledStudents={enrolledStudents?.content}
+            searchTerm={searchDebounce}
+          />
 
-        {enrolledStudents &&
-          enrolledStudents.page &&
-          enrolledStudents.page.totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              itemsPerPage={itemsPerPage}
-              pageInfo={enrolledStudents?.page}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
-            />
-          )}
-      </div>
+          {enrolledStudents &&
+            enrolledStudents.page &&
+            enrolledStudents.page.totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                pageInfo={enrolledStudents?.page}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            )}
+        </div>
+      )}
     </div>
   );
 };

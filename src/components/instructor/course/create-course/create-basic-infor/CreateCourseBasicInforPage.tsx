@@ -712,7 +712,7 @@ export function CreateCourseBasicInforPage({
               <Button type="submit" disabled={isValid === false || isLoading}>
                 {isCreating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                     <span>Creating Course</span>
                   </>
                 ) : (
