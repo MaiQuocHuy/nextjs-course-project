@@ -69,7 +69,7 @@ export interface CoursesFilter {
   page?: number;
   size?: number;
   search?: string;
-  categoryId?: string;
+  categoryIds?: string[];
   minPrice?: number;
   maxPrice?: number;
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
@@ -155,9 +155,13 @@ export const coursesApi = createApi({
           console.log('Adding search filter:', filters.search.trim());
         }
 
-        if (filters.categoryId?.trim()) {
-          params.append('categoryId', filters.categoryId.trim());
-          console.log('Adding categoryId filter:', filters.categoryId.trim());
+        if (filters.categoryIds && filters.categoryIds.length > 0) {
+          filters.categoryIds.forEach(categoryId => {
+            if (categoryId.trim()) {
+              params.append('categoryIds', categoryId.trim());
+            }
+          });
+          console.log('Adding categoryIds filter:', filters.categoryIds);
         }
 
         // Quan trọng: Chỉ thêm price filters khi khác undefined

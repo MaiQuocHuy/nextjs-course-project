@@ -118,10 +118,9 @@ export function InstructorProfile({
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => {
-              // Navigate to instructor profile
-              console.log("View instructor profile");
-            }}
+            onClick={() =>
+              window.open("https://www.linkedin.com/in/sundarpichai", "_blank")
+            }
           >
             <ExternalLink className="w-4 h-4 mr-2" />
             View Profile
@@ -134,7 +133,7 @@ export function InstructorProfile({
   // Full variant
   return (
     <Card className={cn("overflow-hidden", className)}>
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600" />
           Your Instructor
