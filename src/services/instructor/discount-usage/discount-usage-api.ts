@@ -14,16 +14,16 @@ export const discountUsageApi = createApi({
       DiscountUsageResponse,
       DiscountUsageQueryParams
     >({
-      query: ({ page, size, search, type, dateFrom, dateTo }) => {
+      query: ({ page, size, search, type, fromDate, toDate }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           size: size.toString(),
         });
 
         if (search) params.append("search", search);
-        if (type && type !== "ALL") params.append("type", type);
-        if (dateFrom) params.append("dateFrom", dateFrom);
-        if (dateTo) params.append("dateTo", dateTo);
+        if (type) params.append("type", type);
+        if (fromDate) params.append("fromDate", fromDate);
+        if (toDate) params.append("toDate", toDate);
 
         return {
           url: `/instructor/discount-usage?${params.toString()}`,

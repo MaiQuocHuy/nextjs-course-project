@@ -14,16 +14,16 @@ export const affiliatePayoutApi = createApi({
       AffiliatePayoutResponse,
       AffiliatePayoutQueryParams
     >({
-      query: ({ page, size, search, status, dateFrom, dateTo }) => {
+      query: ({ page, size, search, status, fromDate, toDate }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           size: size.toString(),
         });
 
         if (search) params.append("search", search);
-        if (status && status !== "ALL") params.append("status", status);
-        if (dateFrom) params.append("dateFrom", dateFrom);
-        if (dateTo) params.append("dateTo", dateTo);
+        if (status) params.append("status", status);
+        if (fromDate) params.append("fromDate", fromDate);
+        if (toDate) params.append("toDate", toDate);
 
         return {
           url: `/instructor/affiliate-payout?${params.toString()}`,
