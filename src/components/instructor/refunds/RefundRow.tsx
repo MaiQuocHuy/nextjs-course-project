@@ -68,15 +68,7 @@ export const RefundRow = ({
 
       {/* Status */}
       <TableCell>
-        <Badge
-          variant={getStatusVariant(
-            isExpired && refund.status === 'PENDING' ? 'EXPIRED' : refund.status
-          )}
-        >
-          {isExpired && refund.status === 'PENDING'
-            ? 'PENDING (EXPIRED)'
-            : refund.status}
-        </Badge>
+        <Badge variant={getStatusVariant(refund.status)}>{refund.status}</Badge>
       </TableCell>
 
       {/* Requested Dates */}
