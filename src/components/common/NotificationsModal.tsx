@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CustomPagination } from "@/components/ui/custom-pagination";
+import { CustomPaginationNotifications } from "@/components/ui/custom-pagination-notifications";
 import {
   Bell,
   BellRing,
@@ -90,6 +90,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const isHoveringModalRef = useRef(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
   const isMobile = useIsMobile();
 
@@ -118,7 +119,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
   const notifications = notificationsResponse?.data?.content || [];
   const totalPages = notificationsResponse?.data?.page?.totalPages || 1;
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.length > 0 ? notifications[0].unreadCount || 0 : 0;
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -292,7 +293,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
         <PopoverContent
           ref={popoverRef}
-          className="w-96 p-0 animate-in slide-in-from-top-2 duration-200 z-50"
+          className="w-96 p-0 animate-in slide-in-from-top-2 duration-200 z-50 overflow-hidden"
+          style={{ overscrollBehavior: "contain" }}
           align="end"
           side="bottom"
           sideOffset={8}
@@ -305,7 +307,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             }
           }}
         >
-          <div className="flex flex-col max-h-[80vh]">
+          <div className="flex flex-col max-h-[80vh] w-full overflow-hidden">
             {/* Header */}
             <div className="flex-shrink-0 p-4 border-b">
               <div className="flex items-center justify-between">
@@ -345,7 +347,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-[400px]">
+              <ScrollArea ref={scrollAreaRef} className="h-[400px]">
                 <div className="p-2">
                   {isLoading ? (
                     <div className="space-y-2">
@@ -473,19 +475,30 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex-shrink-0 p-3 border-t bg-muted/30">
-                <CustomPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={(page) => {
-                    setCurrentPage(page);
-                    // Keep the dropdown open while paginating
-                    if (hoverTimeout) {
-                      clearTimeout(hoverTimeout);
-                      setHoverTimeout(null);
-                    }
-                  }}
-                />
+              <div className="flex-shrink-0 p-3 border-t bg-muted/30 overflow-hidden">
+                <div className="w-full overflow-x-auto">
+                  <CustomPaginationNotifications
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(page) => {
+                      setCurrentPage(page);
+                      // Scroll to top of the modal content
+                      if (scrollAreaRef.current) {
+                        const viewport = scrollAreaRef.current.querySelector(
+                          "[data-radix-scroll-area-viewport]"
+                        );
+                        if (viewport) {
+                          viewport.scrollTo({ top: 0, behavior: "smooth" });
+                        }
+                      }
+                      // Keep the dropdown open while paginating
+                      if (hoverTimeout) {
+                        clearTimeout(hoverTimeout);
+                        setHoverTimeout(null);
+                      }
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>

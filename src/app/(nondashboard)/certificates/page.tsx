@@ -124,11 +124,16 @@ function CertificateSearchContent() {
   const handleDownload = () => {
     if (!certificate) return;
 
-    const downloadUrl = certificate.fileUrl || certificate.certificateUrl;
+    let downloadUrl = certificate.fileUrl;
     if (!downloadUrl) {
       // console.error("No download URL available");
       return;
     }
+
+    // Add fl_attachment for download
+    downloadUrl = downloadUrl.includes("/fl_attachment")
+      ? downloadUrl
+      : downloadUrl.replace("/upload/", "/upload/fl_attachment/");
 
     // Transform URL to be absolute if needed
     const url = downloadUrl.startsWith("http")
@@ -148,7 +153,7 @@ function CertificateSearchContent() {
   const handleView = () => {
     if (!certificate) return;
 
-    let viewUrl = certificate.fileUrl || certificate.certificateUrl;
+    let viewUrl = certificate.fileUrl;
     if (!viewUrl) {
       // console.error("No view URL available");
       return;
@@ -172,29 +177,21 @@ function CertificateSearchContent() {
     });
   };
 
-  const getStatusBadge = (status: CertificateData["fileStatus"]) => {
-    switch (status) {
-      case "GENERATED":
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Generated
-          </Badge>
-        );
-      case "PENDING":
-        return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Processing
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            Unknown
-          </Badge>
-        );
+  const getStatusBadge = (fileUrl: string | null) => {
+    if (fileUrl !== null) {
+      return (
+        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Generated
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Processing
+        </Badge>
+      );
     }
   };
 
@@ -306,7 +303,9 @@ function CertificateSearchContent() {
                   </h2>
                   <p className="text-gray-600">Certificate Code</p>
                 </div>
-                <div className="text-right">{getStatusBadge(certificate.fileStatus)}</div>
+                <div className="text-right">
+                  {getStatusBadge(certificate.fileUrl ? certificate.fileUrl : null)}
+                </div>
               </div>
 
               <Separator className="my-8" />
@@ -365,40 +364,43 @@ function CertificateSearchContent() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="mt-10 flex gap-4 justify-center">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleView}
-                  className="flex items-center gap-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  View Certificate
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={handleDownload}
-                  disabled={certificate.fileStatus !== "GENERATED"}
-                  className="flex items-center gap-2"
-                  title={
-                    certificate.fileStatus === "PENDING"
-                      ? "Certificate is being generated"
-                      : "Download certificate"
-                  }
-                >
-                  <Download className="h-4 w-4" />
-                  {certificate.fileStatus === "PENDING" ? "Processing..." : "Download"}
-                </Button>
-              </div>
-
-              {certificate.fileStatus === "PENDING" && (
-                <Alert className="mt-8">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Certificate is being generated. Please come back in a few minutes to download.
-                  </AlertDescription>
-                </Alert>
+              {/* Actions or Processing Notification */}
+              {certificate.fileUrl === null ? (
+                <div className="mt-10">
+                  <Alert className="border-yellow-200 bg-yellow-50">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <div className="ml-2">
+                      <h4 className="text-lg font-semibold text-yellow-800 mb-2">
+                        Certificate Processing
+                      </h4>
+                      <AlertDescription className="text-yellow-700">
+                        Your certificate is currently being generated. This process usually takes a
+                        few minutes. Please check back shortly to download your completed
+                        certificate.
+                      </AlertDescription>
+                    </div>
+                  </Alert>
+                </div>
+              ) : (
+                <div className="mt-10 flex gap-4 justify-center">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleView}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View Certificate
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

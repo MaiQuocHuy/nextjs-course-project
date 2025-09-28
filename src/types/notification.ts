@@ -5,6 +5,7 @@ export interface NotificationDto {
   entityId: string;
   message: string;
   actionUrl: string;
+  unreadCount?: number;
   priority: NotificationPriority;
   isRead: boolean;
   readAt: string | null;
