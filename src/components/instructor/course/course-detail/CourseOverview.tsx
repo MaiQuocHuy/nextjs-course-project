@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CreateCourseBasicInforPage } from '../create-course/create-basic-infor/CreateCourseBasicInforPage';
-import { calculateTotalDuration } from '@/utils/instructor/course/course-helper-functions';
+import { calculateTotalDuration, getCourseLevelColor } from '@/utils/instructor/course/course-helper-functions';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 import { useGetCourseByIdQuery } from '@/services/instructor/courses/courses-api';
 import CourseOverviewSkeleton from './skeletons/CourseOverviewSkeleton';
@@ -94,18 +94,25 @@ const CourseOverview = ({ isEdittingCourse }: CourseHeaderProps) => {
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-4">
                   {/* Categories */}
-                  {courseInfo.categories.map((cat) => (
-                    <Badge key={cat.id} variant="secondary">
-                      <BookOpen className="h-4 w-4" />
-                      {cat.name.charAt(0).toUpperCase() +
-                        cat.name.slice(1)}{' '}
-                    </Badge>
-                  ))}
+                  <div className="flex flex-wrap gap-2">
+                    {courseInfo.categories.map((cat) => (
+                      <Badge key={cat.id} variant="secondary">
+                        <BookOpen className="h-4 w-4" />
+                        {cat.name.charAt(0).toUpperCase() +
+                          cat.name.slice(1)}{' '}
+                      </Badge>
+                    ))}
+                  </div>
 
+                <div className="flex flex-wrap gap-4">
                   {/* Course Level */}
-                  <Badge variant="outline">{courseInfo.level}</Badge>
+                   <Badge
+                      variant="outline"
+                      className={`text-white px-2 py-1 ${getCourseLevelColor(courseInfo.level)}`}
+                    >
+                      {courseInfo.level}
+                    </Badge>
 
                   {/* Course Duration */}
                   <Badge variant="outline" className="flex items-center gap-2">

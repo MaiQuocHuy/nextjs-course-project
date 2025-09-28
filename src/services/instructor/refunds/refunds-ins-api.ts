@@ -57,11 +57,14 @@ export const refundsInstSlice = createApi({
     }),
 
     // Get refund by id
-    getRefundById: builder.query<ApiResponse<RefundDetailResponse>, string>({
+    getRefundById: builder.query<RefundDetailResponse, string>({
       query: (refundId) => `/instructor/refund/${refundId}`,
       providesTags: (_result, _error, refundId) => [
         { type: "Refunds", id: refundId },
       ],
+      transformResponse: (response: ApiResponse<RefundDetailResponse>) => {
+        return response.data;
+      }
     }),
 
     // Update refund status

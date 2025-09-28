@@ -124,21 +124,28 @@ export const coursesInstSlice = createApi({
     // Create a new course
     createCourse: builder.mutation({
       query: (BasicInfoData) => {
-        const formData = new FormData();
-        formData.append('title', BasicInfoData.title);
-        formData.append('description', BasicInfoData.description);
-        formData.append('price', BasicInfoData.price.toString());
+        // Build query parameters for basic fields
+        const params = new URLSearchParams();
+        params.append('title', BasicInfoData.title);
+        params.append('description', BasicInfoData.description);
+        params.append('price', BasicInfoData.price.toString());
+
         if (BasicInfoData.categoryIds) {
           BasicInfoData.categoryIds.forEach((id: string) => {
-            formData.append('categoryIds', id);
+            params.append('categoryIds', id);
           });
         }
-        formData.append('level', BasicInfoData.level);
+
+        params.append('level', BasicInfoData.level);
+
+        // Create FormData only for file upload
+        const formData = new FormData();
         if (BasicInfoData.file) {
           formData.append('thumbnail', BasicInfoData.file);
         }
+
         return {
-          url: '/instructor/courses',
+          url: `/instructor/courses?${params.toString()}`,
           method: 'POST',
           body: formData,
         };

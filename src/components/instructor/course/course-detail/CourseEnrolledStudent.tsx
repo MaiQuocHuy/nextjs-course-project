@@ -1,24 +1,18 @@
-import { useGetEnrolledStudentsQuery } from '@/services/instructor/courses/courses-api';
-import { useParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+
+import { useGetEnrolledStudentsQuery } from '@/services/instructor/courses/courses-api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Users, Mail, MessageSquare } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
 import { CourseEnrolledStudent as CourseEnrolledStudentType } from '@/types/instructor/students';
 import { ErrorComponent } from '../../commom/ErrorComponent';
-import { StudentSkeleton } from '../../students/skeletons';
+import { StudentPageSkeleton } from '../../students/StudentPageSkeletons';
 import { Pagination } from '@/components/common/Pagination';
-import Link from 'next/link';
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from '@/components/ui/select';
 
 const CourseEnrolledStudent = () => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -79,15 +73,18 @@ const CourseEnrolledStudent = () => {
 
   // Show loading state while fetching data
   if (isLoading) {
-    return <StudentSkeleton />;
+    return <StudentPageSkeleton />;
   }
 
   // Show error state if there's an error
   if (error) {
-    return <ErrorComponent 
-    title='Error Loading Students'
-    message='Failed to load enrolled students. Please try again.'
-    onRetry={() => refetch()} />;
+    return (
+      <ErrorComponent
+        title="Error Loading Students"
+        message="Failed to load enrolled students. Please try again."
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   if (enrolledStudents && enrolledStudents.content.length === 0) {

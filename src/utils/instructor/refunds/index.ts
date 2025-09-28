@@ -1,4 +1,7 @@
-import { RefundResponse } from '@/types/instructor/refunds';
+import {
+  RefundDetailResponse,
+  RefundResponse,
+} from '@/types/instructor/refunds';
 
 export const getStatusVariant = (status: string) => {
   switch (status) {
@@ -42,7 +45,9 @@ export const formatPaymentId = (id: string) => {
   return id.slice(0, 8).toUpperCase();
 };
 
-export const isRefundExpired = (refund: RefundResponse) => {
+export const isRefundExpired = (
+  refund: RefundResponse | RefundDetailResponse
+) => {
   if (!refund.requestedAt) return false;
   const requestedDate = new Date(refund.requestedAt);
   const now = new Date();

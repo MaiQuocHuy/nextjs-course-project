@@ -2,13 +2,13 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 
 import { baseQueryWithReauth } from '@/lib/baseQueryWithReauth';
 import { ApiResponse, PaginatedData } from '@/types/common';
-import { CoursesFilter } from '@/types/common';
-import { StudentDetails, Students } from '@/types/instructor/students';
+import {
+  StudentDetailsFilters,
+  StudentDetails,
+  Students,
+  StudentsFilters,
+} from '@/types/instructor/students';
 import { PaginatedQuizResults, QuizResultDetails } from '@/types/student';
-
-interface EnrolledStudentFilters extends CoursesFilter {
-  studentId: string;
-}
 
 export const studentsInstSlice = createApi({
   reducerPath: 'studentsInstSlice',
@@ -16,15 +16,25 @@ export const studentsInstSlice = createApi({
   tagTypes: ['StudentsIns'],
   endpoints: (builder) => ({
     // Get enrolled students
-    getEnrolledStudents: builder.query<PaginatedData<Students>, CoursesFilter>({
-      query: (courseParams) => ({
-        url: `/instructor/enrolled-students?page=${
-          courseParams.page || 0
-        }&size=${courseParams.size || 10}&sort=${
-          courseParams.sort || 'createdAt,desc'
-        }`,
-        method: 'GET',
-      }),
+    getEnrolledStudents: builder.query<
+      PaginatedData<Students>,
+      StudentsFilters
+    >({
+      query: (params) => {
+        let url = `/instructor/enrolled-students?page=${
+          params.page || 0
+        }&size=${params.size || 10}&sort=${params.sort || 'createdAt,desc'}`;
+
+        // Add search term if provided
+        if (params.search) {
+          url += `&search=${encodeURIComponent(params.search)}`;
+        }
+        
+        return {
+          url,
+          method: 'GET',
+        };
+      },
       transformResponse: (response: ApiResponse<PaginatedData<Students>>) => {
         return response.data;
       },
@@ -42,8 +52,20 @@ export const studentsInstSlice = createApi({
           : [{ type: 'StudentsIns', id: 'LIST' }],
     }),
 
+    // Get total number of enrolled students
+    getNumOfEnrolledStudents: builder.query<number, void>({
+      query: () => ({
+        url: `/instructor/enrolled-students/count`,
+        method: 'GET',
+      }),
+      transformResponse: (response: ApiResponse<number>) => {
+        return response.data;
+      },
+      providesTags: [{ type: 'StudentsIns', id: 'LIST' }],
+    }),
+
     // Get student details
-    getStudentDetails: builder.query<StudentDetails, EnrolledStudentFilters>({
+    getStudentDetails: builder.query<StudentDetails, StudentDetailsFilters>({
       query: (params) => ({
         url: `/instructor/enrolled-students/${params.studentId}?page=${
           params.page || 0
@@ -53,7 +75,9 @@ export const studentsInstSlice = createApi({
       transformResponse: (response: ApiResponse<StudentDetails>) => {
         return response.data;
       },
-      providesTags: (result, error, arg) => [{ type: 'StudentsIns', id: arg.studentId }],
+      providesTags: (_result, _error, arg) => [
+        { type: 'StudentsIns', id: arg.studentId },
+      ],
     }),
 
     // Get student quiz results
@@ -62,15 +86,17 @@ export const studentsInstSlice = createApi({
       { studentId: string; page?: number; size?: number; sort?: string }
     >({
       query: (params) => ({
-        url: `/instructor/enrolled-students/${params.studentId}/quiz-scores?page=${
-          params.page || 0
-        }&size=${params.size || 10}&sort=${params.sort || 'completedAt,desc'}`,
+        url: `/instructor/enrolled-students/${
+          params.studentId
+        }/quiz-scores?page=${params.page || 0}&size=${params.size || 10}&sort=${
+          params.sort || 'completedAt,desc'
+        }`,
         method: 'GET',
       }),
       transformResponse: (response: ApiResponse<PaginatedQuizResults>) => {
         return response.data;
       },
-      providesTags: (result, error, arg) => [
+      providesTags: (_result, _error, arg) => [
         { type: 'StudentsIns', id: arg.studentId },
       ],
     }),
@@ -87,7 +113,7 @@ export const studentsInstSlice = createApi({
       transformResponse: (response: ApiResponse<QuizResultDetails>) => {
         return response.data;
       },
-      providesTags: (result, error, arg) => [
+      providesTags: (_result, _error, arg) => [
         { type: 'StudentsIns', id: arg.studentId },
       ],
     }),
@@ -96,7 +122,8 @@ export const studentsInstSlice = createApi({
 
 export const {
   useGetEnrolledStudentsQuery,
+  useGetNumOfEnrolledStudentsQuery,
   useGetStudentDetailsQuery,
   useGetStudentQuizResultsQuery,
-  useGetStudentQuizResultsDetailsQuery
+  useGetStudentQuizResultsDetailsQuery,
 } = studentsInstSlice;

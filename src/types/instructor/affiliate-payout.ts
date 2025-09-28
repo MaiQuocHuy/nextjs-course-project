@@ -34,7 +34,7 @@ export interface AffiliatePayout {
   discountUsage: AffiliatePayoutDiscountUsage | null;
   commissionPercent: number;
   commissionAmount: number;
-  payoutStatus: 'PENDING' | 'PAID' | 'CANCELLED';
+  payoutStatus: "PENDING" | "PAID" | "CANCELLED";
   createdAt: string;
   paidAt: string | null;
   updatedAt: string;
@@ -62,7 +62,7 @@ export interface AffiliatePayoutQueryParams {
   page: number;
   size: number;
   search?: string;
-  status?: 'ALL' | 'PENDING' | 'PAID' | 'CANCELLED';
-  dateFrom?: string;
-  dateTo?: string;
+  status?: "PENDING" | "PAID" | "CANCELLED";
+  fromDate?: string;
+  toDate?: string;
 }

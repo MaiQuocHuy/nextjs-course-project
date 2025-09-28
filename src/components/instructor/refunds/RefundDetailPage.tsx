@@ -24,6 +24,7 @@ import {
   formatCurrency,
   formatDateTime,
   getStatusVariant,
+  isRefundExpired,
 } from '@/utils/instructor/refunds';
 import { DetailsLoadingError } from '@/components/instructor/refunds/shared/LoadingError';
 import { useGetRefundByIdQuery } from '@/services/instructor/refunds/refunds-ins-api';
@@ -56,19 +57,20 @@ export const RefundDetailPage = () => {
     );
   }
 
-  const refund = data.data;
+  const refund = data;
+  const isExpired = isRefundExpired(refund);
 
   return (
     <div className="container mx-auto p-4 lg:p-6 space-y-6">
       {/* Back button */}
-      {/* <Button
+      <Button
         variant="ghost"
         onClick={() => router.push('/instructor/refunds')}
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Refunds
-      </Button> */}
+      </Button>
 
       {/* Header */}
       <Card>
@@ -84,10 +86,16 @@ export const RefundDetailPage = () => {
             </div>
             <div className="flex items-center gap-3">
               <Badge
-                variant={getStatusVariant(refund.status)}
-                className="text-base"
+                variant={getStatusVariant(
+                  isExpired && refund.status === 'PENDING'
+                    ? 'EXPIRED'
+                    : refund.status
+                )}
+                className='text-base'
               >
-                {refund.status}
+                {isExpired && refund.status === 'PENDING'
+                  ? 'PENDING (EXPIRED)'
+                  : refund.status}
               </Badge>
               <span className="text-xl font-semibold">
                 {formatCurrency(refund.amount)}

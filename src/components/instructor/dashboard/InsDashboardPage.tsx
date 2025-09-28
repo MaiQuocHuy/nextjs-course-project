@@ -14,8 +14,6 @@ import { useGetRecentEarningsQuery } from '@/services/instructor/earnings/earnin
 import { RevenueStatistics } from './RevenueStatistics';
 import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
 import { RefundsTable } from '../refunds/RefundsTable';
-
-// Import our custom components
 import {
   SkeletonTable,
   SkeletonChart,
