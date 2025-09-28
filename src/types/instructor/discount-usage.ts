@@ -50,7 +50,7 @@ export interface DiscountUsageQueryParams {
   page: number;
   size: number;
   search?: string;
-  type?: "ALL" | "REFERRAL" | "GENERAL";
-  dateFrom?: string;
-  dateTo?: string;
+  type?: "REFERRAL" | "GENERAL";
+  fromDate?: string;
+  toDate?: string;
 }
