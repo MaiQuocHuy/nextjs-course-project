@@ -27,6 +27,8 @@ export function useCourseWithSections(courseId: string): {
     error: coursesError,
   } = useGetEnrolledCoursesQuery();
 
+  console.log("Courses Data Latest:", coursesData);
+
   // Get course progress
   const {
     data: progressData,
@@ -59,7 +61,7 @@ export function useCourseWithSections(courseId: string): {
 
     const courses = coursesData.content || [];
     const course = courses.find((c) => c.courseId === courseId);
-
+    console.log("Found Course:", courses);
     if (!course) {
       return undefined;
     }

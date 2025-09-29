@@ -32,6 +32,8 @@ export default function LearningPageClient({
     refetch,
   } = useCourseWithSections(courseId);
 
+  console.log("Course Data:", courseData);
+
   // Load saved lesson from localStorage and set default lesson
   useEffect(() => {
     if (
