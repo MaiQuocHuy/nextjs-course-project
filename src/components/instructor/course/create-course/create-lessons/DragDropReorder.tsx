@@ -38,10 +38,6 @@ export function DragDropReorder<T extends { id: string; orderIndex: number }>({
         onReorder(newItems);
       }
     }
-
-    // if (onReorder2) {
-    //   onReorder2(index, index - 1);
-    // }
   };
 
   const moveDown = (index: number) => {

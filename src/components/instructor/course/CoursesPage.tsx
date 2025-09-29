@@ -660,8 +660,9 @@ export const CoursesPage = () => {
                             className="cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(
-                                `/instructor/courses/${course.id}/edit-course`
+                              window.open(
+                                `/instructor/courses/${course.id}/edit-course`,
+                                '_blank'
                               );
                             }}
                           >
@@ -702,7 +703,9 @@ export const CoursesPage = () => {
                     {/* Levels */}
                     <Badge
                       variant="outline"
-                      className={`text-white px-2 py-1 ${getCourseLevelColor(course.level)}`}
+                      className={`text-white px-2 py-1 ${getCourseLevelColor(
+                        course.level
+                      )}`}
                     >
                       {course.level}
                     </Badge>
@@ -710,7 +713,7 @@ export const CoursesPage = () => {
                     {/* Categories */}
                     <div className="flex items-center gap-2 border-t-1 pt-2">
                       <div className="flex items-center gap-1">
-                        {course.categories.slice(0, 2).map((category) => {
+                        {course.categories.slice(0, 1).map((category) => {
                           return (
                             <Badge key={category.id} variant="outline">
                               {category.name}
@@ -719,9 +722,9 @@ export const CoursesPage = () => {
                         })}
                       </div>
 
-                      {course.categories.length > 2 && (
+                      {course.categories.length > 1 && (
                         <Badge variant="default">{`+${
-                          course.categories.length - 2
+                          course.categories.length - 1
                         } more`}</Badge>
                       )}
                     </div>
@@ -739,19 +742,12 @@ export const CoursesPage = () => {
                     </div>
 
                     {/* Rating and created date */}
-                    <div
-                      className={`flex items-center text-sm ${
-                        course.averageRating > 0
-                          ? 'justify-between'
-                          : 'justify-end'
-                      }`}
-                    >
-                      {course.averageRating > 0 && (
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span>{course.averageRating}</span>
-                        </div>
-                      )}
+                    <div className="flex items-center text-sm justify-between">
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                        <span>{course.averageRating}</span>
+                      </div>
+
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import CourseContentSkeleton from './skeletons/CourseContentSkeleton';
 import { useParams } from 'next/navigation';
 import { useGetCourseByIdQuery } from '@/services/instructor/courses/courses-api';
+import { ErrorComponent } from '../../commom/ErrorComponent';
 
 const CourseContentPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,12 +18,14 @@ const CourseContentPage = () => {
     data: courseInfo,
     isLoading: isCourseLoading,
     isError: isErrorLoadingCourse,
+    refetch: refetchCourseInfo,
   } = useGetCourseByIdQuery(id, { skip: !id });
 
   const {
     data: sections,
     isLoading: isSectionsLoading,
     isError: isErrorLoadingSections,
+    refetch: refetchSections,
   } = useGetSectionsQuery(id, { skip: !id });
 
   const [updatedSections, setUpdatedSections] = useState<SectionType[]>([]);
@@ -71,12 +74,25 @@ const CourseContentPage = () => {
     fetchFiles();
   }, [sections]);
 
+  const handleRefetch = async () => {
+    if (id) {
+      await refetchSections();
+      await refetchCourseInfo();
+    }
+  };
+
   if (isCourseLoading || isSectionsLoading || isSettingUp) {
     return <CourseContentSkeleton />;
   }
 
   if (isErrorLoadingSections || isErrorLoadingCourse) {
-    return <p>Error fetching course content!</p>;
+    return (
+      <ErrorComponent
+        title="Course Content"
+        message="Error fetching course content!"
+        onRetry={handleRefetch}
+      />
+    );
   }
 
   return (
