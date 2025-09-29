@@ -1305,21 +1305,30 @@ export default function CourseContent({
 
                 {/* Render lessons in edit mode */}
                 <div className="space-y-4">
-                  <DragDropReorder
-                    items={watchedSections[sectionIndex]?.lessons || []}
-                    onReorder={(reorderedLessons) => {
-                      getTempSections();
-                      form.setValue(
-                        `sections.${sectionIndex}.lessons`,
-                        reorderedLessons
-                      );
-                      setReorderLesson((prev) => [...prev, sectionIndex]);
-                    }}
-                    renderItem={(lesson, lessonIndex) =>
-                      renderLesson(sectionIndex, lesson, lessonIndex)
-                    }
-                    className="space-y-4"
-                  />
+                  {currentMode !== 'view' ? (
+                    <DragDropReorder
+                      items={watchedSections[sectionIndex]?.lessons || []}
+                      onReorder={(reorderedLessons) => {
+                        getTempSections();
+                        form.setValue(
+                          `sections.${sectionIndex}.lessons`,
+                          reorderedLessons
+                        );
+                        setReorderLesson((prev) => [...prev, sectionIndex]);
+                      }}
+                      renderItem={(lesson, lessonIndex) =>
+                        renderLesson(sectionIndex, lesson, lessonIndex)
+                      }
+                      className="space-y-4"
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      {watchedSections[sectionIndex]?.lessons.map(
+                        (lesson, lessonIndex) =>
+                          renderLesson(sectionIndex, lesson, lessonIndex)
+                      )}
+                    </div>
+                  )}
 
                   {/* Add new lesson button */}
                   {currentMode !== 'view' && (
