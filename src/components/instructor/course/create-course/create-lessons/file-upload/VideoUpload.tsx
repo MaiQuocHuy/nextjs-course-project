@@ -38,7 +38,7 @@ interface VideoUploadProps {
 const VideoUpload = ({
   videoFile,
   onVideoChange,
-  maxSize = 100 * 1024 * 1024, // Default 100MB
+  maxSize = 10 * 1024 * 1024, // Default 10MB
   required = false,
   label = 'Upload Lesson Video',
   mode = 'edit',
