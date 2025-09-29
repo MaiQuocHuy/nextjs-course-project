@@ -24,6 +24,7 @@ import { useGetInsEarningsQuery } from '@/services/instructor/earnings/earnings-
 import { InsEarningsDetail } from '@/types/instructor/earnings';
 import { ErrorComponent } from '../commom/ErrorComponent';
 import { Pagination } from '@/components/common/Pagination';
+import { toast } from 'sonner';
 
 interface DateRange {
   from?: Date;
@@ -231,11 +232,23 @@ export const EarningsPage = () => {
                             : ''
                         }
                         onChange={(e) => {
-                          const date = e.target.value
+                          // Check if from date is after to date
+                          const toDate = dateRange?.to
+                            ? new Date(dateRange.to)
+                            : undefined;
+                          const fromDate = e.target.value
                             ? new Date(e.target.value)
                             : undefined;
+
+                          if (fromDate && toDate && fromDate > toDate) {
+                            toast.error(
+                              "'From Date' cannot be later than 'To Date'"
+                            );
+                            return;
+                          }
+
                           setDateRange((prev) => ({
-                            from: date,
+                            from: fromDate,
                             to: prev?.to,
                           }));
                         }}
@@ -253,12 +266,25 @@ export const EarningsPage = () => {
                             : ''
                         }
                         onChange={(e) => {
-                          const date = e.target.value
+                          // Check if to date is after from date
+                          const fromDate = dateRange?.from
+                            ? new Date(dateRange.from)
+                            : undefined;
+
+                          const toDate = e.target.value
                             ? new Date(e.target.value)
                             : undefined;
+
+                          if (fromDate && toDate && toDate < fromDate) {
+                            toast.error(
+                              "'To Date' cannot be earlier than 'From Date'"
+                            );
+                            return;
+                          }
+
                           setDateRange((prev) => ({
                             from: prev?.from,
-                            to: date,
+                            to: toDate,
                           }));
                         }}
                       />
@@ -339,7 +365,10 @@ export const EarningsPage = () => {
                     <table className="w-full text-sm">
                       <thead className="text-xs uppercase bg-muted/50">
                         <tr>
-                          <th scope="col" className="px-4 py-3 text-center w-12">
+                          <th
+                            scope="col"
+                            className="px-4 py-3 text-center w-12"
+                          >
                             No.
                           </th>
                           <th scope="col" className="px-4 py-3 text-left">

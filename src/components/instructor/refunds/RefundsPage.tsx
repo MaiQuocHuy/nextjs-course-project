@@ -13,6 +13,7 @@ import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins
 import { RefundsSkeleton } from './skeletons/index';
 import { TableLoadingError } from './shared/LoadingError';
 import { RefreshCcw } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Filters = {
   search: string;
@@ -125,6 +126,12 @@ const RefundsPage = () => {
                   setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onDateRangeChange={(range) => {
+                  // Check if from date and to date are valid
+                  if (range.from && range.to && range.from > range.to) {
+                    // Invalid range, ignore the change
+                    toast.error("'From Date' cannot be later than 'To Date'");
+                    return;
+                  }
                   setFilters((prev) => ({
                     ...prev,
                     fromDate: range.from,
