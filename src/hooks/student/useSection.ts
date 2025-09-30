@@ -25,7 +25,7 @@ export function useCourseWithSections(courseId: string): {
     data: coursesData,
     isLoading: coursesLoading,
     error: coursesError,
-  } = useGetEnrolledCoursesQuery();
+  } = useGetEnrolledCoursesQuery({});
 
   console.log("Courses Data Latest:", coursesData);
 

@@ -13,8 +13,10 @@ import {
   Trash2,
   Eye,
 } from 'lucide-react';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
+import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 import {
@@ -48,10 +50,7 @@ import {
 } from '@/services/instructor/courses/courses-api';
 import { Course, CoursesFilter } from '@/types/instructor/courses/courses';
 import { useGetCategoriesQuery } from '@/services/coursesApi';
-import { useRouter } from 'next/navigation';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
-import { toast } from 'sonner';
+
 import WarningAlert from '../commom/WarningAlert';
 import { getStatusColor } from '@/utils/instructor/course/handle-course-status';
 import { ErrorComponent } from '../commom/ErrorComponent';
@@ -59,8 +58,7 @@ import { CoursesSkeleton } from './skeletons/index';
 import { CoursesGridSkeleton } from './skeletons/index';
 import { useGetMinAndMaxPrice } from '@/hooks/instructor/useGetMinAndMaxPrice';
 import { Pagination } from '@/components/common/Pagination';
-import { set } from 'zod';
-import { de } from 'zod/v4/locales';
+import { getCourseLevelColor } from '@/utils/instructor/course/course-helper-functions';
 
 const coursesParams: CoursesFilter = {
   page: 0,
@@ -75,7 +73,6 @@ export const CoursesPage = () => {
   const [filters, setFilters] = useState(coursesParams);
   const [isFiltering, setIsFiltering] = useState(false);
   const [isGridLoading, setIsGridLoading] = useState(false);
-  const [isClearFilters, setIsClearFilters] = useState(false);
   const priceRangeInit = useRef({
     isInit: false,
     minPrice: 0,
@@ -601,210 +598,202 @@ export const CoursesPage = () => {
       {isGridLoading ? (
         <CoursesGridSkeleton />
       ) : courses && courses.content.length > 0 ? (
-        <div className="space-y-2">
-          {/* Total courses */}
-          <div>
-            <span className="text-base">Total Courses:</span>{' '}
-            <span className="text-lg font-semibold">
-              {courses.content.length}
-            </span>
-          </div>
+        <div className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {courses.content.map((course) => (
+              <Card
+                key={course.id}
+                className="shadow-card cursor-pointer hover:shadow-elegant transition-shadow gap-4"
+                onClick={() =>
+                  window.open(`/instructor/courses/${course.id}`, '_blank')
+                }
+              >
+                {/* Course's Thumbnail, Status and Actions*/}
+                <div className="relative">
+                  <img
+                    src={course.thumbnailUrl}
+                    alt={course.title}
+                    className="w-full h-48 object-cover rounded-t-lg"
+                  />
+                  <span
+                    className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
+                      course.statusReview
+                    )}`}
+                  >
+                    {course.statusReview ? course.statusReview : 'Draft'}
+                  </span>
 
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {courses.content.map((course) => (
-                <Card
-                  key={course.id}
-                  className="shadow-card cursor-pointer hover:shadow-elegant transition-shadow"
-                  onClick={() =>
-                    window.open(`/instructor/courses/${course.id}`, '_blank')
-                  }
-                >
-                  {/* Course's Thumbnail, Status and Actions*/}
-                  <div className="relative">
-                    <img
-                      src={course.thumbnailUrl}
-                      alt={course.title}
-                      className="w-full h-48 object-cover rounded-t-lg"
-                    />
-                    <span
-                      className={`absolute top-3 left-3 px-2 py-1 rounded text-sm font-semibold capitalize ${getStatusColor(
-                        course.statusReview
+                  {/* Actions */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-3 right-3 bg-white/90 hover:bg-white"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+
+                      {/* View course detail button */}
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(
+                            `/instructor/courses/${course.id}`,
+                            '_blank'
+                          );
+                        }}
+                      >
+                        <Eye className="mr-1 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+
+                      {!course.approved && (
+                        <>
+                          {/* Button edit course */}
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(
+                                `/instructor/courses/${course.id}/edit-course`,
+                                '_blank'
+                              );
+                            }}
+                          >
+                            <Edit className="mr-1 h-4 w-4" />
+                            Edit Course
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+
+                          {/* Button delete course */}
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsDeleteDialogOpen(true);
+                              setSelectedCourse(course);
+                            }}
+                          >
+                            <Trash2 className="mr-1 h-4 w-4" />
+                            Delete Course
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Title and Description */}
+                <CardHeader>
+                  <CardTitle className="line-clamp-2">{course.title}</CardTitle>
+                  <CardDescription className="line-clamp-2 min-h-[40px]">
+                    {course.description}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <div className="space-y-3 border-t-1 pt-2">
+                    {/* Levels */}
+                    <Badge
+                      variant="outline"
+                      className={`text-white px-2 py-1 ${getCourseLevelColor(
+                        course.level
                       )}`}
                     >
-                      {course.statusReview ? course.statusReview : 'Draft'}
-                    </span>
+                      {course.level}
+                    </Badge>
 
-                    {/* Actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-3 right-3 bg-white/90 hover:bg-white"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-
-                        {/* View course detail button */}
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(
-                              `/instructor/courses/${course.id}`,
-                              '_blank'
-                            );
-                          }}
-                        >
-                          <Eye className="mr-1 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-
-                        {!course.approved && (
-                          <>
-                            {/* Button edit course */}
-                            <DropdownMenuItem
-                              className="cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(
-                                  `/instructor/courses/${course.id}/edit-course`
-                                );
-                              }}
-                            >
-                              <Edit className="mr-1 h-4 w-4" />
-                              Edit Course
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-
-                            {/* Button delete course */}
-                            <DropdownMenuItem
-                              className="cursor-pointer"
-                              variant="destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsDeleteDialogOpen(true);
-                                setSelectedCourse(course);
-                              }}
-                            >
-                              <Trash2 className="mr-1 h-4 w-4" />
-                              Delete Course
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  {/* Title and Description */}
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2">
-                      {course.title}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2 min-h-[40px]">
-                      {course.description}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="space-y-3">
-                      {/* Categories */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          {course.categories.slice(0, 2).map((category) => {
-                            return (
-                              <Badge key={category.id} variant="outline">
-                                {category.name}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-
-                        {course.categories.length > 2 && (
-                          <Badge variant="default">{`+${
-                            course.categories.length - 2
-                          } more`}</Badge>
-                        )}
+                    {/* Categories */}
+                    <div className="flex items-center gap-2 border-t-1 pt-2">
+                      <div className="flex items-center gap-1">
+                        {course.categories.slice(0, 1).map((category) => {
+                          return (
+                            <Badge key={category.id} variant="outline">
+                              {category.name}
+                            </Badge>
+                          );
+                        })}
                       </div>
 
-                      {/* Total students and sections */}
-                      <div className="flex items-center justify-between text-sm border-t-1 pt-2">
-                        <div className="flex items-center space-x-1">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span>{`${course.totalStudents} student(s)`}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <BookOpen className="h-4 w-4 text-muted-foreground" />
-                          <span>{course.sectionCount} section(s)</span>
-                        </div>
-                      </div>
+                      {course.categories.length > 1 && (
+                        <Badge variant="default">{`+${
+                          course.categories.length - 1
+                        } more`}</Badge>
+                      )}
+                    </div>
 
-                      {/* Rating and created date */}
-                      <div
-                        className={`flex items-center text-sm ${
-                          course.averageRating > 0
-                            ? 'justify-between'
-                            : 'justify-end'
-                        }`}
-                      >
-                        {course.averageRating > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span>{course.averageRating}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {new Date(course.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                    {/* Total students and sections */}
+                    <div className="flex items-center justify-between text-sm border-t-1 pt-2">
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>{`${course.totalStudents} student(s)`}</span>
                       </div>
-
-                      {/* Price and view detail course button */}
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="text-2xl font-bold text-primary">
-                          {course.price > 0 ? '$' + course.price : 'Free'}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/instructor/courses/${course.id}`);
-                          }}
-                        >
-                          View Course
-                        </Button>
+                      <div className="flex items-center space-x-1">
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        <span>{course.sectionCount} section(s)</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
 
-            {/* Pagination */}
-            {courses && courses.page && courses.page.totalPages >= 1 && (
-              <Pagination
-                currentPage={filters.page ? filters.page : 0}
-                itemsPerPage={filters.size ? filters.size : 10}
-                pageInfo={courses.page}
-                onPageChange={(page) => {
-                  setIsGridLoading(true);
-                  setFilters({ ...filters, page });
-                }}
-                onItemsPerPageChange={(size) => {
-                  setIsGridLoading(true);
-                  setFilters({ ...filters, size });
-                }}
-              />
-            )}
+                    {/* Rating and created date */}
+                    <div className="flex items-center text-sm justify-between">
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                        <span>{course.averageRating}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>
+                          {new Date(course.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Price and view detail course button */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-2xl font-bold text-primary">
+                        {course.price > 0 ? '$' + course.price : 'Free'}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/instructor/courses/${course.id}`);
+                        }}
+                      >
+                        View Course
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
+
+          {/* Pagination */}
+          {courses && courses.page && courses.page.totalPages >= 1 && (
+            <Pagination
+              currentPage={filters.page ? filters.page : 0}
+              itemsPerPage={filters.size ? filters.size : 10}
+              pageInfo={courses.page}
+              onPageChange={(page) => {
+                setIsGridLoading(true);
+                setFilters({ ...filters, page });
+              }}
+              onItemsPerPageChange={(size) => {
+                setIsGridLoading(true);
+                setFilters({ ...filters, size });
+              }}
+            />
+          )}
         </div>
       ) : (
         // No course found

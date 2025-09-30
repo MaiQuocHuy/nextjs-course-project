@@ -21,7 +21,7 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
-import { Course } from "@/services/coursesApi";
+import { Course, useGetCourseReviewsBySlugQuery } from "@/services/coursesApi";
 import { cn } from "@/lib/utils";
 
 interface InstructorProfileProps {
@@ -38,12 +38,42 @@ export function InstructorProfile({
   const instructor = course.instructor;
   const instructorOverviewInstructorSummary = course.overViewInstructorSummary;
 
-  // Mock instructor stats (in real app, this would come from API)
+  // Fetch reviews for this course to get real review data
+  const { data: reviewsData, isLoading: reviewsLoading } =
+    useGetCourseReviewsBySlugQuery(course.slug, {
+      skip: !course.slug,
+    });
+
+  // Calculate real stats from reviews
+  const reviewStats = reviewsData?.content
+    ? {
+        totalReviews: reviewsData.content.length,
+        // Use course-specific reviews for this instructor's average rating
+        averageRating:
+          reviewsData.content.length > 0
+            ? (
+                reviewsData.content.reduce(
+                  (sum, review) => sum + review.rating,
+                  0
+                ) / reviewsData.content.length
+              ).toFixed(1)
+            : instructorOverviewInstructorSummary.average?.toFixed(1) || "0.0",
+      }
+    : {
+        totalReviews: reviewsLoading ? 0 : 0, // Show 0 during loading and when no data
+        averageRating:
+          instructorOverviewInstructorSummary.average?.toFixed(1) || "0.0",
+      };
+
+  // Combine real data from backend with mock data for missing fields
   const instructorStats = {
+    // Real data from backend
+    totalCourses: instructorOverviewInstructorSummary.totalCoursesByInstructor,
+    averageRating: reviewStats.averageRating,
+    totalReviews: reviewStats.totalReviews,
+
+    // Mock data for fields not available in backend
     totalStudents: Math.floor(Math.random() * 50000) + 10000,
-    totalCourses: Math.floor(Math.random() * 20) + 5,
-    averageRating: (Math.random() * 1 + 4).toFixed(1),
-    totalReviews: Math.floor(Math.random() * 5000) + 1000,
     yearsExperience: Math.floor(Math.random() * 10) + 5,
     expertise: ["Web Development", "JavaScript", "React", "Node.js"],
     location: "San Francisco, CA",
@@ -69,7 +99,10 @@ export function InstructorProfile({
               <AvatarImage
                 src={
                   instructor.thumbnailUrl ||
-                  `https://ui-avatars.com/api/?name=${instructor.name}&background=3b82f6&color=fff`
+                  instructor.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    instructor.name
+                  )}&background=3b82f6&color=fff`
                 }
                 alt={instructor.name}
               />
@@ -82,7 +115,9 @@ export function InstructorProfile({
                 {instructor.name}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Expert Instructor
+                {instructor.bio
+                  ? instructor.bio.substring(0, 50) + "..."
+                  : "Expert Instructor"}
               </p>
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -90,7 +125,8 @@ export function InstructorProfile({
                   {instructorStats.averageRating}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  • {formatNumber(instructorStats.totalStudents)} students
+                  ({instructorStats.totalReviews} reviews) •{" "}
+                  {instructorStats.totalCourses} courses
                 </span>
               </div>
             </div>
@@ -118,10 +154,9 @@ export function InstructorProfile({
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => {
-              // Navigate to instructor profile
-              console.log("View instructor profile");
-            }}
+            onClick={() =>
+              window.open("https://www.linkedin.com/in/sundarpichai", "_blank")
+            }
           >
             <ExternalLink className="w-4 h-4 mr-2" />
             View Profile
@@ -134,7 +169,7 @@ export function InstructorProfile({
   // Full variant
   return (
     <Card className={cn("overflow-hidden", className)}>
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600" />
           Your Instructor
@@ -149,7 +184,10 @@ export function InstructorProfile({
                 <AvatarImage
                   src={
                     instructor.thumbnailUrl ||
-                    `https://ui-avatars.com/api/?name=${instructor.name}&background=3b82f6&color=fff&size=96`
+                    instructor.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      instructor.name
+                    )}&background=3b82f6&color=fff&size=96`
                   }
                   alt={instructor.name}
                 />
@@ -165,7 +203,7 @@ export function InstructorProfile({
                   {instructor.name}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-3">
-                  Senior Software Engineer & Educator
+                  Professional Instructor
                 </p>
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <MapPin className="w-4 h-4" />
@@ -188,9 +226,7 @@ export function InstructorProfile({
                 </div>
                 <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
                   <div className="text-lg font-bold text-green-600">
-                    {
-                      instructorOverviewInstructorSummary.totalCoursesByInstructor
-                    }
+                    {instructorStats.totalCourses}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
                     Courses
@@ -198,9 +234,7 @@ export function InstructorProfile({
                 </div>
                 <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
                   <div className="text-lg font-bold text-yellow-600">
-                    {Number(
-                      instructorOverviewInstructorSummary.average?.toFixed(1)
-                    )}
+                    {instructorStats.averageRating}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400">
                     Rating
@@ -219,14 +253,16 @@ export function InstructorProfile({
           </div>
 
           {/* Bio Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-              About {instructor.name.split(" ")[0]}
-            </h4>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              {instructor.bio}
-            </p>
-          </div>
+          {instructor.bio && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                About {instructor.name.split(" ")[0]}
+              </h4>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                {instructor.bio}
+              </p>
+            </div>
+          )}
 
           {/* Expertise */}
           <div className="space-y-3">
@@ -261,8 +297,9 @@ export function InstructorProfile({
                     Top-Rated Instructor
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Consistently rated {instructorStats.averageRating}+ stars by
-                    students
+                    {instructorStats.totalReviews > 0
+                      ? `Rated ${instructorStats.averageRating} stars by ${instructorStats.totalReviews} students`
+                      : `Overall rating: ${instructorStats.averageRating} stars`}
                   </div>
                 </div>
               </div>
@@ -294,6 +331,22 @@ export function InstructorProfile({
                   </div>
                 </div>
               </div>
+              {instructorStats.totalReviews > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      Student Favorite
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Received {formatNumber(instructorStats.totalReviews)}{" "}
+                      reviews from engaged students
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -15,8 +15,8 @@ export const useCourses = (filters: CoursesFilter) => {
       params.search = filters.search.trim();
     }
     
-    if (filters.categoryId?.trim()) {
-      params.categoryId = filters.categoryId.trim();
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      params.categoryIds = filters.categoryIds;
     }
     
     // Chỉ thêm price filter khi khác default [0, 500]
@@ -47,7 +47,7 @@ export const useCourses = (filters: CoursesFilter) => {
     filters.page,
     filters.size,
     filters.search,
-    filters.categoryId,
+    filters.categoryIds,
     filters.minPrice,
     filters.maxPrice,
     filters.level,

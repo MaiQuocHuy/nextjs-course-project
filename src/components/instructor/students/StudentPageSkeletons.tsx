@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   SkeletonHeader,
   SkeletonSearchBar,
-} from '../../commom/skeletons/SkeletonComponents';
+} from '../commom/skeletons/SkeletonComponents';
 
 export const SkeletonStudentStats = () => {
   return (
@@ -64,7 +64,19 @@ export const SkeletonStudentCard = () => {
   );
 };
 
-export const StudentSkeleton = () => {
+export const StudentsListSkeleton = () => {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
+      {Array(6)
+        .fill(0)
+        .map((_, index) => (
+          <SkeletonStudentCard key={index} />
+        ))}
+    </div>
+  );
+};
+
+export const StudentPageSkeleton = () => {
   return (
     <div className="space-y-6">
       {/* Header Skeleton */}
@@ -79,13 +91,7 @@ export const StudentSkeleton = () => {
       </div>
 
       {/* Students List Skeleton */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-stretch">
-        {Array(6)
-          .fill(0)
-          .map((_, index) => (
-            <SkeletonStudentCard key={index} />
-          ))}
-      </div>
+      <StudentsListSkeleton />
     </div>
   );
 };

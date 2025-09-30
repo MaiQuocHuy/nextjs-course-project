@@ -116,6 +116,7 @@ export default function CourseContent({
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingContent, setIsCreatingContent] = useState(false);
   const [canSaveChanges, setCanSaveChanges] = useState(false);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -216,7 +217,7 @@ export default function CourseContent({
     formState: { errors, isDirty, dirtyFields },
   } = form;
 
-  const watchedSections = watch("sections");
+  const watchedSections = watch('sections');
 
   // Get input errors
   useEffect(() => {
@@ -234,6 +235,7 @@ export default function CourseContent({
     }
   }, [form.formState]);
 
+  // Check if there are any ongoing saving operations
   useEffect(() => {
     if (
       isCreatingSection ||
@@ -279,6 +281,25 @@ export default function CourseContent({
     isDeletingSection,
     isDeletingLesson,
     isGeneratingQuizs,
+  ]);
+
+  // Check if there are any ongoing creating operations
+  useEffect(() => {
+    if (
+      isCreatingSection ||
+      isCreatingLesson ||
+      isCreatingLessonWithQuiz ||
+      isUpdatingCourseStatus
+    ) {
+      setIsCreatingContent(true);
+    } else {
+      setIsCreatingContent(false);
+    }
+  }, [
+    isCreatingSection,
+    isCreatingLesson,
+    isCreatingLessonWithQuiz,
+    isUpdatingCourseStatus,
   ]);
 
   // Check if there are any changes to enable save button
@@ -776,7 +797,7 @@ export default function CourseContent({
                 <>
                   {/* Lesson video */}
                   {lesson.video && lesson.video.file && (
-                    <VideoUpload videoFile={lesson.video.file} />
+                    <VideoUpload videoFile={lesson.video.file} mode="view" />
                   )}
 
                   {/* Quiz questions preview in view mode */}
@@ -884,6 +905,7 @@ export default function CourseContent({
                               onVideoChange={(file) => {
                                 field.onChange(file);
                               }}
+                              mode="edit"
                             />
                           </FormControl>
                           <FormMessage />
@@ -1003,18 +1025,25 @@ export default function CourseContent({
                                 )?.length
                               ) && (
                                 <Button
-                                  type="button"
-                                  onClick={() =>
+                                  // type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     generateQuizWithAI(
                                       sectionIndex,
                                       lessonIndex
-                                    )
-                                  }
+                                    );
+                                  }}
                                   disabled={isLoading}
                                 >
-                                  {isGeneratingQuizs
-                                    ? "Generating quiz..."
-                                    : "Generate Questions with AI"}
+                                  {isGeneratingQuizs ? (
+                                    <span className="flex items-center">
+                                      <Loader2 className="animate-spin h-4 w-4 mr-2" />{' '}
+                                      Generating quiz
+                                    </span>
+                                  ) : (
+                                    'Generate Questions with AI'
+                                  )}
                                 </Button>
                               )}
                             </div>
@@ -1276,21 +1305,30 @@ export default function CourseContent({
 
                 {/* Render lessons in edit mode */}
                 <div className="space-y-4">
-                  <DragDropReorder
-                    items={watchedSections[sectionIndex]?.lessons || []}
-                    onReorder={(reorderedLessons) => {
-                      getTempSections();
-                      form.setValue(
-                        `sections.${sectionIndex}.lessons`,
-                        reorderedLessons
-                      );
-                      setReorderLesson((prev) => [...prev, sectionIndex]);
-                    }}
-                    renderItem={(lesson, lessonIndex) =>
-                      renderLesson(sectionIndex, lesson, lessonIndex)
-                    }
-                    className="space-y-4"
-                  />
+                  {currentMode !== 'view' ? (
+                    <DragDropReorder
+                      items={watchedSections[sectionIndex]?.lessons || []}
+                      onReorder={(reorderedLessons) => {
+                        getTempSections();
+                        form.setValue(
+                          `sections.${sectionIndex}.lessons`,
+                          reorderedLessons
+                        );
+                        setReorderLesson((prev) => [...prev, sectionIndex]);
+                      }}
+                      renderItem={(lesson, lessonIndex) =>
+                        renderLesson(sectionIndex, lesson, lessonIndex)
+                      }
+                      className="space-y-4"
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      {watchedSections[sectionIndex]?.lessons.map(
+                        (lesson, lessonIndex) =>
+                          renderLesson(sectionIndex, lesson, lessonIndex)
+                      )}
+                    </div>
+                  )}
 
                   {/* Add new lesson button */}
                   {currentMode !== "view" && (
@@ -1344,12 +1382,14 @@ export default function CourseContent({
 
     try {
       let response = null;
-      if (lesson.type === "VIDEO" && lesson.video) {
+
+      if (lesson.type === 'VIDEO' && lesson.video) {
         const lessonData = {
           title: lesson.title,
           type: lesson.type.toUpperCase(),
           videoFile: lesson.video.file,
         };
+
         response = await createLesson({
           sectionId: section.id,
           lessonData,
@@ -1358,9 +1398,6 @@ export default function CourseContent({
         const updatedLesson = {
           ...lesson,
           quiz: {
-            ...lesson.quiz,
-            // Remove documents from quiz
-            documents: undefined,
             // Remove id and orderIndex from questions
             questions: lesson.quiz?.questions?.map((question) => {
               const { id, orderIndex, ...rest } = question;
@@ -1369,11 +1406,13 @@ export default function CourseContent({
             excelFile: undefined,
           },
         };
+
         const lessonData = {
           title: updatedLesson.title,
           type: updatedLesson.type,
           quiz: updatedLesson.quiz,
         };
+
         response = await createLessonWithQuiz({
           sectionId: section.id,
           data: lessonData,
@@ -1638,7 +1677,7 @@ export default function CourseContent({
       const validationResult = courseContentSchema.safeParse(data);
       if (validationResult.success) {
         setLessonsData(validationResult.data);
-        setStep("review");
+        setStep('review');
       } else {
         toast.error(
           validationResult.error.issues[0].message ||
@@ -1710,9 +1749,7 @@ export default function CourseContent({
         sections={sections}
         onBackToEdit={() => setStep("create")}
         handleFinalSubmit={handleFinalSubmit}
-        isCreating={
-          isCreatingSection || isCreatingLesson || isUpdatingCourseStatus
-        }
+        isCreating={isCreatingContent}
       />
     );
   }

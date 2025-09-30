@@ -15,14 +15,44 @@ Kịch bản demo này trình bày một luồng hoàn chỉnh từ việc giả
 ### 🎓 **Student (Học viên)**
 
 ---
+## 🛒 **Phần 1: Student Mua Khóa Học**
 
-## 🚀 **Phần 1: Instructor Tạo Khóa Học**
+### 🔍 **Bước 1.1: Student tìm kiếm và xem khóa học**
 
-### 📝 **Bước 1.1: Đăng nhập và điều hướng**
+### 📖 **Bước 1.2: Xem chi tiết khóa học**
 
-### 🎯 **Bước 1.2: Tạo thông tin cơ bản khóa học**
+### 💳 **Bước 1.3: Quy trình thanh toán**
 
-### 📚 **Bước 1.3: Tạo cấu trúc khóa học (Sections & Lessons)**
+### 🎓 **Bước 1.4: Enrollment thành công**
+
+---
+
+## 📚 **Phần 2: Student Học Khóa Học**
+
+### 🎯 **Bước 2.1: Truy cập Learning Dashboard**
+
+### 📺 **Bước 2.2: Học video lessons**
+
+### 📝 **Bước 2.3: Hoàn thành Quiz**
+
+### 📊 **Bước 2.5: Theo dõi Progress**
+
+---
+
+## 🏆 **Phần 3: Hoàn Thành Khóa Học & Nhận Certificate**
+
+### ✅ **Bước 3.1: Hoàn thành tất cả lessons**
+
+### 🏆 **Bước 3.2: Certificate Generation**
+
+
+## 🚀 **Phần 4: Instructor Tạo Khóa Học**
+
+### 📝 **Bước 4.1: Đăng nhập và điều hướng**
+
+### 🎯 **Bước 4.2: Tạo thông tin cơ bản khóa học**
+
+### 📚 **Bước 4.3: Tạo cấu trúc khóa học (Sections & Lessons)**
 
 **📊 Trạng thái khóa học sau khi tạo:**
 
@@ -33,11 +63,11 @@ Kịch bản demo này trình bày một luồng hoàn chỉnh từ việc giả
 
 ---
 
-## 🛡️ **Phần 2: Admin Duyệt Khóa Học**
+## 🛡️ **Phần 5: Admin Duyệt Khóa Học**
 
-### 🔍 **Bước 2.1: Admin xem khóa học chờ duyệt**
+### 🔍 **Bước 5.1: Admin xem khóa học chờ duyệt**
 
-### ✅ **Bước 2.2: Phê duyệt khóa học**
+### ✅ **Bước 5.2: Phê duyệt khóa học**
 
 **📊 Trạng thái khóa học sau khi duyệt:**
 
@@ -49,35 +79,7 @@ Kịch bản demo này trình bày một luồng hoàn chỉnh từ việc giả
 
 ---
 
-## 🛒 **Phần 3: Student Mua Khóa Học**
 
-### 🔍 **Bước 3.1: Student tìm kiếm và xem khóa học**
-
-### 📖 **Bước 3.2: Xem chi tiết khóa học**
-
-### 💳 **Bước 3.3: Quy trình thanh toán**
-
-### 🎓 **Bước 3.4: Enrollment thành công**
-
----
-
-## 📚 **Phần 4: Student Học Khóa Học**
-
-### 🎯 **Bước 4.1: Truy cập Learning Dashboard**
-
-### 📺 **Bước 4.2: Học video lessons**
-
-### 📝 **Bước 4.3: Hoàn thành Quiz**
-
-### 📊 **Bước 4.5: Theo dõi Progress**
-
----
-
-## 🏆 **Phần 5: Hoàn Thành Khóa Học & Nhận Certificate**
-
-### ✅ **Bước 5.1: Hoàn thành tất cả lessons**
-
-### 🏆 **Bước 5.2: Certificate Generation**
 
 ---
 
@@ -87,9 +89,9 @@ Kịch bản demo này trình bày một luồng hoàn chỉnh từ việc giả
 ⏱️ Estimated Demo Duration: 5-10 minutes
 
 📅 Demo Breakdown:
-- Part 1 (Instructor creates course)
+- Part 1 (Student purchase)
 - Part 2 (Admin approval)
-- Part 3 (Student purchase)
+- Part 3 (Instructor creates course)
 - Part 4 (Learning experience)
 - Part 5 (Certificate completion)
 - Q&A and wrap-up
@@ -99,7 +101,7 @@ Kịch bản demo này trình bày một luồng hoàn chỉnh từ việc giả
 
 ### 🎯 **Demo Environment**
 
-- **URL**: https://demo.courseplatform.com
+- **URL**: https://sybau-education.vercel.app/
 - **Test Accounts Ready**: ✅
 - **Sample Course Content**: ✅
 - **Payment Gateway**: Stripe Test Mode ✅

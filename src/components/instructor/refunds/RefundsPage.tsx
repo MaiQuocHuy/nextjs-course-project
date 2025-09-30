@@ -10,102 +10,69 @@ import {
 } from '@/components/instructor/refunds/shared';
 import { RefundsTable } from '@/components/instructor/refunds/RefundsTable';
 import { useGetAllRefundsQuery } from '@/services/instructor/refunds/refunds-ins-api';
-import { TableLoadingSkeleton, RefundsSkeleton } from './skeletons/index';
+import { RefundsSkeleton } from './skeletons/index';
 import { TableLoadingError } from './shared/LoadingError';
 import { RefreshCcw } from 'lucide-react';
 
 type Filters = {
-  searchQuery: string;
-  statusFilter: 'ALL' | 'PENDING' | 'COMPLETED' | 'FAILED';
-  dateRange: { from: string | null; to: string | null };
+  search: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | null;
+  fromDate: string | null;
+  toDate: string | null;
 };
 
 const initFilterValues: Filters = {
-  searchQuery: '',
-  statusFilter: 'ALL',
-  dateRange: { from: null, to: null },
+  search: '',
+  status: null,
+  fromDate: null,
+  toDate: null,
 };
 
 const RefundsPage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState<Filters>(initFilterValues);
-  const [isFiltering, setIsFiltering] = useState(false);
 
-  const { data, isLoading, error, refetch } = useGetAllRefundsQuery({
-    page: currentPage,
-    size: itemsPerPage,
-  });
+  const apiParams = useMemo(() => {
+    const params: any = {
+      page: currentPage,
+      size: itemsPerPage,
+    };
+
+    if (filters.search.trim()) {
+      params.search = filters.search.trim();
+    }
+    if (filters.status) {
+      params.status = filters.status;
+    }
+    if (filters.fromDate) {
+      params.fromDate = filters.fromDate;
+    }
+    if (filters.toDate) {
+      params.toDate = filters.toDate;
+    }
+
+    return params;
+  }, [currentPage, itemsPerPage, filters]);
+
+  const { data, isLoading, error, refetch } = useGetAllRefundsQuery(apiParams);
 
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.searchQuery !== '' ||
-      filters.statusFilter !== 'ALL' ||
-      filters.dateRange.from !== null ||
-      filters.dateRange.to !== null
+      filters.search !== '' ||
+      filters.status !== null ||
+      filters.fromDate !== null ||
+      filters.toDate !== null
     );
-  }, [
-    filters.searchQuery,
-    filters.statusFilter,
-    filters.dateRange.from,
-    filters.dateRange.to,
-  ]);
+  }, [filters]);
 
-  const filteredRefunds = useMemo(() => {
-    if (!data?.content || data.content.length === 0) {
-      return [];
-    }
-
-    setIsFiltering(true);
-
-    const result = data.content.filter((refund) => {
-      // Search: match id, payment id, or reason
-      if (filters.searchQuery !== '') {
-        const searchLower = String(filters.searchQuery).toLowerCase();
-        const matchesSearch =
-          refund.id.toLowerCase().includes(searchLower) ||
-          (refund.payment?.user?.name &&
-            refund.payment.user.name.toLowerCase().includes(searchLower)) ||
-          (refund.payment?.id &&
-            refund.payment.id.toLowerCase().includes(searchLower));
-        if (!matchesSearch) return false;
-      }
-
-      // Status filter
-      if (
-        filters.statusFilter !== 'ALL' &&
-        refund.status !== filters.statusFilter
-      ) {
-        return false;
-      }
-
-      // Date range filter (use requestedAt)
-      if (filters.dateRange.from || filters.dateRange.to) {
-        const refundDate = new Date(refund.requestedAt);
-        if (
-          filters.dateRange.from &&
-          refundDate < new Date(filters.dateRange.from)
-        ) {
-          return false;
-        }
-        if (
-          filters.dateRange.to &&
-          refundDate > new Date(filters.dateRange.to + ' 23:59:59')
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    setIsFiltering(false);
-    return result;
-  }, [data, filters]);
+  // Use data directly from API since filtering is done server-side
+  const refunds = data?.content || [];
 
   const handleSearchChange = useCallback((query: string) => {
-    setFilters((prev) => ({ ...prev, searchQuery: query }));
+    setFilters((prev) => ({ ...prev, search: query }));
+    setCurrentPage(0); // Reset to first page when searching
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -119,7 +86,7 @@ const RefundsPage = () => {
   if (error) {
     return <TableLoadingError onRetry={() => refetch()} />;
   }
-  
+
   return (
     <div className="container mx-auto p-4 lg:p-6 space-y-6">
       {/* Header */}
@@ -139,22 +106,35 @@ const RefundsPage = () => {
         <CardContent className="px-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <SearchBar
-              placeholder="Search by refund id or student's name"
-              searchQuery={filters.searchQuery}
+              placeholder="Search by refund ID, user name, or reason"
+              searchQuery={filters.search}
               onSearchChange={handleSearchChange}
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
-                statusFilter={filters.statusFilter}
-                dateRange={filters.dateRange}
+                statusFilter={filters.status || 'ALL'}
+                dateRange={{ from: filters.fromDate, to: filters.toDate }}
                 onStatusFilterChange={(status) => {
-                  setFilters((prev) => ({ ...prev, statusFilter: status }));
+                  setFilters((prev) => ({
+                    ...prev,
+                    status:
+                      status === 'ALL'
+                        ? null
+                        : (status as 'PENDING' | 'COMPLETED' | 'FAILED'),
+                  }));
+                  setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onDateRangeChange={(range) => {
-                  setFilters((prev) => ({ ...prev, dateRange: range }));
+                  setFilters((prev) => ({
+                    ...prev,
+                    fromDate: range.from,
+                    toDate: range.to,
+                  }));
+                  setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onClearFilters={() => {
                   setFilters(initFilterValues);
+                  setCurrentPage(0);
                 }}
               />
             </div>
@@ -163,47 +143,44 @@ const RefundsPage = () => {
       </Card>
 
       {/* Refunds Table */}
-      {isFiltering ? (
-        <TableLoadingSkeleton />
-      ) : (
-        <>
-          {filteredRefunds.length > 0 ? (
-            <div className="space-y-4">
-              {/* Refresh button */}
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading || isFiltering}
-              >
-                <RefreshCcw className="h-4 w-4" />
-                Refresh
-              </Button>
+      {refunds.length > 0 ? (
+        <div className="space-y-4">
+          {/* Refresh button */}
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoading}
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Refresh
+          </Button>
 
-              {/* Refunds Table */}
-              <RefundsTable
-                filteredRefunds={filteredRefunds}
-                currentPage={currentPage}
-                itemsPerPage={itemsPerPage}
-              />
+          {/* Refunds Table */}
+          <RefundsTable
+            filteredRefunds={refunds}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+          />
 
-              {/* Pagination */}
-              {data && data.page && data.page.totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  pageInfo={data.page || null}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              type={hasActiveFilters ? 'no-results' : 'no-data'}
-              clearFilters={resetFilters}
+          {/* Pagination */}
+          {data && data.page && data.page.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              pageInfo={data.page || null}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(newSize) => {
+                setItemsPerPage(newSize);
+                setCurrentPage(0); // Reset to first page when changing page size
+              }}
             />
           )}
-        </>
+        </div>
+      ) : (
+        <EmptyState
+          type={hasActiveFilters ? 'no-results' : 'no-data'}
+          clearFilters={resetFilters}
+        />
       )}
     </div>
   );

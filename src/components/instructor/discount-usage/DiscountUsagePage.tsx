@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,17 @@ import { TableLoadingError } from "../refunds/shared/LoadingError";
 import { RefundsSkeleton, TableLoadingSkeleton } from "../refunds/skeletons";
 
 type Filters = {
-  searchQuery: string;
-  typeFilter: "ALL" | "REFERRAL" | "GENERAL";
-  dateRange: { from: string | null; to: string | null };
+  search: string;
+  type: "REFERRAL" | "GENERAL" | null;
+  fromDate: string | null;
+  toDate: string | null;
 };
 
 const initFilterValues: Filters = {
-  searchQuery: "",
-  typeFilter: "ALL",
-  dateRange: { from: null, to: null },
+  search: "",
+  type: null,
+  fromDate: null,
+  toDate: null,
 };
 
 const params = {
@@ -34,86 +36,53 @@ const DiscountUsagePage = () => {
   const [currentPage, setCurrentPage] = useState(params.page);
   const [itemsPerPage, setItemsPerPage] = useState(params.size);
   const [filters, setFilters] = useState<Filters>(initFilterValues);
-  const [isFiltering, setIsFiltering] = useState(false);
 
-  const { data, isLoading, error, refetch } = useGetAllDiscountUsagesQuery({
-    page: currentPage,
-    size: itemsPerPage,
-  });
+  const apiParams = useMemo(() => {
+    const params: any = {
+      page: currentPage,
+      size: itemsPerPage,
+    };
+
+    if (filters.search.trim()) {
+      params.search = filters.search.trim();
+    }
+    if (filters.type) {
+      params.type = filters.type;
+    }
+    if (filters.fromDate) {
+      params.fromDate = filters.fromDate;
+    }
+    if (filters.toDate) {
+      params.toDate = filters.toDate;
+    }
+
+    return params;
+  }, [currentPage, itemsPerPage, filters]);
+
+  const { data, isLoading, error, refetch } =
+    useGetAllDiscountUsagesQuery(apiParams);
 
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.searchQuery !== "" ||
-      filters.typeFilter !== "ALL" ||
-      filters.dateRange.from !== null ||
-      filters.dateRange.to !== null
+      filters.search !== "" ||
+      filters.type !== null ||
+      filters.fromDate !== null ||
+      filters.toDate !== null
     );
-  }, [
-    filters.searchQuery,
-    filters.typeFilter,
-    filters.dateRange.from,
-    filters.dateRange.to,
-  ]);
+  }, [filters]);
 
-  const filteredUsages = useMemo(() => {
-    if (!data?.data?.content || data.data.content.length === 0) {
-      return [];
-    }
+  // Use data directly from API since filtering is done server-side
+  const discountUsages = data?.data?.content || [];
 
-    setIsFiltering(true);
-
-    const result = data.data.content.filter((usage) => {
-      // Search: match id, discount code, user name, course title
-      if (filters.searchQuery !== "") {
-        const searchLower = String(filters.searchQuery).toLowerCase();
-        const matchesSearch =
-          usage.id.toLowerCase().includes(searchLower) ||
-          (usage.discount?.code &&
-            usage.discount.code.toLowerCase().includes(searchLower)) ||
-          (usage.user?.name &&
-            usage.user.name.toLowerCase().includes(searchLower)) ||
-          (usage.course?.title &&
-            usage.course.title.toLowerCase().includes(searchLower)) ||
-          (usage.referredByUser?.name &&
-            usage.referredByUser.name.toLowerCase().includes(searchLower));
-        if (!matchesSearch) return false;
-      }
-
-      // Type filter
-      if (
-        filters.typeFilter !== "ALL" &&
-        usage.discount.type !== filters.typeFilter
-      ) {
-        return false;
-      }
-
-      // Date range filter (use usedAt)
-      if (filters.dateRange.from || filters.dateRange.to) {
-        const usageDate = new Date(usage.usedAt);
-        if (
-          filters.dateRange.from &&
-          usageDate < new Date(filters.dateRange.from)
-        ) {
-          return false;
-        }
-        if (
-          filters.dateRange.to &&
-          usageDate > new Date(filters.dateRange.to + " 23:59:59")
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    setIsFiltering(false);
-    return result;
-  }, [data, filters]);
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [filters.search, filters.type, filters.fromDate, filters.toDate]);
 
   const handleSearchChange = useCallback((query: string) => {
-    setFilters((prev) => ({ ...prev, searchQuery: query }));
+    setFilters((prev) => ({ ...prev, search: query }));
+    setCurrentPage(0); // Reset to first page when searching
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -147,22 +116,33 @@ const DiscountUsagePage = () => {
         <CardContent className="px-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <SearchBar
-              placeholder="Search by ID, discount code, user, or course"
-              searchQuery={filters.searchQuery}
+              placeholder="Search by discount usage ID, discount code, user name, or course title"
+              searchQuery={filters.search}
               onSearchChange={handleSearchChange}
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
-                typeFilter={filters.typeFilter}
-                dateRange={filters.dateRange}
+                typeFilter={filters.type || "ALL"}
+                dateRange={{ from: filters.fromDate, to: filters.toDate }}
                 onTypeFilterChange={(type) => {
-                  setFilters((prev) => ({ ...prev, typeFilter: type }));
+                  setFilters((prev) => ({
+                    ...prev,
+                    type:
+                      type === "ALL" ? null : (type as "REFERRAL" | "GENERAL"),
+                  }));
+                  setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onDateRangeChange={(range) => {
-                  setFilters((prev) => ({ ...prev, dateRange: range }));
+                  setFilters((prev) => ({
+                    ...prev,
+                    fromDate: range.from,
+                    toDate: range.to,
+                  }));
+                  setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onClearFilters={() => {
                   setFilters(initFilterValues);
+                  setCurrentPage(0);
                 }}
               />
             </div>
@@ -171,44 +151,41 @@ const DiscountUsagePage = () => {
       </Card>
 
       {/* Discount Usages Table */}
-      {isFiltering ? (
-        <TableLoadingSkeleton />
-      ) : (
-        <>
-          {filteredUsages.length > 0 ? (
-            <div className="space-y-4">
-              {/* Refetch button */}
-              <div>
-                <Button
-                  variant="outline"
-                  onClick={() => refetch()}
-                  disabled={isLoading || isFiltering}
-                >
-                  Refetch
-                </Button>
-              </div>
+      {discountUsages.length > 0 ? (
+        <div className="space-y-4">
+          {/* Refetch button */}
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              Refetch
+            </Button>
+          </div>
 
-              {/* Discount Usages Table */}
-              <DiscountUsageTable filteredUsages={filteredUsages} />
+          {/* Discount Usages Table */}
+          <DiscountUsageTable filteredUsages={discountUsages} />
 
-              {/* Pagination */}
-              {data && data.data.page && data.data.page.totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  pageInfo={data.data.page || null}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              type={hasActiveFilters ? "no-results" : "no-data"}
-              clearFilters={resetFilters}
+          {/* Pagination */}
+          {data && data.data.page && data.data.page.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              pageInfo={data.data.page || null}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(newSize) => {
+                setItemsPerPage(newSize);
+                setCurrentPage(0); // Reset to first page when changing page size
+              }}
             />
           )}
-        </>
+        </div>
+      ) : (
+        <EmptyState
+          type={hasActiveFilters ? "no-results" : "no-data"}
+          clearFilters={resetFilters}
+        />
       )}
     </div>
   );

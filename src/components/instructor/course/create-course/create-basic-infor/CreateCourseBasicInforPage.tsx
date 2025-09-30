@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -59,8 +59,6 @@ import {
   useDeleteCourseMutation,
   useUpdateCourseStatusMutation,
 } from '@/services/instructor/courses/courses-api';
-import { AppDispatch } from '@/store/store';
-import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { useRouter } from 'next/navigation';
 import WarningAlert from '@/components/instructor/commom/WarningAlert';
@@ -92,6 +90,8 @@ export function CreateCourseBasicInforPage({
   onSubmit,
   onRefetchData,
 }: CourseFormProps) {
+  console.log(courseInfo);
+
   const [isCourseThumbUpdated, setIsCourseThumbUpdated] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [courseStatus, setCourseStatus] = useState<'published' | 'unpublished'>(
@@ -172,6 +172,29 @@ export function CreateCourseBasicInforPage({
   }, [isCreating, isUpdating, isDeleting, isUpdatingStatus]);
 
   const imageFile = watch('file');
+
+  const canPublishCourse = useMemo(() => {
+    let canPublishCourse = true;
+
+    if (
+      !courseInfo ||
+      courseInfo.approved ||
+      courseInfo.title.trim() === '' ||
+      courseInfo.description.trim() === '' ||
+      !imageFile ||
+      imageFile === undefined ||
+      !courseInfo.sections ||
+      courseInfo.sections.length === 0 ||
+      (courseInfo.sections.length > 0 &&
+        courseInfo.sections.some(
+          (section) => !section.lessons || section.lessons.length === 0
+        ))
+    ) {
+      canPublishCourse = false;
+    }
+
+    return canPublishCourse;
+  }, [courseInfo, imageFile]);
 
   const getStatusReviewColor = (status: string) => {
     if (status) status = status.toLowerCase();
@@ -303,7 +326,7 @@ export function CreateCourseBasicInforPage({
   return (
     <div className={cn('space-y-6')}>
       {/* Course actions */}
-      {mode === 'edit' && courseInfo && (
+      {mode === 'edit' && courseInfo && canPublishCourse && (
         <div className="space-y-3">
           <Button
             variant="outline"
@@ -329,6 +352,14 @@ export function CreateCourseBasicInforPage({
                   {courseInfo.statusReview === null && (
                     <span className="text-sm text-muted-foreground">
                       Switch to publish mode to be able to submit for review
+                    </span>
+                  )}
+
+                  {(courseInfo.statusReview === 'PENDING' ||
+                    courseInfo.statusReview === 'RESUBMITTED') && (
+                    <span className="text-sm text-muted-foreground">
+                      Your course is under review. You cannot publish or
+                      unpublish the course at this time.
                     </span>
                   )}
 
@@ -373,6 +404,11 @@ export function CreateCourseBasicInforPage({
                   <Switch
                     checked={courseStatus === 'published'}
                     onCheckedChange={handlePublishCourseToggle}
+                    disabled={
+                      isLoading ||
+                      courseInfo.statusReview === 'PENDING' ||
+                      courseInfo.statusReview === 'RESUBMITTED'
+                    }
                   />
                   <span>
                     {courseStatus === 'published' ? 'Published' : 'Unpublished'}
@@ -435,8 +471,8 @@ export function CreateCourseBasicInforPage({
                     >
                       {isUpdating ? (
                         <>
-                          <span>Updating...</span>
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          <span>Updating</span>
                         </>
                       ) : (
                         'Save changes'
@@ -695,6 +731,7 @@ export function CreateCourseBasicInforPage({
                         label="Course Thumbnail"
                         imageFileName={imageFile && imageFile.name}
                         required
+                        isLoading={isLoading}
                       />
                     </FormControl>
                     {errors.file && (
@@ -714,7 +751,7 @@ export function CreateCourseBasicInforPage({
               <Button type="submit" disabled={isValid === false || isLoading}>
                 {isCreating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                     <span>Creating Course</span>
                   </>
                 ) : (

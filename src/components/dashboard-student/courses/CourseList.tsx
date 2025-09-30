@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useGetEnrolledCoursesQuery } from "@/services/student/studentApi";
 import { CourseCard } from "./CourseCard";
-import { CourseFilter } from "./CourseFilter";
+import { CourseFilter, type CourseFilterRef } from "./CourseFilter";
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 import { CoursesLoadingSkeleton, EnrolledCoursesError } from "../ui";
@@ -12,13 +12,10 @@ import Link from "next/link";
 import { useAppSelector, useAppDispatch } from "@/store/hook";
 import {
   resetFilters,
+  setSearchQuery,
   CourseFilterStatus,
-  CourseSortBy,
 } from "@/store/slices/student/courseFilterSlice";
-import {
-  CustomPagination,
-  usePagination,
-} from "@/components/ui/custom-pagination";
+import { CustomPagination } from "@/components/ui/custom-pagination";
 
 const COURSES_PER_PAGE = 6;
 
@@ -27,79 +24,74 @@ type CourseListProps = {
 };
 
 export function CourseList({ cols }: CourseListProps) {
-  const { data, error, isLoading, refetch } = useGetEnrolledCoursesQuery();
   const dispatch = useAppDispatch();
-  const {
-    searchQuery,
-    filter: filterStatus,
-    sort: sortBy,
-  } = useAppSelector((state) => state.courseFilter);
+  const { searchQuery, progressFilter, status, sortBy, sortDirection } =
+    useAppSelector((state) => state.courseFilter);
+
+
+
+  // Handle pagination via API
+  const [currentPage, setCurrentPage] = useState(0);
+  
+  // Ref to communicate with CourseFilter component
+  const courseFilterRef = useRef<CourseFilterRef>(null);
+
+  // Proper reset handler that handles the search state correctly
+  const handleResetFilters = () => {
+    // Try to reset via CourseFilter component first (handles debounced search properly)
+    if (courseFilterRef.current) {
+      courseFilterRef.current.resetFilters();
+    } else {
+      // Fallback to direct Redux reset
+      dispatch(resetFilters());
+      dispatch(setSearchQuery(""));
+    }
+  };
+
+  // Prepare API parameters with pagination
+  const apiParams = useMemo(() => {
+    const params: any = {
+      sortBy,
+      sortDirection,
+      size: COURSES_PER_PAGE,
+      page: currentPage,
+    };
+
+    if (searchQuery.trim()) {
+      params.search = searchQuery.trim();
+    }
+
+    if (progressFilter !== CourseFilterStatus.ALL) {
+      params.progressFilter = progressFilter;
+    }
+
+    if (status) {
+      params.status = status;
+    }
+
+    return params;
+  }, [searchQuery, progressFilter, status, sortBy, sortDirection, currentPage]);
+
+  const { data, error, isLoading, refetch } =
+    useGetEnrolledCoursesQuery(apiParams);
 
   const courses = data?.content || [];
+  const totalPages = data?.page?.totalPages || 1;
+  const totalItems = data?.page?.totalElements || 0;
 
-  // Filter and sort courses
-  const filteredAndSortedCourses = useMemo(() => {
-    let filtered = [...courses];
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (course) =>
-          course.title.toLowerCase().includes(query) ||
-          course.instructor.name.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply status filter
-    if (filterStatus !== CourseFilterStatus.ALL) {
-      filtered = filtered.filter((course) => {
-        const status = course.completionStatus?.toUpperCase();
-        switch (filterStatus) {
-          case CourseFilterStatus.COMPLETED:
-            return status === "COMPLETED";
-          case CourseFilterStatus.IN_PROGRESS:
-            return status === "IN_PROGRESS";
-          case CourseFilterStatus.NOT_STARTED:
-            return status === "NOT_STARTED" || !status;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case CourseSortBy.TITLE:
-          return a.title.localeCompare(b.title);
-        case CourseSortBy.INSTRUCTOR:
-          return a.instructor.name.localeCompare(b.instructor.name);
-        case CourseSortBy.PROGRESS:
-          return (b.progress || 0) - (a.progress || 0);
-        case CourseSortBy.RECENT:
-        default:
-          // For recent, we can sort by courseId as a proxy since we don't have enrolledAt
-          return b.courseId.localeCompare(a.courseId);
-      }
-    });
-
-    return filtered;
-  }, [courses, searchQuery, filterStatus, sortBy]);
-
-  // Use pagination hook
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems: paginatedCourses,
-    handlePageChange,
-    totalItems,
-  } = usePagination(filteredAndSortedCourses, COURSES_PER_PAGE);
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchQuery, progressFilter, status, sortBy, sortDirection]);
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <CourseFilter />
+        <CourseFilter ref={courseFilterRef} />
         <CoursesLoadingSkeleton />
       </div>
     );
@@ -108,21 +100,23 @@ export function CourseList({ cols }: CourseListProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        <CourseFilter />
+        <CourseFilter ref={courseFilterRef} />
         <EnrolledCoursesError onRetry={refetch} />
       </div>
     );
   }
 
-  if (courses.length === 0) {
+  if (totalItems === 0) {
     return (
       <div className="space-y-6">
-        <CourseFilter />
+        <CourseFilter ref={courseFilterRef} />
         <EmptyState
           hasFilter={
-            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+            searchQuery.trim() !== "" ||
+            progressFilter !== CourseFilterStatus.ALL ||
+            status !== null
           }
-          onClearFilter={() => dispatch(resetFilters())}
+          onClearFilter={handleResetFilters}
         />
       </div>
     );
@@ -130,31 +124,35 @@ export function CourseList({ cols }: CourseListProps) {
 
   return (
     <div className="space-y-6">
-      <CourseFilter />
+      <CourseFilter ref={courseFilterRef} />
 
-      {filteredAndSortedCourses.length === 0 ? (
+      {courses.length === 0 ? (
         <EmptyState
           hasFilter={
-            searchQuery.trim() !== "" || filterStatus !== CourseFilterStatus.ALL
+            searchQuery.trim() !== "" ||
+            progressFilter !== CourseFilterStatus.ALL ||
+            status !== null
           }
-          onClearFilter={() => dispatch(resetFilters())}
+          onClearFilter={handleResetFilters}
         />
       ) : (
         <>
           <div
             className={`grid gap-6 md:grid-cols-2 lg:grid-cols-${cols || 4}`}
           >
-            {paginatedCourses.map((course) => (
+            {courses.map((course) => (
               <CourseCard key={course.courseId} course={course} />
             ))}
           </div>
 
           {/* Pagination */}
-          <CustomPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          {totalPages > 1 && (
+            <CustomPagination
+              currentPage={currentPage + 1} // Convert to 1-based for UI
+              totalPages={totalPages}
+              onPageChange={(page) => handlePageChange(page - 1)} // Convert to 0-based for API
+            />
+          )}
         </>
       )}
     </div>

@@ -5,7 +5,7 @@ import {
   SkeletonTable,
   SkeletonSearchBar,
 } from '@/components/instructor/commom/skeletons/SkeletonComponents';
-import { SkeletonStudentCard } from '@/components/instructor/students/skeletons';
+import { SkeletonStudentCard } from '@/components/instructor/students/StudentPageSkeletons';
 
 export const CourseOverviewSkeleton = () => {
   return (

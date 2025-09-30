@@ -85,10 +85,16 @@ CourseSidebarProps) {
   // }, [debouncedPriceRange, filters, onFiltersChange]);
 
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
+    console.log("📂 Category change:", {
+      categoryId,
+      checked,
+      currentCategories: filters.categories,
+    });
     const updatedCategories = checked
       ? [...filters.categories, categoryId]
       : filters.categories.filter((id) => id !== categoryId);
 
+    console.log("📂 Updated categories:", updatedCategories);
     onFiltersChange({
       ...filters,
       categories: updatedCategories,

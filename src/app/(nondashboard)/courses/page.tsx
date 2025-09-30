@@ -48,12 +48,13 @@ function CoursesPageContent() {
 
   // Build API filters
   const apiFilters = useMemo(() => {
+    console.log("🔍 Building API filters with categories:", filters.categories);
     return {
       page: currentPage - 1, // API sử dụng 0-based indexing
       size: itemsPerPage,
       search: searchQuery.trim() || undefined,
-      categoryId:
-        filters.categories.length > 0 ? filters.categories[0] : undefined,
+      categoryIds:
+        filters.categories.length > 0 ? filters.categories : undefined,
       // Chỉ gửi price khi khác default [0, 500]
       minPrice: filters.priceRange[0] !== 0 ? filters.priceRange[0] : undefined,
       maxPrice:

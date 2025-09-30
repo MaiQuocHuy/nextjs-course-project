@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,17 @@ import { EmptyState } from "../refunds/shared";
 import { RefundsSkeleton, TableLoadingSkeleton } from "../refunds/skeletons";
 
 type Filters = {
-  searchQuery: string;
-  statusFilter: "ALL" | "PENDING" | "PAID" | "CANCELLED";
-  dateRange: { from: string | null; to: string | null };
+  search: string;
+  status: "PENDING" | "PAID" | "CANCELLED" | null;
+  fromDate: string | null;
+  toDate: string | null;
 };
 
 const initFilterValues: Filters = {
-  searchQuery: "",
-  statusFilter: "ALL",
-  dateRange: { from: null, to: null },
+  search: "",
+  status: null,
+  fromDate: null,
+  toDate: null,
 };
 
 const params = {
@@ -35,84 +37,53 @@ const AffiliatePayoutPage = () => {
   const [currentPage, setCurrentPage] = useState(params.page);
   const [itemsPerPage, setItemsPerPage] = useState(params.size);
   const [filters, setFilters] = useState<Filters>(initFilterValues);
-  const [isFiltering, setIsFiltering] = useState(false);
 
-  const { data, isLoading, error, refetch } = useGetAllAffiliatePayoutsQuery({
-    page: currentPage,
-    size: itemsPerPage,
-  });
+  const apiParams = useMemo(() => {
+    const params: any = {
+      page: currentPage,
+      size: itemsPerPage,
+    };
+
+    if (filters.search.trim()) {
+      params.search = filters.search.trim();
+    }
+    if (filters.status) {
+      params.status = filters.status;
+    }
+    if (filters.fromDate) {
+      params.fromDate = filters.fromDate;
+    }
+    if (filters.toDate) {
+      params.toDate = filters.toDate;
+    }
+
+    return params;
+  }, [currentPage, itemsPerPage, filters]);
+
+  const { data, isLoading, error, refetch } =
+    useGetAllAffiliatePayoutsQuery(apiParams);
 
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.searchQuery !== "" ||
-      filters.statusFilter !== "ALL" ||
-      filters.dateRange.from !== null ||
-      filters.dateRange.to !== null
+      filters.search !== "" ||
+      filters.status !== null ||
+      filters.fromDate !== null ||
+      filters.toDate !== null
     );
-  }, [
-    filters.searchQuery,
-    filters.statusFilter,
-    filters.dateRange.from,
-    filters.dateRange.to,
-  ]);
+  }, [filters]);
 
-  const filteredPayouts = useMemo(() => {
-    if (!data?.data?.content || data.data.content.length === 0) {
-      return [];
-    }
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [filters.search, filters.status, filters.fromDate, filters.toDate]);
 
-    setIsFiltering(true);
-
-    const result = data.data.content.filter((payout) => {
-      // Search: match id, referred by user name, course title, or discount user name
-      if (filters.searchQuery !== "") {
-        const searchLower = String(filters.searchQuery).toLowerCase();
-        const matchesSearch =
-          payout.id.toLowerCase().includes(searchLower) ||
-          (payout.referredByUser?.name &&
-            payout.referredByUser.name.toLowerCase().includes(searchLower)) ||
-          (payout.course?.title &&
-            payout.course.title.toLowerCase().includes(searchLower)) ||
-          (payout.discountUsage?.user?.name &&
-            payout.discountUsage.user.name.toLowerCase().includes(searchLower));
-        if (!matchesSearch) return false;
-      }
-
-      // Status filter
-      if (
-        filters.statusFilter !== "ALL" &&
-        payout.payoutStatus !== filters.statusFilter
-      ) {
-        return false;
-      }
-
-      // Date range filter (use createdAt)
-      if (filters.dateRange.from || filters.dateRange.to) {
-        const payoutDate = new Date(payout.createdAt);
-        if (
-          filters.dateRange.from &&
-          payoutDate < new Date(filters.dateRange.from)
-        ) {
-          return false;
-        }
-        if (
-          filters.dateRange.to &&
-          payoutDate > new Date(filters.dateRange.to + " 23:59:59")
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    setIsFiltering(false);
-    return result;
-  }, [data, filters]);
+  // Use data directly from API since filtering is done server-side
+  const affiliatePayouts = data?.data?.content || [];
 
   const handleSearchChange = useCallback((query: string) => {
-    setFilters((prev) => ({ ...prev, searchQuery: query }));
+    setFilters((prev) => ({ ...prev, search: query }));
+    setCurrentPage(0); // Reset to first page when searching
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -146,22 +117,35 @@ const AffiliatePayoutPage = () => {
         <CardContent className="px-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <SearchBar
-              placeholder="Search by ID, referrer, course, or discount user"
-              searchQuery={filters.searchQuery}
+              placeholder="Search by affiliate payout ID, referrer name, course title, or discount code"
+              searchQuery={filters.search}
               onSearchChange={handleSearchChange}
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
-                statusFilter={filters.statusFilter}
-                dateRange={filters.dateRange}
+                statusFilter={filters.status || "ALL"}
+                dateRange={{ from: filters.fromDate, to: filters.toDate }}
                 onStatusFilterChange={(status) => {
-                  setFilters((prev) => ({ ...prev, statusFilter: status }));
+                  setFilters((prev) => ({
+                    ...prev,
+                    status:
+                      status === "ALL"
+                        ? null
+                        : (status as "PENDING" | "PAID" | "CANCELLED"),
+                  }));
+                  setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onDateRangeChange={(range) => {
-                  setFilters((prev) => ({ ...prev, dateRange: range }));
+                  setFilters((prev) => ({
+                    ...prev,
+                    fromDate: range.from,
+                    toDate: range.to,
+                  }));
+                  setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onClearFilters={() => {
                   setFilters(initFilterValues);
+                  setCurrentPage(0);
                 }}
               />
             </div>
@@ -170,44 +154,41 @@ const AffiliatePayoutPage = () => {
       </Card>
 
       {/* Payouts Table */}
-      {isFiltering ? (
-        <TableLoadingSkeleton />
-      ) : (
-        <>
-          {filteredPayouts.length > 0 ? (
-            <div className="space-y-4">
-              {/* Refetch button */}
-              <div>
-                <Button
-                  variant="outline"
-                  onClick={() => refetch()}
-                  disabled={isLoading || isFiltering}
-                >
-                  Refetch
-                </Button>
-              </div>
+      {affiliatePayouts.length > 0 ? (
+        <div className="space-y-4">
+          {/* Refetch button */}
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              Refetch
+            </Button>
+          </div>
 
-              {/* Payouts Table */}
-              <AffiliatePayoutTable filteredPayouts={filteredPayouts} />
+          {/* Payouts Table */}
+          <AffiliatePayoutTable filteredPayouts={affiliatePayouts} />
 
-              {/* Pagination */}
-              {data && data.data.page && data.data.page.totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  pageInfo={data.data.page || null}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              type={hasActiveFilters ? "no-results" : "no-data"}
-              clearFilters={resetFilters}
+          {/* Pagination */}
+          {data && data.data.page && data.data.page.totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              pageInfo={data.data.page || null}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(newSize) => {
+                setItemsPerPage(newSize);
+                setCurrentPage(0); // Reset to first page when changing page size
+              }}
             />
           )}
-        </>
+        </div>
+      ) : (
+        <EmptyState
+          type={hasActiveFilters ? "no-results" : "no-data"}
+          clearFilters={resetFilters}
+        />
       )}
     </div>
   );

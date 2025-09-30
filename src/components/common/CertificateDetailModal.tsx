@@ -137,18 +137,20 @@ export default function CertificateDetailModal({
               </span>
             </DialogTitle>
           </DialogHeader>
-          <div className="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6 flex-1 min-h-0">
-            <iframe
-              src={getViewUrl(previewUrl)}
-              className="w-full h-full border rounded-lg"
-              title="Certificate Preview"
-              onLoad={() =>
-                toast.success("Certificate loaded successfully", {
-                  duration: 1000,
-                })
-              }
-              onError={() => toast.error("Failed to load certificate preview")}
-            />
+          <div className="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6 flex-1 min-h-0 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg border overflow-hidden">
+              <img
+                src={getViewUrl(previewUrl)}
+                alt="Certificate Preview"
+                className="max-w-full max-h-full object-contain"
+                onLoad={() =>
+                  toast.success("Certificate loaded successfully", {
+                    duration: 1000,
+                  })
+                }
+                onError={() => toast.error("Failed to load certificate preview")}
+              />
+            </div>
           </div>
         </DialogContent>
       </Dialog>

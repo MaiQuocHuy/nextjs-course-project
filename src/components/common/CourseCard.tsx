@@ -3,7 +3,7 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Users, Clock, PlayCircle, BookOpen, Award } from "lucide-react";
+import { Star, Users, PlayCircle, BookOpen, Award } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Course } from "@/services/coursesApi";
@@ -44,17 +44,6 @@ export function CourseCard({
   const getTotalLessons = () => {
     // Sử dụng sectionCount từ API thay vì tính toán từ sections
     return course.sectionCount || 0;
-  };
-
-  const getDurationInHours = () => {
-    // Use totalHours from API if available, otherwise estimate
-    if (course.totalHours && course.totalHours > 0) {
-      return course.totalHours;
-    }
-
-    // Fallback estimation: 10 minutes per lesson
-    const totalMinutes = getTotalLessons() * 10;
-    return Math.round(totalMinutes / 60);
   };
 
   const renderEnrollButton = (className: string) => {
@@ -205,10 +194,6 @@ export function CourseCard({
                     <div className="flex items-center gap-1">
                       <BookOpen className="w-3 h-3" />
                       <span>{getTotalLessons()} lessons</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{getDurationInHours()}h</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
@@ -369,22 +354,13 @@ export function CourseCard({
           </div>
 
           {/* Course Stats */}
-          <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
                 <BookOpen className="w-4 h-4" />
               </div>
               <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
                 {getTotalLessons()} Lessons
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
-                <Clock className="w-4 h-4" />
-              </div>
-              <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                {getDurationInHours()}h Total
               </p>
             </div>
 
