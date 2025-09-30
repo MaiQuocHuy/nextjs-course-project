@@ -1,28 +1,29 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from 'react';
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   SearchBar,
   FilterBar,
   Pagination,
-} from "@/components/instructor/affiliate-payout/shared";
-import { AffiliatePayoutTable } from "@/components/instructor/affiliate-payout/AffiliatePayoutTable";
-import { useGetAllAffiliatePayoutsQuery } from "@/services/instructor/affiliate-payout/affiliate-payout-api";
+} from '@/components/instructor/affiliate-payout/shared';
+import { AffiliatePayoutTable } from '@/components/instructor/affiliate-payout/AffiliatePayoutTable';
+import { useGetAllAffiliatePayoutsQuery } from '@/services/instructor/affiliate-payout/affiliate-payout-api';
 
-import { TableLoadingError } from "../refunds/shared/LoadingError";
-import { EmptyState } from "../refunds/shared";
-import { RefundsSkeleton, TableLoadingSkeleton } from "../refunds/skeletons";
+import { TableLoadingError } from '../refunds/shared/LoadingError';
+import { EmptyState } from '../refunds/shared';
+import { RefundsSkeleton } from '../refunds/skeletons';
+import { toast } from 'sonner';
 
 type Filters = {
   search: string;
-  status: "PENDING" | "PAID" | "CANCELLED" | null;
+  status: 'PENDING' | 'PAID' | 'CANCELLED' | null;
   fromDate: string | null;
   toDate: string | null;
 };
 
 const initFilterValues: Filters = {
-  search: "",
+  search: '',
   status: null,
   fromDate: null,
   toDate: null,
@@ -66,7 +67,7 @@ const AffiliatePayoutPage = () => {
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.search !== "" ||
+      filters.search !== '' ||
       filters.status !== null ||
       filters.fromDate !== null ||
       filters.toDate !== null
@@ -123,19 +124,26 @@ const AffiliatePayoutPage = () => {
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
-                statusFilter={filters.status || "ALL"}
+                statusFilter={filters.status || 'ALL'}
                 dateRange={{ from: filters.fromDate, to: filters.toDate }}
                 onStatusFilterChange={(status) => {
                   setFilters((prev) => ({
                     ...prev,
                     status:
-                      status === "ALL"
+                      status === 'ALL'
                         ? null
-                        : (status as "PENDING" | "PAID" | "CANCELLED"),
+                        : (status as 'PENDING' | 'PAID' | 'CANCELLED'),
                   }));
                   setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onDateRangeChange={(range) => {
+                  // Check if from date and to date are valid
+                  if (range.from && range.to && range.from > range.to) {
+                    // Invalid range, ignore the change
+                    toast.error("'From Date' cannot be later than 'To Date'");
+                    return;
+                  }
+
                   setFilters((prev) => ({
                     ...prev,
                     fromDate: range.from,
@@ -186,7 +194,7 @@ const AffiliatePayoutPage = () => {
         </div>
       ) : (
         <EmptyState
-          type={hasActiveFilters ? "no-results" : "no-data"}
+          type={hasActiveFilters ? 'no-results' : 'no-data'}
           clearFilters={resetFilters}
         />
       )}

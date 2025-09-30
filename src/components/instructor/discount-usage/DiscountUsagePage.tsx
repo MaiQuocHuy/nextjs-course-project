@@ -1,27 +1,28 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from 'react';
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   SearchBar,
   FilterBar,
   Pagination,
-} from "@/components/instructor/discount-usage/shared";
-import { DiscountUsageTable } from "@/components/instructor/discount-usage/DiscountUsageTable";
-import { useGetAllDiscountUsagesQuery } from "@/services/instructor/discount-usage/discount-usage-api";
-import { EmptyState } from "../refunds/shared";
-import { TableLoadingError } from "../refunds/shared/LoadingError";
-import { RefundsSkeleton, TableLoadingSkeleton } from "../refunds/skeletons";
+} from '@/components/instructor/discount-usage/shared';
+import { DiscountUsageTable } from '@/components/instructor/discount-usage/DiscountUsageTable';
+import { useGetAllDiscountUsagesQuery } from '@/services/instructor/discount-usage/discount-usage-api';
+import { EmptyState } from '../refunds/shared';
+import { TableLoadingError } from '../refunds/shared/LoadingError';
+import { RefundsSkeleton, TableLoadingSkeleton } from '../refunds/skeletons';
+import { toast } from 'sonner';
 
 type Filters = {
   search: string;
-  type: "REFERRAL" | "GENERAL" | null;
+  type: 'REFERRAL' | 'GENERAL' | null;
   fromDate: string | null;
   toDate: string | null;
 };
 
 const initFilterValues: Filters = {
-  search: "",
+  search: '',
   type: null,
   fromDate: null,
   toDate: null,
@@ -65,7 +66,7 @@ const DiscountUsagePage = () => {
   // Compute hasActiveFilters
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.search !== "" ||
+      filters.search !== '' ||
       filters.type !== null ||
       filters.fromDate !== null ||
       filters.toDate !== null
@@ -122,17 +123,23 @@ const DiscountUsagePage = () => {
             />
             <div className="lg:flex-1 lg:max-w-none">
               <FilterBar
-                typeFilter={filters.type || "ALL"}
+                typeFilter={filters.type || 'ALL'}
                 dateRange={{ from: filters.fromDate, to: filters.toDate }}
                 onTypeFilterChange={(type) => {
                   setFilters((prev) => ({
                     ...prev,
                     type:
-                      type === "ALL" ? null : (type as "REFERRAL" | "GENERAL"),
+                      type === 'ALL' ? null : (type as 'REFERRAL' | 'GENERAL'),
                   }));
                   setCurrentPage(0); // Reset to first page when filtering
                 }}
                 onDateRangeChange={(range) => {
+                  // Check if from date and to date are valid
+                  if (range.from && range.to && range.from > range.to) {
+                    // Invalid range, ignore the change
+                    toast.error("'From Date' cannot be later than 'To Date'");
+                    return;
+                  }
                   setFilters((prev) => ({
                     ...prev,
                     fromDate: range.from,
@@ -183,7 +190,7 @@ const DiscountUsagePage = () => {
         </div>
       ) : (
         <EmptyState
-          type={hasActiveFilters ? "no-results" : "no-data"}
+          type={hasActiveFilters ? 'no-results' : 'no-data'}
           clearFilters={resetFilters}
         />
       )}
